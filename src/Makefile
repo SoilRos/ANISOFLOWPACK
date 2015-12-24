@@ -1,4 +1,4 @@
-Run.exe: 01_Types.o 02_Util.o 03_Type_Checking.o 04_Geometry.o 05_IOdata.o 06_K_operations.o 07_Topology.o 08_IsoSystem.o 09_AnisoSystem.o 11_Simulation.o 12_LinearSolvers.o
+Run.exe: 01_Types.o 02_Util.o 03_Type_Checking.o 04_Geometry.o 05_IOdata.o 06_K_operations.o 07_Topology.o 08_IsoSystem.o 09_AnisoSystem.o 11_Simulation.o 12_LinearSolvers.o Run.o
 	gfortran Run.o 01_Types.o 02_Util.o 03_Type_Checking.o 04_Geometry.o 05_IOdata.o 06_K_operations.o 07_Topology.o 08_IsoSystem.o 09_AnisoSystem.o 11_Simulation.o 12_LinearSolvers.o -o Run.exe
 
 Run.o: Run.f90
