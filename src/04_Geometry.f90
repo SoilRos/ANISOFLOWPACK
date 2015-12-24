@@ -132,36 +132,36 @@ SUBROUTINE bld_domainff_dp(prjctrt,flnm,X,Y,Z,dmngmtry)
     WRITE(*,*) '*---|Importando archivo de geometria|---*'                                                                     
     !Definicion del caracter de delimitacion de rutas de acuerdo con el sistema operativo 
     IF (INDEX(prjctrt,'/')==0) THEN
-        rtdlmtng='\\'                                                                                                               Delimitador en MS-DOS
+        rtdlmtng='\\'                                                                                                               !Delimitador en MS-DOS
     ELSE
-        rtdlmtng='//'                                                                                                               Delimitador en Unix-OS
+        rtdlmtng='//'                                                                                                               !Delimitador en Unix-OS
     END IF
     !Verificacion de la existencia y pertinencia de los datos de entrada
     IF (LEN_TRIM(TRIM(ADJUSTL(prjctrt))//rtdlmtng//TRIM(ADJUSTL(flnm))) > 200) THEN
         CALL error('En bld_domainff_dp: La ruta del archivo geometria es demasiado larga')    
     ELSE
-        rt=TRIM(ADJUSTL(prjctrt))//rtdlmtng//TRIM(ADJUSTL(flnm))                                                                    Archivo en el que  se almacena el dominio espacial        
+        rt=TRIM(ADJUSTL(prjctrt))//rtdlmtng//TRIM(ADJUSTL(flnm))                                                                    !Archivo en el que  se almacena el dominio espacial        
     END IF
     INQUIRE(FILE=TRIM(ADJUSTL(rt)),EXIST=flexist)
-    IF (.NOT.flexist) CALL error('En bld_domainff_dp: El archivo geometria no existe')                                              Verifica que el archivo con el dominio exista y est� en la ruta correcta
+    IF (.NOT.flexist) CALL error('En bld_domainff_dp: El archivo geometria no existe')                                              !Verifica que el archivo con el dominio exista y est� en la ruta correcta
     !Lectura del archivo que contiene el dominio espacial
-    OPEN(u,FILE=rt,STATUS='OLD',ACTION='READ')                                                                                      Abre el archivo del dominio espacial
-    READ(u,'(A8,I10,A1)')header,clmns,enter                                                                                         Numero de columnas
-    READ(u,'(A8,I10,A1)')header,rws,enter                                                                                           Numero de filas
-    READ(u,'(A8,I10,A1)')header,lvls,enter                                                                                          Numero de niveles
-    ALLOCATE(X(clmns+1),Y(rws+1),Z(lvls+1))                                                                                         Aloja los arreglos de coordenadas en precisi�n doble
+    OPEN(u,FILE=rt,STATUS='OLD',ACTION='READ')                                                                                      !Abre el archivo del dominio espacial
+    READ(u,'(A8,I10,A1)')header,clmns,enter                                                                                         !Numero de columnas
+    READ(u,'(A8,I10,A1)')header,rws,enter                                                                                           !Numero de filas
+    READ(u,'(A8,I10,A1)')header,lvls,enter                                                                                          !Numero de niveles
+    ALLOCATE(X(clmns+1),Y(rws+1),Z(lvls+1))                                                                                         !Aloja los arreglos de coordenadas en precisi�n doble
     DO i=1,clmns+1
-        READ(u,'(SP,ES18.11E2,A1)')X(i),enter                                                                                       Coordenadas en la direccion X
+        READ(u,'(SP,ES18.11E2,A1)')X(i),enter                                                                                       !Coordenadas en la direccion X
     END DO
     DO j=1,rws+1
-        READ(u,'(SP,ES18.11E2,A1)')Y(j),enter                                                                                       Coordenadas en la direccion Y
+        READ(u,'(SP,ES18.11E2,A1)')Y(j),enter                                                                                       !Coordenadas en la direccion Y
     END DO
     DO k=1,lvls+1
-        READ(u,'(SP,ES18.11E2,A1)')Z(k),enter                                                                                       Coordenadas en la direccion Z
+        READ(u,'(SP,ES18.11E2,A1)')Z(k),enter                                                                                       !Coordenadas en la direccion Z
     END DO
     CLOSE(u)
     CALL bld_domain(X,Y,Z,rws,clmns,lvls,dmngmtry)
-    WRITE(*,*) '*---|La creacion de la variable tipo geometria ha sido exitosa|---*'                                                Imprime el mensaje de finalizacion satisfactoria del programa
+    WRITE(*,*) '*---|La creacion de la variable tipo geometria ha sido exitosa|---*'                                                !Imprime el mensaje de finalizacion satisfactoria del programa
     !
 END SUBROUTINE bld_domainff_dp
 !!
@@ -200,17 +200,17 @@ SUBROUTINE bld_domain_dp(X,Y,Z,rws,clmns,lvls,dmngmtry)
     IF (SIZE(Y,1)/=rws+1)   CALL error('En bld_domain_sp: Dimensiones incongruentes del vector y')
     IF (SIZE(Z,1)/=lvls+1)  CALL error('En bld_domain_sp: Dimensiones incongruentes del vector z')
     !Construcci�n del dominio espacial
-    dmngmtry%exist=.true.                                                                                                           Garantiza la existencia de la variable tipo
-    dmngmtry%infile=.false.                                                                                                         no daTa ya que la variable esta en RAM
-    dmngmtry%flind=-9999                                                                                                            ...todos los par�metros de almacenamiento en...
-    dmngmtry%rtdom=''                                                                                                               Atributo reservado para hacer la lEctura directa de disco
+    dmngmtry%exist=.true.                                                                                                           !Garantiza la existencia de la variable tipo
+    dmngmtry%infile=.false.                                                                                                         !no daTa ya que la variable esta en RAM
+    dmngmtry%flind=-9999                                                                                                            !...todos los par�metros de almacenamiento en...
+    dmngmtry%rtdom=''                                                                                                               !Atributo reservado para hacer la lEctura directa de disco
     dmngmtry%clmns=clmns
     dmngmtry%rws=rws
     dmngmtry%lvls=lvls
-    dmngmtry%Xd=>X                                                                                                                  Apunta al arreglo X
-    dmngmtry%Yd=>Y                                                                                                                  Apunta al arreglo Y
-    dmngmtry%Zd=>Z                                                                                                                  Apunta al arreglo Z
-    NULLIFY(dmngmtry%Xs,dmngmtry%Ys,dmngmtry%Zs)                                                                                    Anula atributos de presicion simple
+    dmngmtry%Xd=>X                                                                                                                  !Apunta al arreglo X
+    dmngmtry%Yd=>Y                                                                                                                  !Apunta al arreglo Y
+    dmngmtry%Zd=>Z                                                                                                                  !Apunta al arreglo Z
+    NULLIFY(dmngmtry%Xs,dmngmtry%Ys,dmngmtry%Zs)                                                                                    !Anula atributos de presicion simple
     !
 END SUBROUTINE bld_domain_dp
 !
