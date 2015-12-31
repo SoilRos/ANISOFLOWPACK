@@ -1,5 +1,5 @@
-Run.exe: 01_Types.o 02_Util.o 03_Type_Checking.o 04_Geometry.o 05_IOdata.o 06_K_operations.o 07_Topology.o 08_IsoSystem.o 09_AnisoSystem.o 11_Simulation.o 12_LinearSolvers.o Run.o chkopts
-	-${FLINKER} Run.o 01_Types.o 02_Util.o 03_Type_Checking.o 04_Geometry.o 05_IOdata.o 06_K_operations.o 07_Topology.o 08_IsoSystem.o 09_AnisoSystem.o 11_Simulation.o 12_LinearSolvers.o -o Run.exe ${PETSC_SYS_LIB}
+Run.exe: 01_Types.o 02_Util.o 03_Type_Checking.o 04_Geometry.o 05_IOdata.o 06_K_operations.o 07_Topology.o 08_IsoSystem.o 09_AnisoSystem.o 11_Simulation.o 12_LinearSolvers.o run.o chkopts
+	-${FLINKER} run.o 01_Types.o 02_Util.o 03_Type_Checking.o 04_Geometry.o 05_IOdata.o 06_K_operations.o 07_Topology.o 08_IsoSystem.o 09_AnisoSystem.o 11_Simulation.o 12_LinearSolvers.o -o Run.exe ${PETSC_SYS_LIB}
 
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
@@ -16,8 +16,8 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 03_Type_Checking.o: 03_Type_Checking.f90
 	gfortran -c 03_Type_Checking.f90
 
-04_Geometry.o: 04_Geometry.f90
-	gfortran -c 04_Geometry.f90
+# 04_Geometry.o: 04_Geometry.f90
+	# gfortran -c 04_Geometry.f90
 
 05_IOdata.o: 05_IOdata.f90
 	gfortran -c 05_IOdata.f90
@@ -25,8 +25,8 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 06_K_operations.o: 06_K_operations.f90
 	gfortran -c 06_K_operations.f90
 
-07_Topology.o: 07_Topology.f90
-	gfortran -c 07_Topology.f90
+# 07_Topology.o: 07_Topology.f90
+	# gfortran -c 07_Topology.f90
 
 08_IsoSystem.o: 08_IsoSystem.f90
 	gfortran -c 08_IsoSystem.f90
