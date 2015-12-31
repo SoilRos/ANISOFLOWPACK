@@ -18,6 +18,7 @@ MODULE topology
         SUBROUTINE bld_topologybn(prjctrt,dmngmtry,topo)
             USE anisotype
             IMPLICIT NONE
+#include <petsc/finclude/petscsys.h>
             CHARACTER(*), INTENT(IN)          :: prjctrt   
             TYPE(domain), INTENT(IN)          :: dmngmtry
             TYPE(topology), INTENT(OUT)       :: topo
@@ -59,73 +60,82 @@ SUBROUTINE bld_topologybn(prjctrt,dmngmtry,topo)
     USE iodata, ONLY : gtvlr_bn
     !
     IMPLICIT NONE
+#include <petsc/finclude/petscsys.h>
+    PetscErrorCode                              :: ierr
+    PetscMPIInt                                 :: tprocess, iprocess,status(MPI_STATUS_SIZE)
     !
-    CHARACTER(*), INTENT(IN)                                                     :: prjctrt   
-    TYPE(domain), INTENT(IN)                                                     :: dmngmtry
-    TYPE(topology), INTENT(INOUT)                                                :: topo
+    CHARACTER(*), INTENT(IN)                    :: prjctrt   
+    TYPE(domain), INTENT(IN)                    :: dmngmtry
+    TYPE(topology), INTENT(INOUT)               :: topo
     !   
-    CHARACTER(200)                                               :: rtact,rtcth,rtdph,rtk,rtch,rteh
-    INTEGER(I4B)                                                 :: actk,dphk,cont,cero,act,cth,dph 
-    INTEGER(I4B)                                                 :: uact,udph,utop,uch,ueh,i,j,k
-    
+    CHARACTER(200)                              :: rtact,rtcth,rtdph,rtk,rtch,rteh
+    INTEGER(I4B)                                :: actk,dphk,cont,cero,act,cth,dph 
+    INTEGER(I4B)                                :: uact,udph,utop,uch,ueh,i,j,k,a
     !
     PARAMETER(uact=30); PARAMETER(udph=50)
     PARAMETER(utop=55); PARAMETER(uch=57); PARAMETER(ueh=58)
     !
     cero=0; cont=0;
     !
-    WRITE (*,*) '*---|Inicia construccion de la topologia|---*'
-    !
-    rtact = trim(prjctrt)//'/sanpck.act'   !Archivo que contiene los bloques activos del modelo
-    rtdph = trim(prjctrt)//'/sanpck.dph'   !Archivo que contiene los bloques con CC de nivel externo
-    rtk   = trim(prjctrt)//'/sanpck.top'   !Archivo que contiene indices topologicos para bloques activos
-    rtch  = trim(prjctrt)//'/sanpck.toc'   !Archivo que contiene indices topologicos para CC de nivel impuesto
-    rteh  = trim(prjctrt)//'/sanpck.toe'   !Archivo que contiene indices topologicos para CC de nivel externo
-    OPEN(uact, FILE=rtact, STATUS='OLD', ACCESS='DIRECT', FORM='UNFORMATTED', RECL=4*6)
-    OPEN(udph, FILE=rtdph, STATUS='OLD', ACCESS='DIRECT', FORM='UNFORMATTED', RECL=4*6)
-    OPEN(utop, FILE=rtk, STATUS='REPLACE', ACCESS='DIRECT', FORM='UNFORMATTED', RECL=10*4)
-    OPEN(uch,  FILE=rtch, STATUS='REPLACE', ACCESS='DIRECT', FORM='UNFORMATTED', RECL=10*4)
-    OPEN(ueh,  FILE=rteh, STATUS='REPLACE', ACCESS='DIRECT', FORM='UNFORMATTED', RECL=10*4)
-    !
-    act=0; cth=0; dph=0 
-    !NIveles paralelos a Z
-    DO k=1,dmngmtry%lvls
-        !Filas paralelas a Y
-        DO j=1,dmngmtry%rws
-            !Columnas paralelas a X
-            DO i=1,dmngmtry%clmns
-                !
-                cont=cont+1
-                CALL gtvlr_bn(uact,dmngmtry,i,j,k,actk)
-                CALL gtvlr_bn(udph,dmngmtry,i,j,k,dphk)    
-                !
-                !Impresion de los archivos de indices topologicos tanto para
-                !los bloques activos como para las condiciones de frontera
-                IF (actk==1) THEN
-                    act=act+1                        
-                    WRITE(utop,REC=cont)act
-                    WRITE(uch,REC=cont)cero
-                    IF(dphk==3) THEN
-                        dph=dph+1
-                        WRITE(ueh,REC=cont)dph
+    CALL MPI_comm_rank(MPI_COMM_WORLD,iprocess,ierr)
+    CALL MPI_comm_size(MPI_COMM_WORLD,tprocess,ierr)
+    ! Barrier: Sincroniza todos los procesadores al inicio, esto para ubicar más fácil posibles errores.
+    CALL MPI_Barrier(MPI_COMM_WORLD,ierr)
+    IF (iprocess==0) THEN
+        WRITE (*,*) '*---|Inicia construccion de la topologia|---*'
+        !
+        rtact = trim(prjctrt)//'/sanpck.act'   !Archivo que contiene los bloques activos del modelo
+        rtdph = trim(prjctrt)//'/sanpck.dph'   !Archivo que contiene los bloques con CC de nivel externo
+        rtk   = trim(prjctrt)//'/sanpck.top'   !Archivo que contiene indices topologicos para bloques activos
+        rtch  = trim(prjctrt)//'/sanpck.toc'   !Archivo que contiene indices topologicos para CC de nivel impuesto
+        rteh  = trim(prjctrt)//'/sanpck.toe'   !Archivo que contiene indices topologicos para CC de nivel externo
+        OPEN(uact, FILE=rtact, STATUS='OLD', ACCESS='DIRECT', FORM='UNFORMATTED', RECL=4*6)
+        OPEN(udph, FILE=rtdph, STATUS='OLD', ACCESS='DIRECT', FORM='UNFORMATTED', RECL=4*6)
+        OPEN(utop, FILE=rtk, STATUS='REPLACE', ACCESS='DIRECT', FORM='UNFORMATTED', RECL=10*4)
+        OPEN(uch,  FILE=rtch, STATUS='REPLACE', ACCESS='DIRECT', FORM='UNFORMATTED', RECL=10*4)
+        OPEN(ueh,  FILE=rteh, STATUS='REPLACE', ACCESS='DIRECT', FORM='UNFORMATTED', RECL=10*4)
+        !
+        act=0; cth=0; dph=0 
+        !NIveles paralelos a Z
+        DO k=1,dmngmtry%lvls
+            !Filas paralelas a Y
+            DO j=1,dmngmtry%rws
+                !Columnas paralelas a X
+                DO i=1,dmngmtry%clmns
+                    !
+                    cont=cont+1
+                    CALL gtvlr_bn(uact,dmngmtry,i,j,k,actk)
+                    CALL gtvlr_bn(udph,dmngmtry,i,j,k,dphk)    
+                    !
+                    !Impresion de los archivos de indices topologicos tanto para
+                    !los bloques activos como para las condiciones de frontera
+                    IF (actk==1) THEN
+                        act=act+1                        
+                        WRITE(utop,REC=cont)act
+                        WRITE(uch,REC=cont)cero
+                        IF(dphk==3) THEN
+                            dph=dph+1
+                            WRITE(ueh,REC=cont)dph
+                        ELSE
+                            WRITE(ueh,REC=cont)cero
+                        END IF 
+                    ELSE IF (actk==2) THEN
+                        cth=cth+1
+                        WRITE(utop,REC=cont)cero
+                        WRITE(ueh,REC=cont)cero
+                        WRITE(uch,REC=cont)cth
                     ELSE
+                        WRITE(utop,REC=cont)cero
+                        WRITE(uch,REC=cont)cero
                         WRITE(ueh,REC=cont)cero
                     END IF 
-                ELSE IF (actk==2) THEN
-                    cth=cth+1
-                    WRITE(utop,REC=cont)cero
-                    WRITE(ueh,REC=cont)cero
-                    WRITE(uch,REC=cont)cth
-                ELSE
-                    WRITE(utop,REC=cont)cero
-                    WRITE(uch,REC=cont)cero
-                    WRITE(ueh,REC=cont)cero
-                END IF 
-                !
+                    !
+                END DO 
             END DO 
         END DO 
-    END DO 
-    CLOSE(utop);CLOSE(uch); CLOSE(ueh)
+        CLOSE(utop);CLOSE(uch); CLOSE(ueh)
+    END IF
+
     !
     !Le doy tamaño a los arreglos topol�gicos
     ALLOCATE(topo%ijactv(act,3))    !El arreglo de bloques activos
@@ -133,13 +143,22 @@ SUBROUTINE bld_topologybn(prjctrt,dmngmtry,topo)
     ALLOCATE(topo%ijdph(dph,3))    !El arreglo de bloques de nivel externo
     act=0; cth=0; dph=0      !Inicializamiento nulo de vectores
     !
+    ! Todos los procesadores tienen la información de la topología globalmente
     !Se recorre la geometr�a del acuifero y se llenan los arreglos topol�gicos
     DO k=1,dmngmtry%lvls
         DO j=1,dmngmtry%rws
             DO i=1,dmngmtry%clmns
-                !
-                CALL gtvlr_bn(uact,dmngmtry,i,j,k,actk)
-                CALL gtvlr_bn(udph,dmngmtry,i,j,k,dphk)
+                IF (iprocess==0) THEN
+                    CALL gtvlr_bn(uact,dmngmtry,i,j,k,actk)
+                    CALL gtvlr_bn(udph,dmngmtry,i,j,k,dphk)
+                    DO a=1,tprocess-1
+                        CALL MPI_SEND(actk,1,MPI_INTEGER,a,300,MPI_COMM_WORLD,ierr)
+                        CALL MPI_SEND(dphk,1,MPI_INTEGER,a,302,MPI_COMM_WORLD,ierr)
+                    END DO
+                ELSE
+                    CALL MPI_RECV(actk,1,MPI_INTEGER,MPI_ANY_SOURCE,300,MPI_COMM_WORLD, status, ierr)
+                    CALL MPI_RECV(dphk,1,MPI_INTEGER,MPI_ANY_SOURCE,302,MPI_COMM_WORLD, status, ierr)
+                END IF
                 !
                 IF (actk==1)THEN
                     act=act+1
@@ -169,9 +188,13 @@ SUBROUTINE bld_topologybn(prjctrt,dmngmtry,topo)
     topo%dph=dph
     topo%hastopo=.true.
     !
-    CLOSE(uact); CLOSE(udph);
     !
-    WRITE (*,*) '*---|Finaliza construccion de la topologia|---*'
+    ! Barrier: Sincroniza todos los procesadores al final, esto para ubicar más fácil posibles errores.
+    CALL MPI_Barrier(MPI_COMM_WORLD,ierr)
+    IF (iprocess==0) THEN
+        CLOSE(uact); CLOSE(udph);
+        WRITE (*,*) '*---|Finaliza construccion de la topologia|---*'
+    END IF
     !
 END SUBROUTINE  bld_topologybn
 

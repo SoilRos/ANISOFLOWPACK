@@ -114,6 +114,9 @@ SUBROUTINE bld_domainff_dp(prjctrt,flnm,X,Y,Z,dmngmtry)
     USE geometry,   ONLY : bld_domain
     !
     IMPLICIT NONE
+#include <petsc/finclude/petscsys.h>
+    PetscErrorCode                                           :: ierr
+    PetscMPIInt                                              :: tprocess, iprocess,status(MPI_STATUS_SIZE)
     !
     CHARACTER(*), INTENT(IN)                                 :: prjctrt,flnm
     TYPE(domain), INTENT(OUT)                                :: dmngmtry
@@ -123,45 +126,63 @@ SUBROUTINE bld_domainff_dp(prjctrt,flnm,X,Y,Z,dmngmtry)
     CHARACTER(2)                                :: rtdlmtng
     CHARACTER(8)                                :: header
     CHARACTER(200)                              :: rt        
-    INTEGER(I4B)                                :: u,i,j,k,clmns,rws,lvls,hrs,mnts
+    INTEGER(I4B)                                :: u,i,j,k,clmns,rws,lvls,hrs,mnts,a
     REAL(DP)                                    :: timea,timeb,exetime,scnds
     LOGICAL(LGT)                                :: flexist
     !
     PARAMETER(u=29)
     !
-    WRITE(*,*) '*---|Importando archivo de geometria|---*'                                                                     
-    !Definicion del caracter de delimitacion de rutas de acuerdo con el sistema operativo 
-    IF (INDEX(prjctrt,'/')==0) THEN
-        rtdlmtng='\\'                                                                                                               !Delimitador en MS-DOS
+    CALL MPI_comm_rank(MPI_COMM_WORLD,iprocess,ierr)
+    CALL MPI_comm_size(MPI_COMM_WORLD,tprocess,ierr)
+    CALL MPI_Barrier(MPI_COMM_WORLD,ierr)                                                                                               !Barrier: Sincroniza todos los procesadores al inicio, esto para ubicar más fácil posibles errores.
+    IF (iprocess==0) THEN
+        WRITE(*,*) '*---|Importando archivo de geometria|---*'                                                                     
+        !Definicion del caracter de delimitacion de rutas de acuerdo con el sistema operativo 
+        IF (INDEX(prjctrt,'/')==0) THEN
+            rtdlmtng='\\'                                                                                                               !Delimitador en MS-DOS
+        ELSE
+            rtdlmtng='//'                                                                                                               !Delimitador en Unix-OS
+        END IF
+        !Verificacion de la existencia y pertinencia de los datos de entrada
+        IF (LEN_TRIM(TRIM(ADJUSTL(prjctrt))//rtdlmtng//TRIM(ADJUSTL(flnm))) > 200) THEN
+            CALL error('En bld_domainff_dp: La ruta del archivo geometria es demasiado larga')    
+        ELSE
+            rt=TRIM(ADJUSTL(prjctrt))//rtdlmtng//TRIM(ADJUSTL(flnm))                                                                    !Archivo en el que  se almacena el dominio espacial        
+        END IF
+        INQUIRE(FILE=TRIM(ADJUSTL(rt)),EXIST=flexist)
+        IF (.NOT.flexist) CALL error('En bld_domainff_dp: El archivo geometria no existe')                                              !Verifica que el archivo con el dominio exista y est� en la ruta correcta
+        !Lectura del archivo que contiene el dominio espacial
+        OPEN(u,FILE=rt,STATUS='OLD',ACTION='READ')                                                                                      !Abre el archivo del dominio espacial
+        READ(u,'(A8,I10,A1)')header,clmns,enter                                                                                         !Numero de columnas
+        READ(u,'(A8,I10,A1)')header,rws,enter                                                                                           !Numero de filas
+        READ(u,'(A8,I10,A1)')header,lvls,enter                                                                                          !Numero de niveles
+        ALLOCATE(X(clmns+1),Y(rws+1),Z(lvls+1))                                                                                         !Aloja los arreglos de coordenadas en precisi�n doble
+        DO i=1,clmns+1
+            READ(u,'(SP,ES18.11E2,A1)')X(i),enter                                                                                       !Coordenadas en la direccion X
+        END DO
+        DO j=1,rws+1
+            READ(u,'(SP,ES18.11E2,A1)')Y(j),enter                                                                                       !Coordenadas en la direccion Y
+        END DO
+        DO k=1,lvls+1
+            READ(u,'(SP,ES18.11E2,A1)')Z(k),enter                                                                                       !Coordenadas en la direccion Z
+        END DO
+        CLOSE(u)
+        CALL bld_domain(X,Y,Z,rws,clmns,lvls,dmngmtry)
+        
+        ! Envia a los otros procesadores la cantidad de niveles, filas y columnas.
+        DO a=1,tprocess-1
+            CALL MPI_SEND(dmngmtry%lvls ,1,MPI_INTEGER,a,200,MPI_COMM_WORLD,ierr)
+            CALL MPI_SEND(dmngmtry%rws  ,1,MPI_INTEGER,a,201,MPI_COMM_WORLD,ierr)
+            CALL MPI_SEND(dmngmtry%clmns,1,MPI_INTEGER,a,202,MPI_COMM_WORLD,ierr)
+        END DO
+        CALL MPI_Barrier(MPI_COMM_WORLD,ierr)
+        WRITE(*,*) '*---|La creacion de la variable tipo geometria ha sido exitosa|---*'                                                !Imprime el mensaje de finalizacion satisfactoria del programa
     ELSE
-        rtdlmtng='//'                                                                                                               !Delimitador en Unix-OS
+        CALL MPI_RECV(dmngmtry%lvls ,1,MPI_INTEGER,MPI_ANY_SOURCE,200,MPI_COMM_WORLD, status, ierr)
+        CALL MPI_RECV(dmngmtry%rws  ,1,MPI_INTEGER,MPI_ANY_SOURCE,201,MPI_COMM_WORLD, status, ierr)
+        CALL MPI_RECV(dmngmtry%clmns,1,MPI_INTEGER,MPI_ANY_SOURCE,202,MPI_COMM_WORLD, status, ierr)
+        CALL MPI_Barrier(MPI_COMM_WORLD,ierr)
     END IF
-    !Verificacion de la existencia y pertinencia de los datos de entrada
-    IF (LEN_TRIM(TRIM(ADJUSTL(prjctrt))//rtdlmtng//TRIM(ADJUSTL(flnm))) > 200) THEN
-        CALL error('En bld_domainff_dp: La ruta del archivo geometria es demasiado larga')    
-    ELSE
-        rt=TRIM(ADJUSTL(prjctrt))//rtdlmtng//TRIM(ADJUSTL(flnm))                                                                    !Archivo en el que  se almacena el dominio espacial        
-    END IF
-    INQUIRE(FILE=TRIM(ADJUSTL(rt)),EXIST=flexist)
-    IF (.NOT.flexist) CALL error('En bld_domainff_dp: El archivo geometria no existe')                                              !Verifica que el archivo con el dominio exista y est� en la ruta correcta
-    !Lectura del archivo que contiene el dominio espacial
-    OPEN(u,FILE=rt,STATUS='OLD',ACTION='READ')                                                                                      !Abre el archivo del dominio espacial
-    READ(u,'(A8,I10,A1)')header,clmns,enter                                                                                         !Numero de columnas
-    READ(u,'(A8,I10,A1)')header,rws,enter                                                                                           !Numero de filas
-    READ(u,'(A8,I10,A1)')header,lvls,enter                                                                                          !Numero de niveles
-    ALLOCATE(X(clmns+1),Y(rws+1),Z(lvls+1))                                                                                         !Aloja los arreglos de coordenadas en precisi�n doble
-    DO i=1,clmns+1
-        READ(u,'(SP,ES18.11E2,A1)')X(i),enter                                                                                       !Coordenadas en la direccion X
-    END DO
-    DO j=1,rws+1
-        READ(u,'(SP,ES18.11E2,A1)')Y(j),enter                                                                                       !Coordenadas en la direccion Y
-    END DO
-    DO k=1,lvls+1
-        READ(u,'(SP,ES18.11E2,A1)')Z(k),enter                                                                                       !Coordenadas en la direccion Z
-    END DO
-    CLOSE(u)
-    CALL bld_domain(X,Y,Z,rws,clmns,lvls,dmngmtry)
-    WRITE(*,*) '*---|La creacion de la variable tipo geometria ha sido exitosa|---*'                                                !Imprime el mensaje de finalizacion satisfactoria del programa
     !
 END SUBROUTINE bld_domainff_dp
 !!
