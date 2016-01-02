@@ -60,9 +60,7 @@ SUBROUTINE bld_topologybn(prjctrt,dmngmtry,topo)
     USE iodata, ONLY : gtvlr_bn
     !
     IMPLICIT NONE
-    !
 #include <petsc/finclude/petscsys.h>
-    !
     PetscErrorCode                              :: ierr
     PetscMPIInt                                 :: tprocess, iprocess,status(MPI_STATUS_SIZE)
     !

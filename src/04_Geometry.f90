@@ -174,8 +174,6 @@ SUBROUTINE bld_domainff_dp(prjctrt,flnm,X,Y,Z,dmngmtry)
             CALL MPI_SEND(dmngmtry%lvls ,1,MPI_INTEGER,a,200,MPI_COMM_WORLD,ierr)
             CALL MPI_SEND(dmngmtry%rws  ,1,MPI_INTEGER,a,201,MPI_COMM_WORLD,ierr)
             CALL MPI_SEND(dmngmtry%clmns,1,MPI_INTEGER,a,202,MPI_COMM_WORLD,ierr)
-            CALL MPI_SEND(dmngmtry%exist,1,MPI_INTEGER,a,203,MPI_COMM_WORLD,ierr)
-            CALL MPI_SEND(dmngmtry%flind,1,MPI_INTEGER,a,204,MPI_COMM_WORLD,ierr)
         END DO
         CALL MPI_Barrier(MPI_COMM_WORLD,ierr)
         WRITE(*,*) '*---|La creacion de la variable tipo geometria ha sido exitosa|---*'                                                !Imprime el mensaje de finalizacion satisfactoria del programa
@@ -183,8 +181,6 @@ SUBROUTINE bld_domainff_dp(prjctrt,flnm,X,Y,Z,dmngmtry)
         CALL MPI_RECV(dmngmtry%lvls ,1,MPI_INTEGER,MPI_ANY_SOURCE,200,MPI_COMM_WORLD, status, ierr)
         CALL MPI_RECV(dmngmtry%rws  ,1,MPI_INTEGER,MPI_ANY_SOURCE,201,MPI_COMM_WORLD, status, ierr)
         CALL MPI_RECV(dmngmtry%clmns,1,MPI_INTEGER,MPI_ANY_SOURCE,202,MPI_COMM_WORLD, status, ierr)
-        CALL MPI_RECV(dmngmtry%exist,1,MPI_INTEGER,MPI_ANY_SOURCE,203,MPI_COMM_WORLD, status, ierr)
-        CALL MPI_RECV(dmngmtry%flind,1,MPI_INTEGER,MPI_ANY_SOURCE,204,MPI_COMM_WORLD, status, ierr)
         CALL MPI_Barrier(MPI_COMM_WORLD,ierr)
     END IF
     !
