@@ -28,8 +28,8 @@ include ${PETSC_DIR}/lib/petsc/conf/rules
 # 07_Topology.o: 07_Topology.f90
 	# gfortran -c 07_Topology.f90
 
-08_IsoSystem.o: 08_IsoSystem.f90
-	gfortran -c 08_IsoSystem.f90
+# 08_IsoSystem.o: 08_IsoSystem.f90
+# 	gfortran -c 08_IsoSystem.f90
 
 09_AnisoSystem.o: 09_AnisoSystem.f90
 	gfortran -c 09_AnisoSystem.f90
