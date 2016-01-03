@@ -75,8 +75,10 @@ PROGRAM run
     END IF
 
     CALL bld_topologybn(prjctrt,dmngmtry,topo)   
-    !Construcción de matriz en Petsc (Recordar que los indices de Petsc inician en 0)
+    ! Construcción de matriz en Petsc (Recordar que los indices de Petsc inician en 0)
     CALL ensmblT_bn(prjctrt,topo,dmngmtry,pTeq,topheconect,ijheconect,qhcte,qhext)
+    ! Visualizador de pTeq
+    ! CALL MatView(pTeq,PETSC_VIEWER_STDOUT_WORLD,ierr)
     !
     IF (iprocess==0) THEN
         ! Construcción de matriz en array (Recordar que los indices de FORTRAN inician en 1)
@@ -88,11 +90,11 @@ PROGRAM run
         ! CALL gtvlr_bn(u,dmngmtry,2,2,2,vl) 
         
         ! Bucle para imprimir matriz densa
-        do i=topo%act/2,topo%act
-            do j=topo%act/2,topo%act
-                write(*,*)Teq(i,j),i,j
-            end do
-        end do
+        ! do i=topo%act/2,topo%act
+        !     do j=topo%act/2,topo%act
+        !         write(*,*)Teq(i,j),i,j
+        !     end do
+        ! end do
         
         ! UTIL PARA ABRIR UN ARCHIVO Y LEER
         ! rt=trim(prjctrt)//'/sanpck.kxx'

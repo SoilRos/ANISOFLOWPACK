@@ -398,12 +398,11 @@ SUBROUTINE isoTdns_bn_petsc(prjctrt,topo,dmngmtry,Teq,topheconect,ijheconect,qhc
     !acuaciones o el numero de filas o columna de la matriz densa de coeficientes.
     !
     n=topo%act
-    print*,iprocess,n
     ! Se crea la matriz de Petsc
     CALL MatCreateAIJ(PETSC_COMM_WORLD,PETSC_DECIDE,PETSC_DECIDE,n,n,PETSC_DETERMINE,PETSC_NULL_INTEGER,PETSC_DETERMINE,PETSC_NULL_INTEGER,Teq,ierr)
     CALL MatSetOption(Teq,MAT_SYMMETRIC,PETSC_TRUE,ierr)
     ! Este comando permite dar opciones a la matriz desde la linea de comandos, para ver estas opciones ejecutar el programa adicinando "-help" al final
-    CALL MatSetFromOptions(Teq,ierr)
+    ! CALL MatSetFromOptions(Teq,ierr)
 
 !    n=assert_eq((/SIZE(Teq,1),SIZE(Teq,2),topo%act/),'ensmblT')   !Verifica coherencia en el tamaño de arreglos
     !
@@ -598,8 +597,6 @@ SUBROUTINE isoTdns_bn_petsc(prjctrt,topo,dmngmtry,Teq,topheconect,ijheconect,qhc
     CALL MatAssemblyBegin(Teq,MAT_FINAL_ASSEMBLY,ierr)
     CALL MatAssemblyEnd(Teq,MAT_FINAL_ASSEMBLY,ierr)
     !
-    ! Visualizador de la matriz Teq
-    CALL MatView(Teq,PETSC_VIEWER_STDOUT_WORLD,ierr)
     !
     CALL MPI_Barrier(MPI_COMM_WORLD,ierr)
     IF (iprocess==0) THEN
