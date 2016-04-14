@@ -28,8 +28,8 @@ SUBROUTINE GetDstrMngr(Gmtry,ierr)
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscDM.h>
-#include <petsc/finclude/petscDMDA.h>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     TYPE(Geometry),INTENT(INOUT)    :: Gmtry
@@ -88,9 +88,9 @@ SUBROUTINE GetTopology(Gmtry,ierr)
 
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscDM.h>
-#include <petsc/finclude/petscDMDA.h>
-#include <petsc/finclude/petscDMDA.h90>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
+#include <petsc/finclude/petscdmda.h90>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     TYPE(Geometry),INTENT(INOUT)    :: Gmtry
@@ -257,9 +257,9 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
 
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscDM.h>
-#include <petsc/finclude/petscDMDA.h>
-#include <petsc/finclude/petscDMDA.h90>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
+#include <petsc/finclude/petscdmda.h90>
 
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(Property),INTENT(INOUT)        :: Ppt
@@ -324,8 +324,8 @@ SUBROUTINE GeometryDestroy(Gmtry,ierr)
 
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscDM.h>
-#include <petsc/finclude/petscDMDA.h>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     TYPE(Geometry),INTENT(IN)       :: Gmtry ! INOUT or IN?

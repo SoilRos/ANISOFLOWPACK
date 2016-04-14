@@ -156,8 +156,8 @@ SUBROUTINE BCDestroy(BCFld,ierr)
 
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscDM.h>
-#include <petsc/finclude/petscDMDA.h>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(BoundaryConditions),INTENT(IN) :: BCFld ! INOUT or IN?

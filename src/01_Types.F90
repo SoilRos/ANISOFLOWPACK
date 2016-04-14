@@ -4,7 +4,7 @@ MODULE ANISOFLOW_Types
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
 #include <petsc/finclude/petscis.h>
-#include <petsc/finclude/petscDM.h>
+#include <petsc/finclude/petscdm.h>
 
     TYPE Geometry
         DM                              :: DstrMngr

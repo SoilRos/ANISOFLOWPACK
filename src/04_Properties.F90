@@ -27,9 +27,9 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
 
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscDM.h>
-#include <petsc/finclude/petscDMDA.h>
-#include <petsc/finclude/petscDMDA.h90>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
+#include <petsc/finclude/petscdmda.h90>
 
 
 
@@ -182,9 +182,9 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
 
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscDM.h>
-#include <petsc/finclude/petscDMDA.h>
-#include <petsc/finclude/petscDMDA.h90>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
+#include <petsc/finclude/petscdmda.h90>
 
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertyField),INTENT(IN)      :: PptFld
