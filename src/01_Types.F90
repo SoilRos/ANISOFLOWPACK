@@ -39,6 +39,9 @@ MODULE ANISOFLOW_Types
         PetscBool                       :: Interface=.TRUE.     ! Every stencil must use interface conductivity
     END TYPE Property
 
+    ! CvtArray: 
+    ! CvtType
+
     TYPE ConductivityField
         ! Conductivity field defined by few types of conductivity
         TYPE(ConductivityTensor),ALLOCATABLE    :: CvtArray(:)
