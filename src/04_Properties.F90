@@ -22,7 +22,8 @@ END SUBROUTINE GetProrperties
 SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
 
     USE ANISOFLOW_Interface
-
+    USE ANISOFLOW_Types, ONLY : TargetFullTensor
+    
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
@@ -143,7 +144,7 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
             &PETSC_COMM_WORLD,ierr)
 
         DO i=1,CvtLen
-            CALL TargetFullCvt(PptFld%Cvt%CvtArray(i))
+            CALL TargetFullTensor(PptFld%Cvt%CvtArray(i))
         END DO
 
     END IF
@@ -177,6 +178,7 @@ END SUBROUTINE GetLocalProperty
 SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
 
     USE ANISOFLOW_Interface
+    USE ANISOFLOW_Types, ONLY : TargetFullTensor
 
     IMPLICIT NONE
 
@@ -254,9 +256,9 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
     Ppt%CvtFz%yz=0.0
     Ppt%CvtFz%zz=0.0
 
-    IF (SIZE(Ppt%Tplgy).EQ.7) THEN          ! Stencil type star
+    IF (SIZE(Ppt%StnclTplgy).EQ.7) THEN          ! Stencil type star
         ValI(1)=4
-    ELSEIF (SIZE(Ppt%Tplgy).EQ.19) THEN     ! Stencil type box
+    ELSEIF (SIZE(Ppt%StnclTplgy).EQ.19) THEN     ! Stencil type box
         ValI(1)=10
     ELSE 
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,              &
@@ -266,7 +268,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
     END IF
 
     IF (.NOT.PptFld%Cvt%Interface) THEN
-        IF ((Ppt%Tplgy(ValI(1)).EQ.1).OR.(Ppt%Tplgy(ValI(1)).EQ.3).OR.(Ppt%Tplgy(ValI(1)).EQ.4).OR.(Ppt%Tplgy(ValI(1)).EQ.5)) THEN ! Only get properties for active blocks
+        IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4).OR.(Ppt%StnclTplgy(ValI(1)).EQ.5)) THEN ! Only get properties for active blocks
             CALL DMDAVecGetArrayreadF90(Gmtry%DstrMngr,PptFld%Cvt%CvtType,     &
                 & TmpCvtTypeArray,ierr)
 
@@ -280,7 +282,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
             Ppt%CvtBx%xy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xy,PptFld%Cvt%CvtArray(ValI(2))%xy)
             Ppt%CvtBx%xz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xz,PptFld%Cvt%CvtArray(ValI(2))%xz)
             Ppt%CvtBx%yz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yz,PptFld%Cvt%CvtArray(ValI(2))%yz)
-            CALL TargetFullCvt(Ppt%CvtBx)
+            CALL TargetFullTensor(Ppt%CvtBx)
 
             ! Forward on x
             ValI(2)=INT(TmpCvtTypeArray(i+1,j,k))
@@ -290,7 +292,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
             Ppt%CvtFx%xy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xy,PptFld%Cvt%CvtArray(ValI(2))%xy)
             Ppt%CvtFx%xz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xz,PptFld%Cvt%CvtArray(ValI(2))%xz)
             Ppt%CvtFx%yz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yz,PptFld%Cvt%CvtArray(ValI(2))%yz)
-            CALL TargetFullCvt(Ppt%CvtFx)
+            CALL TargetFullTensor(Ppt%CvtFx)
 
             ! Backward on y
             ValI(2)=INT(TmpCvtTypeArray(i,j-1,k))
@@ -300,7 +302,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
             Ppt%CvtBy%xy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xy,PptFld%Cvt%CvtArray(ValI(2))%xy)
             Ppt%CvtBy%xz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xz,PptFld%Cvt%CvtArray(ValI(2))%xz)
             Ppt%CvtBy%yz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yz,PptFld%Cvt%CvtArray(ValI(2))%yz)
-            CALL TargetFullCvt(Ppt%CvtBy)
+            CALL TargetFullTensor(Ppt%CvtBy)
 
             ! Forward on y
             ValI(2)=INT(TmpCvtTypeArray(i,j+1,k))
@@ -310,7 +312,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
             Ppt%CvtFy%xy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xy,PptFld%Cvt%CvtArray(ValI(2))%xy)
             Ppt%CvtFy%xz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xz,PptFld%Cvt%CvtArray(ValI(2))%xz)
             Ppt%CvtFy%yz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yz,PptFld%Cvt%CvtArray(ValI(2))%yz)
-            CALL TargetFullCvt(Ppt%CvtFy)
+            CALL TargetFullTensor(Ppt%CvtFy)
 
             ! Backward on z
             ValI(2)=INT(TmpCvtTypeArray(i,j,k-1))
@@ -320,7 +322,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
             Ppt%CvtBz%xy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xy,PptFld%Cvt%CvtArray(ValI(2))%xy)
             Ppt%CvtBz%xz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xz,PptFld%Cvt%CvtArray(ValI(2))%xz)
             Ppt%CvtBz%yz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yz,PptFld%Cvt%CvtArray(ValI(2))%yz)
-            CALL TargetFullCvt(Ppt%CvtBz)
+            CALL TargetFullTensor(Ppt%CvtBz)
 
             ! Forward on y
             ValI(2)=INT(TmpCvtTypeArray(i,j,k+1))
@@ -330,7 +332,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
             Ppt%CvtFz%xy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xy,PptFld%Cvt%CvtArray(ValI(2))%xy)
             Ppt%CvtFz%xz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xz,PptFld%Cvt%CvtArray(ValI(2))%xz)
             Ppt%CvtFz%yz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yz,PptFld%Cvt%CvtArray(ValI(2))%yz)
-            CALL TargetFullCvt(Ppt%CvtFz)
+            CALL TargetFullTensor(Ppt%CvtFz)
 
             CALL DMDAVecRestoreArrayReadF90(Gmtry%DstrMngr,PptFld%Cvt%CvtType, &
                 & TmpCvtTypeArray,ierr)
@@ -352,30 +354,6 @@ PetscReal FUNCTION Armonic(ValR1,ValR2)
         Armonic = 2.0/(1.0/ValR1+1.0/ValR2)
     END IF
 END FUNCTION Armonic
-
-SUBROUTINE TargetFullCvt(CvtTensor)
-
-    USE ANISOFLOW_Types, ONLY : ConductivityTensor
-
-    IMPLICIT NONE
-
-    TYPE(ConductivityTensor),INTENT(INOUT)  :: CvtTensor
-
-    CvtTensor%yx => TargetMirrorCvt(CvtTensor%xy)
-    CvtTensor%zx => TargetMirrorCvt(CvtTensor%xz)
-    CvtTensor%zy => TargetMirrorCvt(CvtTensor%yz)
-
-END SUBROUTINE TargetFullCvt
-
-FUNCTION TargetMirrorCvt(CvtValue)
-
-    IMPLICIT NONE
-
-    PetscReal,INTENT(IN),TARGET     :: CvtValue
-    PetscReal,POINTER               :: TargetMirrorCvt
-    TargetMirrorCvt => CvtValue
-
-end function TargetMirrorCvt
 
 SUBROUTINE PropertiesDestroy(PptFld,ierr)
 

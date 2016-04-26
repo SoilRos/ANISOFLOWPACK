@@ -190,15 +190,15 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
     ! Stencil vaulues
     Stencil%Values(:)=0.0
 
-    IF (Ppt%Tplgy(10).EQ.1) THEN
+    IF (Ppt%StnclTplgy(10).EQ.1) THEN
         ! 1-S Bloque centro-detras-superior
         Stencil%idx_clmns(MatStencil_i,1) = i
         Stencil%idx_clmns(MatStencil_j,1) = j-1
         Stencil%idx_clmns(MatStencil_k,1) = k-1
-        IF (Ppt%Tplgy(1).EQ.1) THEN         ! Active
+        IF (Ppt%StnclTplgy(1).EQ.1) THEN         ! Active
             Stencil%Values(1)=Ppt%dy*Ppt%dz*Ppt%CvtBy%yz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                             &+Ppt%dx*Ppt%dy*Ppt%CvtBz%zy/(Ppt%dyF+2*Ppt%dy+Ppt%dyB)
-        ELSEIF (Ppt%Tplgy(1).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(1).EQ.2) THEN     ! Dirichlet
             Stencil%Values(1)=one
         END IF
 
@@ -206,10 +206,10 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,2) = i-1
         Stencil%idx_clmns(MatStencil_j,2) = j
         Stencil%idx_clmns(MatStencil_k,2) = k-1
-        IF (Ppt%Tplgy(2).EQ.1) THEN         ! Active
+        IF (Ppt%StnclTplgy(2).EQ.1) THEN         ! Active
             Stencil%Values(2)=Ppt%dy*Ppt%dz*Ppt%CvtBx%xz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                             &+Ppt%dx*Ppt%dy*Ppt%CvtBz%zx/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)
-        ELSEIF (Ppt%Tplgy(2).EQ.2) THEN     ! Diriclet
+        ELSEIF (Ppt%StnclTplgy(2).EQ.2) THEN     ! Diriclet
             Stencil%Values(2)=one
         END IF
 
@@ -217,13 +217,13 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,3) = i
         Stencil%idx_clmns(MatStencil_j,3) = j
         Stencil%idx_clmns(MatStencil_k,3) = k-1
-        IF ((Ppt%Tplgy(3).EQ.1).OR.(Ppt%Tplgy(3).EQ.3).OR.(Ppt%Tplgy(3).EQ.4).OR.(Ppt%Tplgy(3).EQ.5)) THEN         ! Active
+        IF ((Ppt%StnclTplgy(3).EQ.1).OR.(Ppt%StnclTplgy(3).EQ.3).OR.(Ppt%StnclTplgy(3).EQ.4).OR.(Ppt%StnclTplgy(3).EQ.5)) THEN         ! Active
             Stencil%Values(3)=Ppt%dy*Ppt%dz*(Ppt%CvtBx%xz-Ppt%CvtFx%xz)/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                             &+Ppt%dx*Ppt%dz*(Ppt%CvtBy%yz-Ppt%CvtFy%yz)/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                             &+Ppt%dx*Ppt%dy*2*Ppt%CvtBz%zz/(Ppt%dzB+Ppt%dz)
-        ELSEIF (Ppt%Tplgy(3).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(3).EQ.2) THEN     ! Dirichlet
             Stencil%Values(3)=one
-        ! ELSEIF (Ppt%Tplgy(3).EQ.5) THEN     ! Neumman z
+        ! ELSEIF (Ppt%StnclTplgy(3).EQ.5) THEN     ! Neumman z
         !     Stencil%Values(3)=one
         END IF                   
 
@@ -231,10 +231,10 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,4) = i+1
         Stencil%idx_clmns(MatStencil_j,4) = j
         Stencil%idx_clmns(MatStencil_k,4) = k-1
-        IF (Ppt%Tplgy(4).EQ.1) THEN         ! Active
+        IF (Ppt%StnclTplgy(4).EQ.1) THEN         ! Active
             Stencil%Values(4)=Ppt%dy*Ppt%dz*(-1)*Ppt%CvtFx%xz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                             &+Ppt%dx*Ppt%dy*(-1)*Ppt%CvtBz%zx/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)
-        ELSEIF (Ppt%Tplgy(4).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(4).EQ.2) THEN     ! Dirichlet
             Stencil%Values(4)=one
         END IF
 
@@ -242,10 +242,10 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,5) = i
         Stencil%idx_clmns(MatStencil_j,5) = j+1
         Stencil%idx_clmns(MatStencil_k,5) = k-1
-        IF (Ppt%Tplgy(5).EQ.1) THEN         ! Active
+        IF (Ppt%StnclTplgy(5).EQ.1) THEN         ! Active
             Stencil%Values(5)=Ppt%dy*Ppt%dz*(-1)*Ppt%CvtFy%yz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                             &+Ppt%dx*Ppt%dy*(-1)*Ppt%CvtBz%zy/(Ppt%dyF+2*Ppt%dy+Ppt%dyB)
-        ELSEIF (Ppt%Tplgy(5).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(5).EQ.2) THEN     ! Dirichlet
             Stencil%Values(5)=one
         END IF
 
@@ -253,10 +253,10 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,6) = i-1
         Stencil%idx_clmns(MatStencil_j,6) = j-1
         Stencil%idx_clmns(MatStencil_k,6) = k
-        IF (Ppt%Tplgy(6).EQ.1) THEN         ! Active
+        IF (Ppt%StnclTplgy(6).EQ.1) THEN         ! Active
             Stencil%Values(6)=Ppt%dy*Ppt%dz*Ppt%CvtBx%xy/(Ppt%dyF+2*Ppt%dy+Ppt%dyB) &
                             &+Ppt%dx*Ppt%dz*Ppt%CvtBy%yx/(Ppt%dxF+2*Ppt%dxB+Ppt%dx) ! subindices del diferencial malos en el paper(?)
-        ELSEIF (Ppt%Tplgy(6).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(6).EQ.2) THEN     ! Dirichlet
             Stencil%Values(6)=one
         END IF
 
@@ -264,13 +264,13 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,7) = i
         Stencil%idx_clmns(MatStencil_j,7) = j-1
         Stencil%idx_clmns(MatStencil_k,7) = k
-        IF ((Ppt%Tplgy(7).EQ.1).OR.(Ppt%Tplgy(7).EQ.3).OR.(Ppt%Tplgy(7).EQ.4).OR.(Ppt%Tplgy(7).EQ.5)) THEN         ! Active
+        IF ((Ppt%StnclTplgy(7).EQ.1).OR.(Ppt%StnclTplgy(7).EQ.3).OR.(Ppt%StnclTplgy(7).EQ.4).OR.(Ppt%StnclTplgy(7).EQ.5)) THEN         ! Active
             Stencil%Values(7)=Ppt%dy*Ppt%dz* (Ppt%CvtBx%xy-Ppt%CvtFx%xy)/(Ppt%dyF+2*Ppt%dy+Ppt%dyB)  &
                             &+Ppt%dx*Ppt%dz*2*Ppt%CvtBy%yy              /(Ppt%dy+Ppt%dyB)            &
                             &+Ppt%dx*Ppt%dy* (Ppt%CvtBz%zy-Ppt%CvtFz%zy)/(Ppt%dyF+2*Ppt%dy+Ppt%dyB) 
-        ELSEIF (Ppt%Tplgy(7).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(7).EQ.2) THEN     ! Dirichlet
             Stencil%Values(7)=one
-        ! ELSEIF (Ppt%Tplgy(7).EQ.4) THEN     ! Neumman y
+        ! ELSEIF (Ppt%StnclTplgy(7).EQ.4) THEN     ! Neumman y
         !     Stencil%Values(7)=one
         END IF      
 
@@ -278,10 +278,10 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,8) = i+1
         Stencil%idx_clmns(MatStencil_j,8) = j-1
         Stencil%idx_clmns(MatStencil_k,8) = k
-        IF (Ppt%Tplgy(8).EQ.1) THEN         ! Active
+        IF (Ppt%StnclTplgy(8).EQ.1) THEN         ! Active
             Stencil%Values(8)=Ppt%dy*Ppt%dz*(-1)*Ppt%CvtFx%xy/(Ppt%dyF+2*Ppt%dyB+Ppt%dy) & ! subindices del diferencial malos en el paper(?)
                             &+Ppt%dx*Ppt%dz*(-1)*Ppt%CvtBy%yx/(Ppt%dxF+2*Ppt%dxB+Ppt%dx)   ! subindices del diferencial malos en el paper(?)
-        ELSEIF (Ppt%Tplgy(8).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(8).EQ.2) THEN     ! Dirichlet
             Stencil%Values(8)=one
         END IF
 
@@ -289,13 +289,13 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,9) = i-1
         Stencil%idx_clmns(MatStencil_j,9) = j
         Stencil%idx_clmns(MatStencil_k,9) = k
-        IF ((Ppt%Tplgy(9).EQ.1).OR.(Ppt%Tplgy(9).EQ.3).OR.(Ppt%Tplgy(9).EQ.4).OR.(Ppt%Tplgy(9).EQ.5)) THEN         ! Active
+        IF ((Ppt%StnclTplgy(9).EQ.1).OR.(Ppt%StnclTplgy(9).EQ.3).OR.(Ppt%StnclTplgy(9).EQ.4).OR.(Ppt%StnclTplgy(9).EQ.5)) THEN         ! Active
             Stencil%Values(9)=Ppt%dy*Ppt%dz*2*Ppt%CvtBx%xx              /(Ppt%dx+Ppt%dxB)            &
                             &+Ppt%dx*Ppt%dz* (Ppt%CvtBy%yx-Ppt%CvtFy%yx)/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)  &
                             &+Ppt%dx*Ppt%dy* (Ppt%CvtBy%zx-Ppt%CvtFy%zx)/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)
-        ELSEIF (Ppt%Tplgy(9).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(9).EQ.2) THEN     ! Dirichlet
             Stencil%Values(9)=one
-        ! ELSEIF (Ppt%Tplgy(9).EQ.3) THEN     ! Neumman x
+        ! ELSEIF (Ppt%StnclTplgy(9).EQ.3) THEN     ! Neumman x
         !     Stencil%Values(9)=one
         END IF      
 
@@ -308,13 +308,13 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,11) = i+1
         Stencil%idx_clmns(MatStencil_j,11) = j
         Stencil%idx_clmns(MatStencil_k,11) = k
-        IF ((Ppt%Tplgy(11).EQ.1).OR.(Ppt%Tplgy(11).EQ.3).OR.(Ppt%Tplgy(11).EQ.4).OR.(Ppt%Tplgy(11).EQ.5)) THEN         ! Active
+        IF ((Ppt%StnclTplgy(11).EQ.1).OR.(Ppt%StnclTplgy(11).EQ.3).OR.(Ppt%StnclTplgy(11).EQ.4).OR.(Ppt%StnclTplgy(11).EQ.5)) THEN         ! Active
             Stencil%Values(11)=Ppt%dy*Ppt%dz*2*Ppt%CvtFx%xx             /(Ppt%dxF+Ppt%dx)            &
                             &+Ppt%dx*Ppt%dz* (Ppt%CvtFy%yx-Ppt%CvtBy%yx)/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)  &
                             &+Ppt%dx*Ppt%dy* (Ppt%CvtFz%zx-Ppt%CvtBz%zx)/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)
-        ELSEIF (Ppt%Tplgy(11).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(11).EQ.2) THEN     ! Dirichlet
             Stencil%Values(11)=one
-        ! ELSEIF (Ppt%Tplgy(11).EQ.3) THEN     ! Neumman x
+        ! ELSEIF (Ppt%StnclTplgy(11).EQ.3) THEN     ! Neumman x
         !     Stencil%Values(11)=one
         END IF      
 
@@ -322,10 +322,10 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,12) = i-1
         Stencil%idx_clmns(MatStencil_j,12) = j+1
         Stencil%idx_clmns(MatStencil_k,12) = k
-        IF (Ppt%Tplgy(12).EQ.1) THEN         ! Active
+        IF (Ppt%StnclTplgy(12).EQ.1) THEN         ! Active
             Stencil%Values(12)=Ppt%dy*Ppt%dz*(-1)*Ppt%CvtBx%xy/(Ppt%dyF+2*Ppt%dy+Ppt%dyB) &
                              &+Ppt%dx*Ppt%dz*(-1)*Ppt%CvtFy%yx/(Ppt%dxF+2*Ppt%dxB+Ppt%dx)   ! subindices del diferencial malos en el paper(?)
-        ELSEIF (Ppt%Tplgy(12).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(12).EQ.2) THEN     ! Dirichlet
             Stencil%Values(12)=one
         END IF      
 
@@ -333,13 +333,13 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,13) = i
         Stencil%idx_clmns(MatStencil_j,13) = j+1
         Stencil%idx_clmns(MatStencil_k,13) = k
-        IF ((Ppt%Tplgy(13).EQ.1).OR.(Ppt%Tplgy(13).EQ.3).OR.(Ppt%Tplgy(13).EQ.4).OR.(Ppt%Tplgy(13).EQ.5)) THEN         ! Active
+        IF ((Ppt%StnclTplgy(13).EQ.1).OR.(Ppt%StnclTplgy(13).EQ.3).OR.(Ppt%StnclTplgy(13).EQ.4).OR.(Ppt%StnclTplgy(13).EQ.5)) THEN         ! Active
             Stencil%Values(13)=Ppt%dy*Ppt%dz* (Ppt%CvtFx%xy-Ppt%CvtBx%xy)/(Ppt%dyF+2*Ppt%dy+Ppt%dyB)  &
                              &+Ppt%dx*Ppt%dz*2*Ppt%CvtFy%yy              /(Ppt%dyF+Ppt%dy)            &
                              &+Ppt%dx*Ppt%dy* (Ppt%CvtFz%zy-Ppt%CvtBz%zy)/(Ppt%dyF+2*Ppt%dy+Ppt%dyB) 
-        ELSEIF (Ppt%Tplgy(13).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(13).EQ.2) THEN     ! Dirichlet
             Stencil%Values(13)=one
-        ! ELSEIF (Ppt%Tplgy(13).EQ.4) THEN     ! Neumman y
+        ! ELSEIF (Ppt%StnclTplgy(13).EQ.4) THEN     ! Neumman y
         !     Stencil%Values(13)=one
         END IF
 
@@ -347,10 +347,10 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,14) = i+1
         Stencil%idx_clmns(MatStencil_j,14) = j+1
         Stencil%idx_clmns(MatStencil_k,14) = k
-        IF (Ppt%Tplgy(14).EQ.1) THEN         ! Active
+        IF (Ppt%StnclTplgy(14).EQ.1) THEN         ! Active
             Stencil%Values(14)=Ppt%dy*Ppt%dz*Ppt%CvtFx%xy/(Ppt%dyF+2*Ppt%dyB+Ppt%dy) & ! subindices del diferencial malos en el paper(?)
                              &+Ppt%dx*Ppt%dz*Ppt%CvtFy%yx/(Ppt%dxF+2*Ppt%dxB+Ppt%dx)   ! subindices del diferencial malos en el paper(?)
-        ELSEIF (Ppt%Tplgy(14).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(14).EQ.2) THEN     ! Dirichlet
             Stencil%Values(14)=one
         END IF
 
@@ -358,10 +358,10 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,15) = i
         Stencil%idx_clmns(MatStencil_j,15) = j-1
         Stencil%idx_clmns(MatStencil_k,15) = k+1
-        IF (Ppt%Tplgy(15).EQ.1) THEN         ! Active
+        IF (Ppt%StnclTplgy(15).EQ.1) THEN         ! Active
             Stencil%Values(15)=Ppt%dy*Ppt%dz*(-1)*Ppt%CvtBy%yz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                              &+Ppt%dx*Ppt%dy*(-1)*Ppt%CvtFz%zy/(Ppt%dyF+2*Ppt%dy+Ppt%dyB)
-        ELSEIF (Ppt%Tplgy(15).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(15).EQ.2) THEN     ! Dirichlet
             Stencil%Values(15)=one
         END IF
 
@@ -369,10 +369,10 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,16) = i-1
         Stencil%idx_clmns(MatStencil_j,16) = j
         Stencil%idx_clmns(MatStencil_k,16) = k+1
-        IF (Ppt%Tplgy(16).EQ.1) THEN         ! Active
+        IF (Ppt%StnclTplgy(16).EQ.1) THEN         ! Active
             Stencil%Values(16)=Ppt%dy*Ppt%dz*(-1)*Ppt%CvtBx%xz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                              &+Ppt%dx*Ppt%dy*(-1)*Ppt%CvtFz%zx/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)
-        ELSEIF (Ppt%Tplgy(16).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(16).EQ.2) THEN     ! Dirichlet
             Stencil%Values(16)=one
         END IF
 
@@ -380,13 +380,13 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,17) = i
         Stencil%idx_clmns(MatStencil_j,17) = j
         Stencil%idx_clmns(MatStencil_k,17) = k+1
-        IF ((Ppt%Tplgy(17).EQ.1).OR.(Ppt%Tplgy(17).EQ.3).OR.(Ppt%Tplgy(17).EQ.4).OR.(Ppt%Tplgy(17).EQ.5)) THEN         ! Active
+        IF ((Ppt%StnclTplgy(17).EQ.1).OR.(Ppt%StnclTplgy(17).EQ.3).OR.(Ppt%StnclTplgy(17).EQ.4).OR.(Ppt%StnclTplgy(17).EQ.5)) THEN         ! Active
             Stencil%Values(17)=Ppt%dy*Ppt%dz*(Ppt%CvtFx%xz-Ppt%CvtBx%xz)/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                              &+Ppt%dx*Ppt%dz*(Ppt%CvtFy%yz-Ppt%CvtBy%yz)/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                              &+Ppt%dx*Ppt%dy*2*Ppt%CvtFz%zz/(Ppt%dzF+Ppt%dz)
-        ELSEIF (Ppt%Tplgy(17).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(17).EQ.2) THEN     ! Dirichlet
             Stencil%Values(17)=one
-        ! ELSEIF (Ppt%Tplgy(17).EQ.5) THEN     ! Neumman z
+        ! ELSEIF (Ppt%StnclTplgy(17).EQ.5) THEN     ! Neumman z
         !     Stencil%Values(17)=one
         END IF
 
@@ -394,10 +394,10 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,18) = i+1
         Stencil%idx_clmns(MatStencil_j,18) = j
         Stencil%idx_clmns(MatStencil_k,18) = k+1
-        IF (Ppt%Tplgy(18).EQ.1) THEN         ! Active
+        IF (Ppt%StnclTplgy(18).EQ.1) THEN         ! Active
             Stencil%Values(18)=Ppt%dy*Ppt%dz*Ppt%CvtFx%xz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                              &+Ppt%dx*Ppt%dy*Ppt%CvtFz%zx/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)
-        ELSEIF (Ppt%Tplgy(18).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(18).EQ.2) THEN     ! Dirichlet
             Stencil%Values(18)=one
         END IF
 
@@ -405,46 +405,46 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_i,19) = i
         Stencil%idx_clmns(MatStencil_j,19) = j+1
         Stencil%idx_clmns(MatStencil_k,19) = k+1
-        IF (Ppt%Tplgy(19).EQ.1) THEN         ! Active
+        IF (Ppt%StnclTplgy(19).EQ.1) THEN         ! Active
             Stencil%Values(19)=Ppt%dy*Ppt%dz*Ppt%CvtFy%yz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                              &+Ppt%dx*Ppt%dy*Ppt%CvtFz%zy/(Ppt%dyF+2*Ppt%dy+Ppt%dyB)
-        ELSEIF (Ppt%Tplgy(19).EQ.2) THEN     ! Dirichlet
+        ELSEIF (Ppt%StnclTplgy(19).EQ.2) THEN     ! Dirichlet
             Stencil%Values(19)=one
         END IF
-    ELSEIF (Ppt%Tplgy(10).EQ.3) THEN ! Neumman x
+    ELSEIF (Ppt%StnclTplgy(10).EQ.3) THEN ! Neumman x
         Stencil%Values(10)=-one
-        IF ((Ppt%Tplgy(9).EQ.1).AND.(Ppt%Tplgy(11).EQ.1)) THEN
+        IF ((Ppt%StnclTplgy(9).EQ.1).AND.(Ppt%StnclTplgy(11).EQ.1)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
                 & "ERROR: Neumman on x axis was bad defined\n",ierr)
             STOP
-        ELSEIF (Ppt%Tplgy(9).EQ.1) THEN
+        ELSEIF (Ppt%StnclTplgy(9).EQ.1) THEN
             Stencil%Values(9)=one
-        ELSEIF (Ppt%Tplgy(11).EQ.1) THEN
+        ELSEIF (Ppt%StnclTplgy(11).EQ.1) THEN
             Stencil%Values(11)=one
         END IF
-    ELSEIF (Ppt%Tplgy(10).EQ.4) THEN ! Neumman y
+    ELSEIF (Ppt%StnclTplgy(10).EQ.4) THEN ! Neumman y
         Stencil%Values(10)=-one
-        IF ((Ppt%Tplgy(7).EQ.1).AND.(Ppt%Tplgy(13).EQ.1)) THEN
+        IF ((Ppt%StnclTplgy(7).EQ.1).AND.(Ppt%StnclTplgy(13).EQ.1)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
                 & "ERROR: Neumman on y axis was bad defined\n",ierr)
             STOP
-        ELSEIF (Ppt%Tplgy(7).EQ.1) THEN
+        ELSEIF (Ppt%StnclTplgy(7).EQ.1) THEN
             Stencil%Values(7)=one
-        ELSEIF (Ppt%Tplgy(13).EQ.1) THEN
+        ELSEIF (Ppt%StnclTplgy(13).EQ.1) THEN
             Stencil%Values(13)=one
         END IF
-    ELSEIF (Ppt%Tplgy(10).EQ.5) THEN ! Neumman z
+    ELSEIF (Ppt%StnclTplgy(10).EQ.5) THEN ! Neumman z
         Stencil%Values(10)=-one
-        IF ((Ppt%Tplgy(3).EQ.1).AND.(Ppt%Tplgy(17).EQ.1)) THEN
+        IF ((Ppt%StnclTplgy(3).EQ.1).AND.(Ppt%StnclTplgy(17).EQ.1)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
                 & "ERROR: Neumman on z axis was bad defined\n",ierr)
             STOP
-        ELSEIF (Ppt%Tplgy(3).EQ.1) THEN
+        ELSEIF (Ppt%StnclTplgy(3).EQ.1) THEN
             Stencil%Values(3)=one
-        ELSEIF (Ppt%Tplgy(17).EQ.1) THEN
+        ELSEIF (Ppt%StnclTplgy(17).EQ.1) THEN
             Stencil%Values(17)=one
         END IF
-    ELSEIF (Ppt%Tplgy(10).EQ.2) THEN ! Dirichlet
+    ELSEIF (Ppt%StnclTplgy(10).EQ.2) THEN ! Dirichlet
         Stencil%Values(10)=-one
     END IF
 
