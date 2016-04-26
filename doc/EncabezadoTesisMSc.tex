@@ -1,0 +1,148 @@
+\documentclass[12pt,spanish,fleqn,openany,letterpaper,pagesize,final]{scrbook}
+%\documentclass[12pt,spanish,fleqn,openany,letterpaper,pagesize,draft]{scrbook}
+
+
+%\usepackage[ansinew]{inputenc}%	<--	old
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}%		<-- new
+\usepackage{color}%					<--	new
+\usepackage{enumitem}%				<--	new
+\usepackage{gensymb}%				<-- new
+\usepackage[natbibapa]{apacite}%	<-- new
+\usepackage{fancyhdr}
+\usepackage{epsfig}
+\usepackage{epic}
+\usepackage{eepic}
+\usepackage{amsmath,amssymb}
+\usepackage{threeparttable}
+\usepackage{amscd}
+\usepackage{here}
+\usepackage{graphicx}
+\usepackage{lscape}
+\usepackage{tabularx}
+\usepackage{subfigure}
+\usepackage{longtable}
+\usepackage[T1]{fontenc}%			<--	new
+\usepackage{listings}%				<--	new
+\usepackage{algorithm}%				<--	new
+\usepackage{algorithmic}%			<--	new
+\input{spanishAlgorithmic} % mi archivo de traducción
+%\usepackage{draftwatermark}%		<--	new
+%\SetWatermarkText{BIO-HAZARD}%		<--	new
+
+
+\usepackage{rotating} %Para rotar texto, objetos y tablas seite. No se ve en DVI solo en PS. Seite 328 Hundebuch
+                        %se usa junto con \rotate, \sidewidestable ....
+
+
+\renewcommand{\theequation}{\thechapter-\arabic{equation}}
+\renewcommand{\thefigure}{\textbf{\thechapter-\arabic{figure}}}
+\renewcommand{\thetable}{\textbf{\thechapter-\arabic{table}}}
+
+
+\pagestyle{fancyplain}%\addtolength{\headwidth}{\marginparwidth}
+\textheight22.5cm \topmargin0cm \textwidth16.5cm
+\oddsidemargin0.5cm \evensidemargin-0.5cm%
+\renewcommand{\chaptermark}[1]{\markboth{\thechapter\; #1}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\; #1}}
+\lhead[\fancyplain{}{\thepage}]{\fancyplain{}{\rightmark}}
+\rhead[\fancyplain{}{\leftmark}]{\fancyplain{}{\thepage}}
+\fancyfoot{}
+\thispagestyle{fancy}%
+
+
+\addtolength{\headwidth}{0cm}
+\unitlength1mm %Define la unidad LE para Figuras
+\mathindent0cm %Define la distancia de las formulas al texto,  fleqn las descentra
+\marginparwidth0cm
+\parindent0cm %Define la distancia de la primera linea de un parrafo a la margen
+
+%Para tablas,  redefine el backschlash en tablas donde se define la posici\'{o}n del texto en las
+%casillas (con \centering \raggedright o \raggedleft)
+\newcommand{\PreserveBackslash}[1]{\let\temp=\\#1\let\\=\temp}
+\let\PBS=\PreserveBackslash
+
+%Espacio entre lineas
+\renewcommand{\baselinestretch}{1.1}
+
+%Neuer Befehl f\"{u}r die Tabelle Eigenschaften der Aktivkohlen
+\newcommand{\arr}[1]{\raisebox{1.5ex}[0cm][0cm]{#1}}
+
+%Neue Kommandos
+\usepackage{Befehle}
+
+
+%Trennungsliste
+\hyphenation {Reaktor-ab-me-ssun-gen Gas-zu-sa-mmen-set-zung
+Raum-gesch-win-dig-keit Durch-fluss Stick-stoff-gemisch
+Ad-sorp-tions-tem-pe-ra-tur Klein-schmidt
+Kohlen-stoff-Mole-kular-siebe Py-rolysat-aus-beu-te
+Trans-port-vor-gan-ge}
+
+
+%%%% <-- new
+
+\makeatletter
+\newsavebox\myboxA
+\newsavebox\myboxB
+\newlength\mylenA
+
+\newcommand*\xoverline[2][0.75]{%
+    \sbox{\myboxA}{$\m@th#2$}%
+    \setbox\myboxB\null% Phantom box
+    \ht\myboxB=\ht\myboxA%
+    \dp\myboxB=\dp\myboxA%
+    \wd\myboxB=#1\wd\myboxA% Scale phantom
+    \sbox\myboxB{$\m@th\overline{\copy\myboxB}$}%  Overlined phantom
+    \setlength\mylenA{\the\wd\myboxA}%   calc width diff
+    \addtolength\mylenA{-\the\wd\myboxB}%
+    \ifdim\wd\myboxB<\wd\myboxA%
+       \rlap{\hskip 0.5\mylenA\usebox\myboxB}{\usebox\myboxA}%
+    \else
+        \hskip -0.5\mylenA\rlap{\usebox\myboxA}{\hskip 0.5\mylenA\usebox\myboxB}%
+    \fi}
+\makeatother
+
+%%%%
+
+%%%% <-- new
+% Para las citas al inicio del capitulo
+% customize dictum format:
+\setkomafont{dictumtext}{\itshape\small}
+\setkomafont{dictumauthor}{\normalfont}
+\renewcommand*\dictumwidth{\linewidth}
+\renewcommand*\dictumauthorformat[1]{--- #1}
+\renewcommand*\dictumrule{}
+%%%%
+
+\usepackage[margin=1in]{geometry} %Paquete para hacer nuevos entornos teo,def,etc
+
+
+
+%%
+\newenvironment{teorema}[2][Teorema]{\begin{trivlist}
+\item[\hskip \labelsep {\scshape \bfseries #1}\hskip \labelsep {\scshape #2.}]}{\end{trivlist}}
+
+\newenvironment{definicion}[2][Definición]{\begin{trivlist}
+\item[\hskip \labelsep { \scshape \bfseries #1}\hskip \labelsep {\scshape #2.}]}{\end{trivlist}}
+
+\newenvironment{lemma}[2][Lemma]{\begin{trivlist}
+\item[\hskip \labelsep {\scshape \bfseries #1}\hskip \labelsep {\scshape #2.}]}{\end{trivlist}}
+
+\newenvironment{reflection}[2][Reflection]{\begin{trivlist}
+\item[\hskip \labelsep {\scshape \bfseries #1}\hskip \labelsep {\scshape #2.}]}{\end{trivlist}}
+
+\newenvironment{proposicion}[2][Proposición]{\begin{trivlist}
+\item[\hskip \labelsep {\scshape \bfseries #1}\hskip \labelsep {\scshape #2.}]}{\end{trivlist}}
+
+\newenvironment{corollary}[2][Corollary]{\begin{trivlist}
+\item[\hskip \labelsep {\scshape \bfseries #1}\hskip \labelsep {\scshape #2.}]}{\end{trivlist}}
+
+\newenvironment{problema}[2][Problema]{\begin{trivlist}
+\item[\hskip \labelsep {\scshape \bfseries #1}\hskip \labelsep {\scshape #2.}]}{\end{trivlist}}
+%%%
+
+%% Simbolos de finalizacion de demostracion y teorema
+\newcommand*{\QEDA}{\hfill\ensuremath{\blacksquare}}% proofs
+\newcommand*{\QEDB}{\hfill\ensuremath{\square}}% Defs y Teor
+%%
