@@ -1,4 +1,4 @@
-! ANISOFLOW_Types is a model which contains the basic data structures to the program.
+! ANISOFLOW_Types is a module which contains the basic data structures to the program.
 
 MODULE ANISOFLOW_Types
     IMPLICIT NONE
@@ -36,8 +36,9 @@ MODULE ANISOFLOW_Types
 
  !  - Tensor: Is a data structure which represent a full tensor, nine components, of any property.
  !      * NOTES: To use this structure is first needed fill the xx, yy, zz, xy, xz, and yz 
- !               components and then use TargetFullTensor subroutine. This process is required over 
- !               every tensor created; thereafter, is guaranteed the symmetry on the tensor.
+ !               components and then use TargetFullTensor subroutine to have (xy=yx, xz=zx, and 
+ !               yz=zy). This process is required over every tensor created; thereafter, is 
+ !               guaranteed the symmetry on the tensor.
 
     TYPE Tensor
         PetscReal                       :: xx,yy,zz,xy,xz,yz
@@ -54,11 +55,11 @@ MODULE ANISOFLOW_Types
  !  - Property: Is a data structure wich describe completly a cell on the geometry.
  !      + Pstn: Is a Position structure which describe the global position on the grid.
  !      + StencilType: Is an integer used to describe the type of the stencil used on the model.
- !          0: Not defined.
+ !          0: Not defined. (Default)
  !          1: Star stencil. Stencil based on 6 neighbors.
  !          2: Partial box stencil. Stencil based on 18 neighbors. 
  !          3: Box stencil. Stencil based on 26 neighbors.
- !      + StencilTplgy: Is an Array of integer which contains an identificator of the type of the
+ !      + StencilTplgy: Is an Array of integers which contains an identificator of the type of the
  !                      topology on each cell of the stancil. The array is ordered numbering the 
  !                      cells of the stencil from upper to lowest layer, then from the lowest to the
  !                      highest values on the x and on the y axis respectively.
@@ -68,39 +69,57 @@ MODULE ANISOFLOW_Types
  !          3: Neumman on x boundary condition cell (dh/dx=0).
  !          4: Neumman on y boundary condition cell (dh/dy=0).
  !          5: Neumman on z boundary condition cell (dh/dz=0).
- !      + dx,dy,dz: A real which describe the size of the central cell in the directions on x, y, and
- !                  z axis.
+ !      + dx,dy,dz: A real which describe the size of the central cell in the directions on x, y,
+ !                  and z axis.
  !      + dxB,dyB,dzB: A real which describe the size of the backward cell in the directions on x, 
  !                  y, and z axis.
  !      + dxF,dyF,dzF: A real which describe the size of the forward cell in the directions on x, 
  !                  y, and z axis.
- !      + CvtInterface: 
- !      + CvtCell:
- !      + CvtBx,CvtBy,CvtBz:
- !      + CvtFx,CvtFy,CvtFz:
- !      * NOTES: Do not use this structure to define each cell on a field property, it is because
- !               this structure has a redundant data that another one already has too. Instead, 
- !               use this one as temporal structure to have everything as you need of the cell in 
- !               hand.
+ !      + CvtOnBlock: Is a boolean which shows if the block has the conductivity represented 
+ !                    on the block.
+ !      + CvtBlock: Is a Tensor of conductivities of the medium of the block.
+ !      + CvtOnInterface: Is a boolean which shows if the block has the conductivity represented 
+ !                        on the interfaces.
+ !      + CvtBx,CvtBy,CvtBz: Is a tensor of conductivites on the interface of the block in backward 
+ !                           direction of the cartesian axis respectively.
+ !      + CvtFx,CvtFy,CvtFz: Is a tensor of conductivites on the interface of the block in forward 
+ !                           direction of the cartesian axes respectively.
+ !      * NOTES: Do not use this structure to define each cell on a field of properties, it is 
+ !               because this structure has a redundant data that another one already has too. 
+ !               Instead, use this one as temporal structure to have everything as you need of the 
+ !               cell in hand.
 
     TYPE Property
         TYPE(Position)                  :: Pstn
         PetscInt                        :: StnclType=0
         PetscInt,ALLOCATABLE            :: StnclTplgy(:)
         PetscReal                       :: dx,dy,dz,dxB,dxF,dyB,dyF,dzB,dzF
-        PetscBool                       :: CvtInterface=.TRUE.
-        TYPE(Tensor)                    :: CvtCell,CvtBx,CvtFx,CvtBy,CvtFy,CvtBz,CvtFz
+        PetscBool                       :: CvtOnInterface=.FALSE.,CvtOnBlock=.FALSE.
+        TYPE(Tensor)                    :: CvtBlock,CvtBx,CvtFx,CvtBy,CvtFy,CvtBz,CvtFz
     END TYPE Property
 
-
+ !  - ConductivityField: Is a data structure which store the field of conductivities of every block.
+ !                       This structure may store conductiviies defined by field zones or where each
+ !                       conductivity block has a diferent vaule.
+ !      + DefinedByZones: Is a boolean describing if the ConductivityField is stored by zones or 
+ !                        not. If the boolean is .TRUE., it's necessary save the information in 
+ !                        CvtZones and CvtYpe, otherwise it's necessary save the information in 
+ !                        xxVec,yyVec,zzVec
+ !      + DefindeByInteface: Is a boolean describing if the ConductivityField stores the information
+ !                           on the interface or on each block. If the boolean is .TRUE., the 
+ !                           CvtType or xxVec, yyVec, and zzVec need an aditional component on each
+ !                           direction in the first processor.
+ !      + CvtZones: Is an Array of Tenors which contain many Tensors of conductivity as defined 
+ !                  zones. This variable needs to be stored in all processors.
     TYPE ConductivityField
+        PetscBool                               :: DefinedByZones
+        PetscBool                               :: DefinedByInterface=.FALSE.
         ! Conductivity field defined by few types of conductivity
-        TYPE(Tensor),ALLOCATABLE                :: CvtArray(:)
+        TYPE(Tensor),ALLOCATABLE                :: CvtZones(:)
         Vec                                     :: CvtType
         ! Complete conductivity field defined
         Vec                                     :: xxVec,yyVec,zzVec
         ! Conductivity can be saved as block or interface value, but property local must be saved as interface value
-        PetscBool                               :: Interface=.FALSE.
     END TYPE ConductivityField
 
     TYPE PropertyField
