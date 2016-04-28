@@ -8,6 +8,7 @@ MODULE ANISOFLOW_Types
 #include <petsc/finclude/petscdm.h>
 
  !  - Gemoetry: It's a data structure that manage every information needed related to geometry.
+ !    > VARIALBES: DstrMngr, Tplgy, DirichIS, CauchyIS, NeummanIS.
  !      + DstrMngr: It's a PETSc manager data for structured grid in 3 dimensions, provide general 
  !                  information of the grid to be managed in parallel programing.
  !      + Tplgy: It's a PETSc vector type produced by DstrMngr that contains an identificator of the 
@@ -24,7 +25,7 @@ MODULE ANISOFLOW_Types
  !                  produced by DstrMngr.
  !      + NeummanIS: It's a PETSc index set that have a map between Neumman information and vecs 
  !                   produced by DstrMngr.
- !      * NOTES: The variables DirichIS, CauchyIS and NeummanIS have redundant information that is 
+ !    > NOTES: The variables DirichIS, CauchyIS and NeummanIS have redundant information that is 
  !             contained in the Tplgy but anyway is needed to transfer the information.
 
     TYPE Geometry
@@ -35,7 +36,9 @@ MODULE ANISOFLOW_Types
 
 
  !  - Tensor: It's a data structure that represent a full tensor, nine components, of any property.
- !      * NOTES: To use this structure is first needed fill the xx, yy, zz, xy, xz, and yz 
+ !    > VARIABLES: xx, yy, zz, xy, xz, yz, yx, zx, zy.
+ !      + xx,yy,zz,xy,xz,yz,yx,zx,zy: Conductivity components.
+ !    > NOTES: To use this structure is first needed fill the xx, yy, zz, xy, xz, and yz 
  !               components and then use TargetFullTensor subroutine to have (xy=yx, xz=zx, and 
  !               yz=zy). This process is required over every tensor created; thereafter, is 
  !               guaranteed the symmetry on the tensor.
@@ -53,6 +56,8 @@ MODULE ANISOFLOW_Types
     END TYPE Position
 
  !  - Property: It's a data structure wich describe completly a cell on the geometry.
+ !    > VARIABLES: Pstn, StencilType, StencilTplgy, dx, dy, dz, dxB, dyB, dzB, dxF, dyF, dzF,
+ !                 CvtOnBlock, CvtBlock, CvtOnInterface, CvtBx, CvtBy, CvtBz, CvtFx, CvtFy, CvtFz.
  !      + Pstn: It's a Position structure that describe the global position on the grid.
  !      + StencilType: It's an integer used to describe the type of the stencil used on the model.
  !          0: Not defined. (Default)
@@ -84,10 +89,10 @@ MODULE ANISOFLOW_Types
  !                           backward direction of the cartesian axis respectively.
  !      + CvtFx,CvtFy,CvtFz: It's a tensor of conductivites on the interface of the block in forward 
  !                           direction of the cartesian axes respectively.
- !      * NOTES: Do not use this structure to define each cell on a field of properties, it is 
- !               because this structure has a redundant data that another one already has too. 
- !               Instead, use this one as temporal structure to have everything as you need of the 
- !               cell in hand.
+ !    > NOTES: Do not use this structure to define each cell on a field of properties, it is 
+ !             because this structure has a redundant data that another one already has too. 
+ !             Instead, use this one as temporal structure to have everything as you need of the 
+ !             cell in hand.
 
     TYPE Property
         TYPE(Position)                  :: Pstn
@@ -101,6 +106,7 @@ MODULE ANISOFLOW_Types
  !  - ConductivityField: It's a data structure that store the field of conductivities of every block.
  !                       This structure may store conductiviies defined by field zones or where each
  !                       conductivity block has a diferent vaule.
+ !    > VAIABLES: DefinedByZones, DefindeByInteface, CvtZones, CvtType, xxVec, yyVec, zzVec.
  !      + DefinedByZones: It's a boolean describing if the ConductivityField is stored by zones or 
  !                        not. If the boolean is .TRUE., it's necessary save the information in 
  !                        CvtZones and CvtYpe, otherwise it's necessary save the information in 
@@ -126,6 +132,7 @@ MODULE ANISOFLOW_Types
     END TYPE ConductivityField
 
  !  - ProperyField: It's a data structure wich contains fields of differents properties.
+ !    > VARIABLES: Cvt.
  !      + Cvt: It's a ConductivityField data structure wich contain a field of conductivity.
 
     TYPE PropertyField
@@ -133,13 +140,14 @@ MODULE ANISOFLOW_Types
     END TYPE PropertyField
 
  !  - StepBC: It's a data structure that contain a Boundary Condition set.
+ !    > VARIABLES: Diricl, Cauchy.
  !      + Diricl: It's a PETSc vector with the values of the Dirichlet cells. It must has the same
  !                size as Dirichlet indentificators defined in Gemetry data strucure.
  !      + Cauchy: It's a PETSc vector with the values of the Cauchy cells. It must has the same size
  !                as Cauchy indentificators defined in Gemetry data strucure.
- !      * NOTES: The Index Sets defined in Geometry for each boundary condition point the value of  
- !               Dirich and Cauchy vectors to the real position on every global vector crated with
- !               DstrMngr defined in Geometry.
+ !    > NOTES: The Index Sets defined in Geometry for each boundary condition point the value of  
+ !             Dirich and Cauchy vectors to the real position on every global vector crated with
+ !             DstrMngr defined in Geometry.
     TYPE StepBC
         Vec                             :: Dirich,Cauchy
     END TYPE StepBC
@@ -153,6 +161,7 @@ MODULE ANISOFLOW_Types
     END TYPE BoundaryConditions
 
  !  - StensilVar: It's a auxilar data structure to build the matrix.
+ !    > VARIABLES: idx_rws, idx_clmn, Values, Size.
  !      + idx_rws: It's a PETSc MatStencil structure that conitans the information of the rows that
  !                 will be added on the matrix. The allocation to the first component is 4 ever, to 
  !                 the second one dependes on how many rows are necessary to modify, usualy one.
@@ -162,7 +171,7 @@ MODULE ANISOFLOW_Types
  !      + Values: It's an array that store the values to be added on the position indicated by 
  !                idx_rws and idx_clmns.
  !      + Size: It's an integer taht says how many values will be modified on the matrix.
- !      * NOTES: An example of usage of the StencilVar of 3 values in a row is the following:
+ !    > NOTES: An example of usage of the StencilVar of 3 values in a row is the following:
  !          
  !!          StencilVar%Size=3                           ! Amount of values of the Stencil
  !!
@@ -184,8 +193,8 @@ MODULE ANISOFLOW_Types
  !!          StencilVar%Values(2)=2.0                    !    on the positions defined with idx_rws
  !!          StencilVar%Values(3)=1.0                    !    and idx_clmn.
  !                                  
- !               Finally, the StencilVar needs to be added to the matrix with MatSetValuesStencil
- !               that is a PETSc function.
+ !             Finally, the StencilVar needs to be added to the matrix with MatSetValuesStencil
+ !             that is a PETSc function.
 
     TYPE StencilVar
         MatStencil,ALLOCATABLE          :: idx_rws(:,:),idx_clmns(:,:)
@@ -194,6 +203,7 @@ MODULE ANISOFLOW_Types
     END TYPE StencilVar
 
  !  - RunOptionsVar: It's a data structure that contains all options related with the running.
+ !    > VARIABLES: Time, Scheme.
  !      + Time: It's a boolean that define if the running is steady or transient. The default value
  !              is steady.
  !      + Scheme: It's an integer that define the scheme stencil to solve the underground flow 
@@ -210,25 +220,35 @@ MODULE ANISOFLOW_Types
 
  !  - InputTypeVar: It's a collection of integer that define the type of input to be used in the
  !                 program.
+ !    > VARIABLES: Gmtry,Tplgy,Cvt,BC
  !      + Gmtry: It's a integer that define a type of file that will provide the domain size and the
  !               cell center coordenates.
- !          1: Defined by Blessent. An example is provided in ../ex/Blessent/in/tsim_USMH.asc
- !          2: Defined by Perez. An exaple is provided in ../ex/Perez/in/sanpck.domnRST
+ !          1: Defined by Blessent. An example is provided in "../ex/Blessent/in/tsim_USMH.asc"
+ !          2: Defined by Perez. An exaple is provided in "../ex/Perez/in/sanpck.domnRST"
  !      + Tplgy: It's a integer that define a type of file that will provide the identificators to
  !               each cell.
  !          1: Defaul topology, it doesn't need a file. Every face of the domain is a Neumman
  !             condition but on the fisrt layer where the bpundary is dirichlet.
  !      + Cvt: It's a integer that define a type of file that will provide conductivity to each cell
  !             or zone.
- !          1: It's a file that provide block conductivities by zones. An example is provided in ../
- !             ex/Blessent/in/matrix.mprops
- !      + BC: It's
+ !          1: It's a pair of files that provide block conductivities by zones and another one that
+ !             provide an identificator of zone to each cell. An example is provided in "../ex/
+ !             Blessent/in/matrix.mprops" and "../ex/Blessent/in/tsim_USMH.asc".
+ !      + BC: It's a integer that define a type of file that will provide the boundary conditions.
+ !          1: It's a file that only provide dirichlet condition and their postion on the grid. An
+ !             example is provided in "../Blessent/in/grid_400_400.nch_nprop_list.lateral_boundary".
 
     TYPE InputTypeVar
         PetscInt                        :: Gmtry,Tplgy,Cvt,BC
     END TYPE InputTypeVar
 
 CONTAINS
+
+ !  - TargetFullTensor is an auxiliar routine to guarantee the Tensor variable symetry.
+ !    > IN: Tensor
+ !      + Tensor: A tensor structure with xx, yy, zz, xy, xz, and yz defined.
+ !    > OUT: Tensor
+ !      + Tensor: A tensor with yx, zx, and zy values pointed to xy, xz, and yz values respectively.
 
 SUBROUTINE TargetFullTensor(Tens)
 
