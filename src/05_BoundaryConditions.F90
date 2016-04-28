@@ -76,7 +76,7 @@ SUBROUTINE GetSteadyBCDirichlet(Gmtry,BCFld,ierr)
     CALL GetInputType(InputType,ierr)
     CALL GetInputFileSteadyBC(InputFileSteadyBC,ierr)
 
-    IF (InputType%SteadyBC.EQ.1) THEN
+    IF (InputType%BC.EQ.1) THEN
 
         CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
         DirichLen=0
@@ -141,7 +141,7 @@ SUBROUTINE GetSteadyBCCauchy(Gmtry,BCFld,ierr)
     CALL GetInputType(InputType,ierr)
     CALL GetInputFileSteadyBC(InputFileSteadyBC,ierr)
 
-    IF (InputType%SteadyBC.EQ.1) THEN
+    IF (InputType%BC.EQ.1) THEN
 
         ! InputType SeteadyBC equal 1 don't use cauchy BC
 

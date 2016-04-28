@@ -40,7 +40,7 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
 
     PetscInt                            :: u,i,j,k,width(3),corn(3),ValI,CvtLen
     PetscReal                           :: ValR
-    PetscReal,POINTER                   :: CvtTypeArray(:,:,:)
+    PetscReal,POINTER                   :: CvtTypeZone(:,:,:)
     PetscMPIInt                         :: process
     Vec                                 :: CvtTypeGlobal
     TYPE(InputTypeVar)                  :: InputType
@@ -93,7 +93,7 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
 
         CALL VecDestroy(CvtTypeGlobal,ierr)
 
-        ALLOCATE(PptFld%Cvt%CvtArray(CvtLen))
+        ALLOCATE(PptFld%Cvt%CvtZone(CvtLen))
         
         IF (process.EQ.0) THEN
             Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvt))
@@ -105,18 +105,18 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
                 READ(u,*)
                 READ(u,'(A13)')CvtKind
                 IF (CvtKind.EQ."k anisotropic") THEN 
-                    READ(u,'((F8.0),(F8.0),(F8.0))')PptFld%Cvt%CvtArray(i)%xx, &
-                        & PptFld%Cvt%CvtArray(i)%yy,PptFld%Cvt%CvtArray(i)%zz
-                    PptFld%Cvt%CvtArray(i)%xy=0.0
-                    PptFld%Cvt%CvtArray(i)%xz=0.0
-                    PptFld%Cvt%CvtArray(i)%yz=0.0
+                    READ(u,'((F8.0),(F8.0),(F8.0))')PptFld%Cvt%CvtZone(i)%xx, &
+                        & PptFld%Cvt%CvtZone(i)%yy,PptFld%Cvt%CvtZone(i)%zz
+                    PptFld%Cvt%CvtZone(i)%xy=0.0
+                    PptFld%Cvt%CvtZone(i)%xz=0.0
+                    PptFld%Cvt%CvtZone(i)%yz=0.0
                 ELSE IF (CvtKind.EQ."k isotropic  ") THEN
-                    READ(u,'(F15.0)')PptFld%Cvt%CvtArray(i)%xx
-                    PptFld%Cvt%CvtArray(i)%yy=PptFld%Cvt%CvtArray(i)%xx
-                    PptFld%Cvt%CvtArray(i)%zz=PptFld%Cvt%CvtArray(i)%xx
-                    PptFld%Cvt%CvtArray(i)%xy=0.0
-                    PptFld%Cvt%CvtArray(i)%xz=0.0
-                    PptFld%Cvt%CvtArray(i)%yz=0.0
+                    READ(u,'(F15.0)')PptFld%Cvt%CvtZone(i)%xx
+                    PptFld%Cvt%CvtZone(i)%yy=PptFld%Cvt%CvtZone(i)%xx
+                    PptFld%Cvt%CvtZone(i)%zz=PptFld%Cvt%CvtZone(i)%xx
+                    PptFld%Cvt%CvtZone(i)%xy=0.0
+                    PptFld%Cvt%CvtZone(i)%xz=0.0
+                    PptFld%Cvt%CvtZone(i)%yz=0.0
                 ELSE
                     CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
                         & "ERROR: File of conductivity properties is invalid\n"&
@@ -130,21 +130,21 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
             CLOSE(u)
         END IF
 
-        CALL MPI_Bcast(PptFld%Cvt%CvtArray(:)%xx,CvtLen,MPI_DOUBLE, 0,         &
+        CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%xx,CvtLen,MPI_DOUBLE, 0,         &
             & PETSC_COMM_WORLD,ierr)
-        CALL MPI_Bcast(PptFld%Cvt%CvtArray(:)%yy,CvtLen,MPI_DOUBLE, 0,         &
+        CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%yy,CvtLen,MPI_DOUBLE, 0,         &
             & PETSC_COMM_WORLD,ierr)
-        CALL MPI_Bcast(PptFld%Cvt%CvtArray(:)%zz,CvtLen,MPI_DOUBLE, 0,         &
+        CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%zz,CvtLen,MPI_DOUBLE, 0,         &
             &PETSC_COMM_WORLD,ierr)
-        CALL MPI_Bcast(PptFld%Cvt%CvtArray(:)%xy,CvtLen,MPI_DOUBLE, 0,         &
+        CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%xy,CvtLen,MPI_DOUBLE, 0,         &
             &PETSC_COMM_WORLD,ierr)
-        CALL MPI_Bcast(PptFld%Cvt%CvtArray(:)%xz,CvtLen,MPI_DOUBLE, 0,         &
+        CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%xz,CvtLen,MPI_DOUBLE, 0,         &
             &PETSC_COMM_WORLD,ierr)
-        CALL MPI_Bcast(PptFld%Cvt%CvtArray(:)%yz,CvtLen,MPI_DOUBLE, 0,         &
+        CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%yz,CvtLen,MPI_DOUBLE, 0,         &
             &PETSC_COMM_WORLD,ierr)
 
         DO i=1,CvtLen
-            CALL TargetFullTensor(PptFld%Cvt%CvtArray(i))
+            CALL TargetFullTensor(PptFld%Cvt%CvtZone(i))
         END DO
 
     END IF
@@ -195,7 +195,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
 
     TYPE(InputTypeVar)                  :: InputType
     Vec                                 :: TmpCvtType
-    PetscReal,POINTER                   :: TmpCvtTypeArray(:,:,:)
+    PetscReal,POINTER                   :: TmpCvtTypeZone(:,:,:)
     PetscInt                            :: ValI(2),i,j,k
 
     CALL GetInputType(InputType,ierr)
@@ -267,75 +267,75 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
         STOP   
     END IF
 
-    IF (.NOT.PptFld%Cvt%Interface) THEN
+    IF (.NOT.PptFld%Cvt%DefinedByInterface) THEN
         IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4).OR.(Ppt%StnclTplgy(ValI(1)).EQ.5)) THEN ! Only get properties for active blocks
             CALL DMDAVecGetArrayreadF90(Gmtry%DstrMngr,PptFld%Cvt%CvtType,     &
-                & TmpCvtTypeArray,ierr)
+                & TmpCvtTypeZone,ierr)
 
-            ValI(1)=INT(TmpCvtTypeArray(i,j,k))
+            ValI(1)=INT(TmpCvtTypeZone(i,j,k))
 
             ! Backward on x
-            ValI(2)=INT(TmpCvtTypeArray(i-1,j,k))
-            Ppt%CvtBx%xx=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xx,PptFld%Cvt%CvtArray(ValI(2))%xx)
-            Ppt%CvtBx%yy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yy,PptFld%Cvt%CvtArray(ValI(2))%yy)
-            Ppt%CvtBx%zz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%zz,PptFld%Cvt%CvtArray(ValI(2))%zz)
-            Ppt%CvtBx%xy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xy,PptFld%Cvt%CvtArray(ValI(2))%xy)
-            Ppt%CvtBx%xz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xz,PptFld%Cvt%CvtArray(ValI(2))%xz)
-            Ppt%CvtBx%yz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yz,PptFld%Cvt%CvtArray(ValI(2))%yz)
+            ValI(2)=INT(TmpCvtTypeZone(i-1,j,k))
+            Ppt%CvtBx%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
+            Ppt%CvtBx%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
+            Ppt%CvtBx%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
+            Ppt%CvtBx%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
+            Ppt%CvtBx%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
+            Ppt%CvtBx%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
             CALL TargetFullTensor(Ppt%CvtBx)
 
             ! Forward on x
-            ValI(2)=INT(TmpCvtTypeArray(i+1,j,k))
-            Ppt%CvtFx%xx=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xx,PptFld%Cvt%CvtArray(ValI(2))%xx)
-            Ppt%CvtFx%yy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yy,PptFld%Cvt%CvtArray(ValI(2))%yy)
-            Ppt%CvtFx%zz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%zz,PptFld%Cvt%CvtArray(ValI(2))%zz)
-            Ppt%CvtFx%xy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xy,PptFld%Cvt%CvtArray(ValI(2))%xy)
-            Ppt%CvtFx%xz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xz,PptFld%Cvt%CvtArray(ValI(2))%xz)
-            Ppt%CvtFx%yz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yz,PptFld%Cvt%CvtArray(ValI(2))%yz)
+            ValI(2)=INT(TmpCvtTypeZone(i+1,j,k))
+            Ppt%CvtFx%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
+            Ppt%CvtFx%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
+            Ppt%CvtFx%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
+            Ppt%CvtFx%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
+            Ppt%CvtFx%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
+            Ppt%CvtFx%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
             CALL TargetFullTensor(Ppt%CvtFx)
 
             ! Backward on y
-            ValI(2)=INT(TmpCvtTypeArray(i,j-1,k))
-            Ppt%CvtBy%xx=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xx,PptFld%Cvt%CvtArray(ValI(2))%xx)
-            Ppt%CvtBy%yy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yy,PptFld%Cvt%CvtArray(ValI(2))%yy)
-            Ppt%CvtBy%zz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%zz,PptFld%Cvt%CvtArray(ValI(2))%zz)
-            Ppt%CvtBy%xy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xy,PptFld%Cvt%CvtArray(ValI(2))%xy)
-            Ppt%CvtBy%xz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xz,PptFld%Cvt%CvtArray(ValI(2))%xz)
-            Ppt%CvtBy%yz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yz,PptFld%Cvt%CvtArray(ValI(2))%yz)
+            ValI(2)=INT(TmpCvtTypeZone(i,j-1,k))
+            Ppt%CvtBy%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
+            Ppt%CvtBy%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
+            Ppt%CvtBy%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
+            Ppt%CvtBy%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
+            Ppt%CvtBy%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
+            Ppt%CvtBy%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
             CALL TargetFullTensor(Ppt%CvtBy)
 
             ! Forward on y
-            ValI(2)=INT(TmpCvtTypeArray(i,j+1,k))
-            Ppt%CvtFy%xx=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xx,PptFld%Cvt%CvtArray(ValI(2))%xx)
-            Ppt%CvtFy%yy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yy,PptFld%Cvt%CvtArray(ValI(2))%yy)
-            Ppt%CvtFy%zz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%zz,PptFld%Cvt%CvtArray(ValI(2))%zz)
-            Ppt%CvtFy%xy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xy,PptFld%Cvt%CvtArray(ValI(2))%xy)
-            Ppt%CvtFy%xz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xz,PptFld%Cvt%CvtArray(ValI(2))%xz)
-            Ppt%CvtFy%yz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yz,PptFld%Cvt%CvtArray(ValI(2))%yz)
+            ValI(2)=INT(TmpCvtTypeZone(i,j+1,k))
+            Ppt%CvtFy%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
+            Ppt%CvtFy%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
+            Ppt%CvtFy%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
+            Ppt%CvtFy%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
+            Ppt%CvtFy%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
+            Ppt%CvtFy%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
             CALL TargetFullTensor(Ppt%CvtFy)
 
             ! Backward on z
-            ValI(2)=INT(TmpCvtTypeArray(i,j,k-1))
-            Ppt%CvtBz%xx=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xx,PptFld%Cvt%CvtArray(ValI(2))%xx)
-            Ppt%CvtBz%yy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yy,PptFld%Cvt%CvtArray(ValI(2))%yy)
-            Ppt%CvtBz%zz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%zz,PptFld%Cvt%CvtArray(ValI(2))%zz)
-            Ppt%CvtBz%xy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xy,PptFld%Cvt%CvtArray(ValI(2))%xy)
-            Ppt%CvtBz%xz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xz,PptFld%Cvt%CvtArray(ValI(2))%xz)
-            Ppt%CvtBz%yz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yz,PptFld%Cvt%CvtArray(ValI(2))%yz)
+            ValI(2)=INT(TmpCvtTypeZone(i,j,k-1))
+            Ppt%CvtBz%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
+            Ppt%CvtBz%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
+            Ppt%CvtBz%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
+            Ppt%CvtBz%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
+            Ppt%CvtBz%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
+            Ppt%CvtBz%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
             CALL TargetFullTensor(Ppt%CvtBz)
 
             ! Forward on y
-            ValI(2)=INT(TmpCvtTypeArray(i,j,k+1))
-            Ppt%CvtFz%xx=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xx,PptFld%Cvt%CvtArray(ValI(2))%xx)
-            Ppt%CvtFz%yy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yy,PptFld%Cvt%CvtArray(ValI(2))%yy)
-            Ppt%CvtFz%zz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%zz,PptFld%Cvt%CvtArray(ValI(2))%zz)
-            Ppt%CvtFz%xy=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xy,PptFld%Cvt%CvtArray(ValI(2))%xy)
-            Ppt%CvtFz%xz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%xz,PptFld%Cvt%CvtArray(ValI(2))%xz)
-            Ppt%CvtFz%yz=Armonic(PptFld%Cvt%CvtArray(ValI(1))%yz,PptFld%Cvt%CvtArray(ValI(2))%yz)
+            ValI(2)=INT(TmpCvtTypeZone(i,j,k+1))
+            Ppt%CvtFz%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
+            Ppt%CvtFz%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
+            Ppt%CvtFz%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
+            Ppt%CvtFz%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
+            Ppt%CvtFz%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
+            Ppt%CvtFz%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
             CALL TargetFullTensor(Ppt%CvtFz)
 
             CALL DMDAVecRestoreArrayReadF90(Gmtry%DstrMngr,PptFld%Cvt%CvtType, &
-                & TmpCvtTypeArray,ierr)
+                & TmpCvtTypeZone,ierr)
 
         END IF
     ELSE
@@ -372,7 +372,7 @@ SUBROUTINE PropertiesDestroy(PptFld,ierr)
     CALL GetInputType(InputType,ierr)
 
     IF (InputType%Cvt.EQ.1) THEN
-        IF (ALLOCATED(PptFld%Cvt%CvtArray)) DEALLOCATE(PptFld%Cvt%CvtArray)
+        IF (ALLOCATED(PptFld%Cvt%CvtZone)) DEALLOCATE(PptFld%Cvt%CvtZone)
         CALL VecDestroy(PptFld%Cvt%CvtType,ierr)
     END IF 
 

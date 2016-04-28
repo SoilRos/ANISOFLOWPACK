@@ -44,8 +44,7 @@ SUBROUTINE GetInputType(InputType,ierr)
             InputType%Gmtry=1
             InputType%Tplgy=1
             InputType%Cvt=1
-            InputType%SteadyBC=1
-            InputType%TransientBC=1
+            InputType%BC=1
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
                 & "ERROR: Input_type used is invalid\n",ierr)
@@ -56,14 +55,12 @@ SUBROUTINE GetInputType(InputType,ierr)
         InputType%Gmtry=1
         InputType%Tplgy=1
         InputType%Cvt=1
-        InputType%SteadyBC=1
-        InputType%TransientBC=1
+        InputType%BC=1
         ! Setting InputType from interface
         CALL GetInputTypeGmtry(InputType,ierr)
         CALL GetInputTypeTplgy(InputType,ierr)
         CALL GetInputTypeCvt(InputType,ierr)
-        CALL GetInputTypeSteadyBC(InputType,ierr)
-        CALL GetInputTypeTransientBC(InputType,ierr)
+        CALL GetInputTypeBC(InputType,ierr)
     END IF
 
 END SUBROUTINE GetInputType
@@ -146,7 +143,7 @@ SUBROUTINE GetInputTypeCvt(InputType,ierr)
 
 END SUBROUTINE GetInputTypeCvt
 
-SUBROUTINE GetInputTypeSteadyBC(InputType,ierr)
+SUBROUTINE GetInputTypeBC(InputType,ierr)
 
     IMPLICIT NONE
 
@@ -155,50 +152,23 @@ SUBROUTINE GetInputTypeSteadyBC(InputType,ierr)
     PetscErrorCode,INTENT(INOUT)        :: ierr
     Type(InputTypeVar),INTENT(INOUT)    :: InputType
 
-    PetscBool                       :: InputTypeSteadyBCFlg
-    PetscInt                        :: InputTypeSteadyBCTmp
+    PetscBool                       :: InputTypeBCFlg
+    PetscInt                        :: InputTypeBCTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_CHARACTER,"-Input_type_bc_steady",      &
-        & InputTypeSteadyBCTmp,InputTypeSteadyBCFlg,ierr)
+    CALL PetscOptionsGetInt(PETSC_NULL_CHARACTER,"-Input_type_bc",      &
+        & InputTypeBCTmp,InputTypeBCFlg,ierr)
 
-    IF (InputTypeSteadyBCFlg) THEN
-        IF (InputTypeSteadyBCTmp.EQ.1) THEN
-            InputType%SteadyBC=InputTypeSteadyBCTmp
+    IF (InputTypeBCFlg) THEN
+        IF (InputTypeBCTmp.EQ.1) THEN
+            InputType%BC=InputTypeBCTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Input_type_bc_steady used is invalid\n",ierr)
+                & "ERROR: Input_type_bc used is invalid\n",ierr)
             STOP
         END IF
     END IF
 
-END SUBROUTINE GetInputTypeSteadyBC
-
-SUBROUTINE GetInputTypeTransientBC(InputType,ierr)
-
-    IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-
-    PetscErrorCode,INTENT(INOUT)        :: ierr
-    Type(InputTypeVar),INTENT(INOUT)    :: InputType
-
-    PetscBool                       :: InputTypeTransientBCFlg
-    PetscInt                        :: InputTypeTransientBCTmp
-
-    CALL PetscOptionsGetInt(PETSC_NULL_CHARACTER,"-Input_type_bc_transient",   &
-        & InputTypeTransientBCTmp,InputTypeTransientBCFlg,ierr)
-
-    IF (InputTypeTransientBCFlg) THEN
-        IF (InputTypeTransientBCTmp.EQ.1) THEN
-            InputType%TransientBC=InputTypeTransientBCTmp
-        ELSE
-            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Input_type_bc_transient used is invalid\n",ierr)
-            STOP
-        END IF
-    END IF
-
-END SUBROUTINE GetInputTypeTransientBC
+END SUBROUTINE GetInputTypeBC
 
 SUBROUTINE GetInputFileGmtry(InputFileGmtry,ierr)
 
