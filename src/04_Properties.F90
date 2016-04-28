@@ -44,7 +44,7 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
     PetscMPIInt                         :: process
     Vec                                 :: CvtTypeGlobal
     TYPE(InputTypeVar)                  :: InputType
-    CHARACTER(LEN=200)                  :: InputDir,InputFileCvt,InputFileCvtType
+    CHARACTER(LEN=200)                  :: InputDir,InputFileCvt,InputFileCvtByZones
     CHARACTER(LEN=200)                  :: Route
     CHARACTER(LEN=13)                   :: CvtKind
 
@@ -61,8 +61,8 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
 
         CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
         IF (process.EQ.0) THEN
-            CALL GetInputFileCvtType(InputFileCvtType,ierr)
-            Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvtType))
+            CALL GetInputFileCvtByZones(InputFileCvtByZones,ierr)
+            Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvtByZones))
             OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
             READ(u, '((I10),(I10),(I10))')width(1),width(2),width(3)
 

@@ -1,11 +1,22 @@
 MODULE ANISOFLOW_Interface
 
+! ANISOFLOW_Interface it's a module that contains routines that serve as bridge between user and
+! program.
+
     USE ANISOFLOW_Types, ONLY : InputTypeVar
     USE ANISOFLOW_Types, ONLY : RunOptionsVar
 
     IMPLICIT NONE
 
 CONTAINS
+
+ !  - GetInputDir: It's a routine that provide an input directory to the program given by the user.
+ !    > OUT: InputDir, ierr.
+ !      + InputDir: It's a strig that spicify the directory of the input directory using Unix file 
+ !                  system.
+ !      + ierr: It's an integer that indicate whether an error has occurred during the call.
+ !    > NOTES: The user may provide a direction using "-Input_dir" followed by the direction in Unix
+ !             file system.      
 
 SUBROUTINE GetInputDir(InputDir,ierr)
 
@@ -23,6 +34,16 @@ SUBROUTINE GetInputDir(InputDir,ierr)
     IF (.NOT.InputDirFlg) InputDir="/"
     InputDir=TRIM(InputDir)
 END SUBROUTINE GetInputDir
+
+ !  - GetInputType: It's a routine that provide a set of file types to use as input file.
+ !    > OUT: InputType, ierr.
+ !      + InputType: It's a collection of integer that define the type of input to be used in the
+ !                   program.
+ !      + ierr: It's an integer that indicate whether an error has occurred during the call.
+ !    > NOTES: The user may provide a set of file types tu be used using "-Input_type" followed by
+ !             an integer that define the set:
+ !                  1: Set of files types where the idetificators will be Gmtry=1, Tplgy=1, Cvt=1,
+ !                     and BC=1. See InputType definition for more information.
 
 SUBROUTINE GetInputType(InputType,ierr)
 
@@ -65,6 +86,20 @@ SUBROUTINE GetInputType(InputType,ierr)
 
 END SUBROUTINE GetInputType
 
+ !  - GetInputTypeGmtry: It's a routine that provide a file type to use as input geometry.
+ !    > OUT: InputType, ierr.
+ !      + InputType: It's a collection of integer that define the type of input to be used in the
+ !                   program.
+ !      + ierr: It's an integer that indicate whether an error has occurred during the call.
+ !    > NOTES: The user may provide a set of file types tu be used using "-Input_type" followed by
+ !             an integer that define the set:
+ !                  1: Set of files types where the idetificators will be Gmtry=1, Tplgy=1, Cvt=1,
+ !                     and BC=1. See InputType definition for more information.
+ !             or use "-Input_type_gmtry" followed by an integer that the file type to use as input 
+ !             geometry:
+ !                  1: Defined by Blessent. An example is provided in "../ex/Blessent/in/tsim_USMH.asc"
+ !                  2: Defined by Perez. An exaple is provided in "../ex/Perez/in/sanpck.domnRST"
+
 SUBROUTINE GetInputTypeGmtry(InputType,ierr)
     IMPLICIT NONE
 #include <petsc/finclude/petscsys.h>
@@ -88,6 +123,20 @@ SUBROUTINE GetInputTypeGmtry(InputType,ierr)
     END IF
 
 END SUBROUTINE GetInputTypeGmtry
+
+ !  - GetInputTypeTplgy: It's a routine that provide a file type to use as input topology.
+ !    > OUT: InputType, ierr.
+ !      + InputType: It's a collection of integer that define the type of input to be used in the
+ !                   program.
+ !      + ierr: It's an integer that indicate whether an error has occurred during the call.
+ !    > NOTES: The user may provide a set of file types tu be used using "-Input_type" followed by
+ !             an integer that define the set:
+ !                  1: Set of files types where the idetificators will be Gmtry=1, Tplgy=1, Cvt=1,
+ !                     and BC=1. See InputType definition for more information.
+ !             or use "-Input_type_tplgy" followed by an integer that the file type to use as input 
+ !             topology:
+ !                  1: Defaul topology, it doesn't need a file. Every face of the domain is a 
+ !                     Neumman condition but on the fisrt layer where the bpundary is dirichlet.
 
 SUBROUTINE GetInputTypeTplgy(InputType,ierr)
 
@@ -116,6 +165,22 @@ SUBROUTINE GetInputTypeTplgy(InputType,ierr)
 
 END SUBROUTINE GetInputTypeTplgy
 
+ !  - GetInputTypeCvt: It's a routine that provide a file type to use as input conductivity.
+ !    > OUT: InputType, ierr.
+ !      + InputType: It's a collection of integer that define the type of input to be used in the
+ !                   program.
+ !      + ierr: It's an integer that indicate whether an error has occurred during the call.
+ !    > NOTES: The user may provide a set of file types tu be used using "-Input_type" followed by
+ !             an integer that define the set:
+ !                  1: Set of files types where the idetificators will be Gmtry=1, Tplgy=1, Cvt=1,
+ !                     and BC=1. See InputType definition for more information.
+ !             or use "-Input_type_cvt" followed by an integer that the file type to use as input 
+ !             conductivity:
+ !                  1: It's a pair of files that provide block conductivities by zones and another 
+ !                     one that provide an identificator of zone to each cell. An example is 
+ !                     provided in "../ex/Blessent/in/matrix.mprops" and 
+ !                     "../ex/Blessent/in/tsim_USMH.asc".
+
 SUBROUTINE GetInputTypeCvt(InputType,ierr)
 
     IMPLICIT NONE
@@ -142,6 +207,21 @@ SUBROUTINE GetInputTypeCvt(InputType,ierr)
     END IF
 
 END SUBROUTINE GetInputTypeCvt
+
+ !  - GetInputTypeBC: It's a routine that provide a file type to use as input boundary condition.
+ !    > OUT: InputType, ierr.
+ !      + InputType: It's a collection of integer that define the type of input to be used in the
+ !                   program.
+ !      + ierr: It's an integer that indicate whether an error has occurred during the call.
+ !    > NOTES: The user may provide a set of file types tu be used using "-Input_type" followed by
+ !             an integer that define the set:
+ !                  1: Set of files types where the idetificators will be Gmtry=1, Tplgy=1, Cvt=1,
+ !                     and BC=1. See InputType definition for more information.
+ !             or use "-Input_type_bc" followed by an integer that the file type to use as input 
+ !             boundary condition:
+ !                  1: It's a file that only provide dirichlet condition and their postion on the 
+ !                     grid. An example is provided in 
+ !                     "../Blessent/in/grid_400_400.nch_nprop_list.lateral_boundary".
 
 SUBROUTINE GetInputTypeBC(InputType,ierr)
 
@@ -170,6 +250,15 @@ SUBROUTINE GetInputTypeBC(InputType,ierr)
 
 END SUBROUTINE GetInputTypeBC
 
+ !  - GetInputFileGmtry: It's a routine that provide a file name to open the geometry file in 
+ !                       InputDir.
+ !    > OUT: InputFileGmtry, ierr.
+ !      + InputFileGmtry: It's a strig that spicify file name to open the geometry file in InputDir.
+ !      + ierr: It's an integer that indicate whether an error has occurred during the call.
+ !    > NOTES: The user must provide a file name using "-Input_file_gmtry" followed by geometry file 
+ !             name.
+
+
 SUBROUTINE GetInputFileGmtry(InputFileGmtry,ierr)
 
     IMPLICIT NONE
@@ -193,6 +282,15 @@ SUBROUTINE GetInputFileGmtry(InputFileGmtry,ierr)
     InputFileGmtry=TRIM(InputFileGmtry)
 
 END SUBROUTINE GetInputFileGmtry
+
+ !  - GetInputFileTplgy: It's a routine that provide a file name to open the topology file in 
+ !                       InputDir.
+ !    > OUT: InputFileTplgy, ierr.
+ !      + InputFileTplgy: It's a strig that spicify file name to open the topology file in InputDir.
+ !      + ierr: It's an integer that indicate whether an error has occurred during the call.
+ !    > NOTES: The user may provide a file name using "-Input_file_tplgy" followed by topology file 
+ !             name.
+
 
 SUBROUTINE GetInputFileTplgy(InputFileTplgy,ierr)
 
@@ -218,6 +316,16 @@ SUBROUTINE GetInputFileTplgy(InputFileTplgy,ierr)
 
 END SUBROUTINE GetInputFileTplgy
 
+ !  - GetInputFileCvt: It's a routine that provide a file name to open the conductivity file in 
+ !                       InputDir.
+ !    > OUT: InputFileCvt, ierr.
+ !      + InputFileCvt: It's a strig that spicify file name to open the conductivity file in 
+ !                      InputDir.
+ !      + ierr: It's an integer that indicate whether an error has occurred during the call.
+ !    > NOTES: The user must provide a file name using "-Input_file_cvt" followed by conductiviy
+ !             file name.
+
+
 SUBROUTINE GetInputFileCvt(InputFileCvt,ierr)
 
     IMPLICIT NONE
@@ -242,29 +350,38 @@ SUBROUTINE GetInputFileCvt(InputFileCvt,ierr)
 
 END SUBROUTINE GetInputFileCvt
 
-SUBROUTINE GetInputFileCvtType(InputFileCvtType,ierr)
+ !  - GetInputFileCvtByZones: It's a routine that provide a file name to open the conductivity zones 
+ !                            file in InputDir. 
+ !    > OUT: InputFileCvtByZones, ierr.
+ !      + InputFileCvtByZones: It's a strig that spicify file name to open the conductivity zones 
+ !                             file in InputDir.
+ !      + ierr: It's an integer that indicate whether an error has occurred during the call.
+ !    > NOTES: The user must provide a file name using "-Input_file_" followed by conductiviy zones
+ !             file name.
+
+SUBROUTINE GetInputFileCvtByZones(InputFileCvtByZones,ierr)
 
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
-    CHARACTER(LEN=200),INTENT(OUT)  :: InputFileCvtType
+    CHARACTER(LEN=200),INTENT(OUT)  :: InputFileCvtByZones
 
-    PetscBool                       :: InputFileCvtTypeFlg
+    PetscBool                       :: InputFileCvtByZonesFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_CHARACTER,"-Input_file_cvt_type",    &
-        InputFileCvtType,InputFileCvtTypeFlg,ierr)
+    CALL PetscOptionsGetString(PETSC_NULL_CHARACTER,"-Input_file_cvt_by_zones",    &
+        InputFileCvtByZones,InputFileCvtByZonesFlg,ierr)
 
-    IF (.NOT.InputFileCvtTypeFlg) THEN
+    IF (.NOT.InputFileCvtByZonesFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: Input_file_cvt_type command must be used\n",ierr)
+            & "ERROR: Input_file_cvt_by_zones command must be used\n",ierr)
         STOP
     END IF
 
-    InputFileCvtType=TRIM(InputFileCvtType)
+    InputFileCvtByZones=TRIM(InputFileCvtByZones)
 
-END SUBROUTINE GetInputFileCvtType
+END SUBROUTINE GetInputFileCvtByZones
 
 SUBROUTINE GetInputFileSteadyBC(InputFileSteadyBC,ierr)
 

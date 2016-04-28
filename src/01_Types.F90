@@ -1,7 +1,9 @@
-! ANISOFLOW_Types it's a module that contains the basic data structures to the program.
-
 MODULE ANISOFLOW_Types
+
+! ANISOFLOW_Types it's a module that contains the basic data structures to ANISOFLOWPACK.
+
     IMPLICIT NONE
+
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
 #include <petsc/finclude/petscis.h>
@@ -244,7 +246,7 @@ MODULE ANISOFLOW_Types
 
 CONTAINS
 
- !  - TargetFullTensor is an auxiliar routine to guarantee the Tensor variable symetry.
+ !  - TargetFullTensor: It's an auxiliar routine to guarantee the Tensor variable symetry.
  !    > IN: Tensor
  !      + Tensor: A tensor structure with xx, yy, zz, xy, xz, and yz defined.
  !    > OUT: Tensor
@@ -261,6 +263,12 @@ SUBROUTINE TargetFullTensor(Tens)
     Tens%zy => TargMirrorValue(Tens%yz)
 
 END SUBROUTINE TargetFullTensor
+
+ !  - TargMirrorValue: It's a auxilar function to target a real that will be pointed later.
+ !    > IN: Value
+ !      + Values: It's a real.
+ !    > OUT: Value
+ !      + Values: It's the same input real but now as a target.
 
 FUNCTION TargMirrorValue(Value)
 

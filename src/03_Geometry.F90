@@ -16,6 +16,7 @@ SUBROUTINE GetGeometry(Gmtry,ierr)
     TYPE(Geometry),INTENT(OUT)      :: Gmtry
 
     CALL GetDstrMngr(Gmtry,ierr)
+    ! CALL GetCoordInates(Gmtry,ierr)
     CALL GetTopology(Gmtry,ierr)
 
 END SUBROUTINE GetGeometry
