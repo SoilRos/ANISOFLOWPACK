@@ -90,6 +90,28 @@ SUBROUTINE GetDstrMngr(Gmtry,ierr)
 
 END SUBROUTINE GetDstrMngr
 
+SUBROUTINE GetCoordinates(Gmtry,ierr)
+
+    USE ANISOFLOW_Interface
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    TYPE(Geometry),INTENT(INOUT)    :: Gmtry
+    Vec                             :: Coord
+
+    ! CALL GetInputDir(InputDir,ierr)
+    ! CALL GetInputType(InputType,ierr)
+    ! CALL GetInputFileGmtry(InputFileGmtry,ierr)
+
+    CALL DMGetCoordinates(Gmtry%DstrMngr,Coord,ierr)
+    
+END SUBROUTINE GetCoordinates
+
 SUBROUTINE GetTopology(Gmtry,ierr)
 
     USE ANISOFLOW_Interface
