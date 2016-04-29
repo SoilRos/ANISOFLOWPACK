@@ -1,4 +1,3 @@
-! mpiexec -n 2 ./ANISOFLOW.exe -Input_type 1 -Input_dir ../ex/Blessent/in/ -Input_file_gmtry tsim_USMH.asc -Input_file_cvt matrix.mprops -Input_file_cvt_type tsim_USMH.asc -Input_file_bc_steady grid_400_400.nch_nprop_list.lateral_boundary -Run_options_scheme 2
 PROGRAM ANISOFLOW
     USE ANISOFLOW_Geometry
     USE ANISOFLOW_Properties
