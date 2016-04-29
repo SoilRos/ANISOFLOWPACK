@@ -1,10 +1,19 @@
 MODULE ANISOFLOW_Geometry
 
+! ANISOFLOW_Geometry it's a module that contains routines to manage geometry variables.
+
     USE ANISOFLOW_Types, ONLY : Geometry
 
     IMPLICIT NONE
 
 CONTAINS
+
+ !  - GetGeometry: It's a routine that fill a Geometry data structure with input files provided by
+ !                 the user.
+ !    > OUT: Gmtry, ierr.
+ !      + Gmtry: It's a Geometry data structure filled with input files provided by the user.
+ !      + ierr: It's an integer that indicate whether an error has occurred during the call.
+ !    > NOTES:
 
 SUBROUTINE GetGeometry(Gmtry,ierr)
 
@@ -16,7 +25,7 @@ SUBROUTINE GetGeometry(Gmtry,ierr)
     TYPE(Geometry),INTENT(OUT)      :: Gmtry
 
     CALL GetDstrMngr(Gmtry,ierr)
-    ! CALL GetCoordInates(Gmtry,ierr)
+    ! CALL GetCoordinates(Gmtry,ierr)
     CALL GetTopology(Gmtry,ierr)
 
 END SUBROUTINE GetGeometry

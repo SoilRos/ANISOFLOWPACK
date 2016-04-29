@@ -37,7 +37,7 @@ END SUBROUTINE GetInputDir
 
  !  - GetInputType: It's a routine that provide a set of file types to use as input file.
  !    > OUT: InputType, ierr.
- !      + InputType: It's a collection of integer that define the type of input to be used in the
+ !      + InputType: It's a collection of integers that define the type of input to be used in the
  !                   program.
  !      + ierr: It's an integer that indicate whether an error has occurred during the call.
  !    > NOTES: The user may provide a set of file types tu be used using "-Input_type" followed by
@@ -88,7 +88,7 @@ END SUBROUTINE GetInputType
 
  !  - GetInputTypeGmtry: It's a routine that provide a file type to use as input geometry.
  !    > OUT: InputType, ierr.
- !      + InputType: It's a collection of integer that define the type of input to be used in the
+ !      + InputType: It's a collection of integers that define the type of input to be used in the
  !                   program.
  !      + ierr: It's an integer that indicate whether an error has occurred during the call.
  !    > NOTES: The user may provide a set of file types tu be used using "-Input_type" followed by
@@ -126,7 +126,7 @@ END SUBROUTINE GetInputTypeGmtry
 
  !  - GetInputTypeTplgy: It's a routine that provide a file type to use as input topology.
  !    > OUT: InputType, ierr.
- !      + InputType: It's a collection of integer that define the type of input to be used in the
+ !      + InputType: It's a collection of integers that define the type of input to be used in the
  !                   program.
  !      + ierr: It's an integer that indicate whether an error has occurred during the call.
  !    > NOTES: The user may provide a set of file types tu be used using "-Input_type" followed by
@@ -167,7 +167,7 @@ END SUBROUTINE GetInputTypeTplgy
 
  !  - GetInputTypeCvt: It's a routine that provide a file type to use as input conductivity.
  !    > OUT: InputType, ierr.
- !      + InputType: It's a collection of integer that define the type of input to be used in the
+ !      + InputType: It's a collection of integers that define the type of input to be used in the
  !                   program.
  !      + ierr: It's an integer that indicate whether an error has occurred during the call.
  !    > NOTES: The user may provide a set of file types tu be used using "-Input_type" followed by
@@ -210,7 +210,7 @@ END SUBROUTINE GetInputTypeCvt
 
  !  - GetInputTypeBC: It's a routine that provide a file type to use as input boundary condition.
  !    > OUT: InputType, ierr.
- !      + InputType: It's a collection of integer that define the type of input to be used in the
+ !      + InputType: It's a collection of integers that define the type of input to be used in the
  !                   program.
  !      + ierr: It's an integer that indicate whether an error has occurred during the call.
  !    > NOTES: The user may provide a set of file types tu be used using "-Input_type" followed by
@@ -356,8 +356,8 @@ END SUBROUTINE GetInputFileCvt
  !      + InputFileCvtByZones: It's a strig that spicify file name to open the conductivity zones 
  !                             file in InputDir.
  !      + ierr: It's an integer that indicate whether an error has occurred during the call.
- !    > NOTES: The user must provide a file name using "-Input_file_" followed by conductiviy zones
- !             file name.
+ !    > NOTES: The user must provide a file name using "-Input_file_cvt_by_zones" followed by 
+ !             conductiviy zones file name.
 
 SUBROUTINE GetInputFileCvtByZones(InputFileCvtByZones,ierr)
 
@@ -375,7 +375,7 @@ SUBROUTINE GetInputFileCvtByZones(InputFileCvtByZones,ierr)
 
     IF (.NOT.InputFileCvtByZonesFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: Input_file_cvt_by_zones command must be used\n",ierr)
+            & "ERROR: Input_file_cvt_by_zones command must be used.\n",ierr)
         STOP
     END IF
 
@@ -383,29 +383,48 @@ SUBROUTINE GetInputFileCvtByZones(InputFileCvtByZones,ierr)
 
 END SUBROUTINE GetInputFileCvtByZones
 
-SUBROUTINE GetInputFileSteadyBC(InputFileSteadyBC,ierr)
+ !  - GetInputFileBC: It's a routine that provide a file name to open the boundary condition file
+ !                    in InputDir. 
+ !    > OUT: InputFileBC, ierr.
+ !      + InputFileBC: It's a strig that spicify file name to open the boundary condition file in
+ !                     InputDir.
+ !      + ierr: It's an integer that indicate whether an error has occurred during the call.
+ !    > NOTES: The user must provide a file name using "-Input_file_bc" followed by boundary
+ !             condition file name.
+
+SUBROUTINE GetInputFileBC(InputFileBC,ierr)
 
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
-    CHARACTER(LEN=200),INTENT(OUT)  :: InputFileSteadyBC
+    CHARACTER(LEN=200),INTENT(OUT)  :: InputFileBC
 
-    PetscBool                       :: InputFileSteadyBCFlg
+    PetscBool                       :: InputFileBCFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_CHARACTER,"-Input_file_bc_steady",   &
-        InputFileSteadyBC,InputFileSteadyBCFlg,ierr)
+    CALL PetscOptionsGetString(PETSC_NULL_CHARACTER,"-Input_file_bc",   &
+        InputFileBC,InputFileBCFlg,ierr)
 
-    IF (.NOT.InputFileSteadyBCFlg) THEN
+    IF (.NOT.InputFileBCFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: Input_file_bc_steady command must be used if you want a steady simulation\n",ierr)
+            & "ERROR: Input_file_bc command must be used.\n",ierr)
         STOP
     END IF
 
-    InputFileSteadyBC=TRIM(InputFileSteadyBC)
+    InputFileBC=TRIM(InputFileBC)
 
-END SUBROUTINE GetInputFileSteadyBC
+END SUBROUTINE GetInputFileBC
+
+ !  - GetRunOptions: It's a routine that provide RunOptionVar structure that contain all options 
+ !                   related with the running.
+ !    > OUT: RunOptions, ierr.
+ !      + RunOptions: It's a collection of integers that that contain all options related with the
+ !                    running.
+ !      + ierr: It's an integer that indicate whether an error has occurred during the call.
+ !    > NOTES: The user may provide the running options using "-Run_options_scheme" to set a scheme
+ !             stencil and "-Run_options_time" to set the time option followed by a integer to be 
+ !             used. See RunOptionVar for more information.
 
 SUBROUTINE GetRunOptions(RunOptions,ierr)
 

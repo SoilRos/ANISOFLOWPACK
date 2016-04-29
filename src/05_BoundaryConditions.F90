@@ -62,7 +62,7 @@ SUBROUTINE GetSteadyBCDirichlet(Gmtry,BCFld,ierr)
     TYPE(Geometry),INTENT(IN)               :: Gmtry
     TYPE(BoundaryConditions),INTENT(INOUT)  :: BCFld
 
-    CHARACTER(LEN=200)                      :: InputFileSteadyBC,InputDir,Route
+    CHARACTER(LEN=200)                      :: InputFileBC,InputDir,Route
     TYPE(InputTypeVar)                      :: InputType
     PetscMPIInt                             :: process
     PetscInt                                :: u,i,DirichLen
@@ -74,14 +74,14 @@ SUBROUTINE GetSteadyBCDirichlet(Gmtry,BCFld,ierr)
     ValR=0
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputType(InputType,ierr)
-    CALL GetInputFileSteadyBC(InputFileSteadyBC,ierr)
+    CALL GetInputFileBC(InputFileBC,ierr)
 
     IF (InputType%BC.EQ.1) THEN
 
         CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
         DirichLen=0
         IF (process.EQ.0) THEN
-            Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileSteadyBC))
+            Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileBC))
             OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
             READ(u,*)
             READ(u, '(I10)')DirichLen
@@ -131,7 +131,7 @@ SUBROUTINE GetSteadyBCCauchy(Gmtry,BCFld,ierr)
     TYPE(Geometry),INTENT(IN)               :: Gmtry
     TYPE(BoundaryConditions),INTENT(INOUT)  :: BCFld
 
-    CHARACTER(LEN=200)                      :: InputFileSteadyBC,InputDir,Route
+    CHARACTER(LEN=200)                      :: InputFileBC,InputDir,Route
     TYPE(InputTypeVar)                      :: InputType
     PetscInt                                :: u
 
@@ -139,7 +139,7 @@ SUBROUTINE GetSteadyBCCauchy(Gmtry,BCFld,ierr)
 
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputType(InputType,ierr)
-    CALL GetInputFileSteadyBC(InputFileSteadyBC,ierr)
+    CALL GetInputFileBC(InputFileBC,ierr)
 
     IF (InputType%BC.EQ.1) THEN
 
