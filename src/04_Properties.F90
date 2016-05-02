@@ -56,8 +56,8 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
 
     IF (InputType%Cvt.EQ.1) THEN
 
-        CALL DMCreateGlobalVector(Gmtry%DstrMngr,CvtTypeGlobal,ierr)
-        CALL DMCreateLocalVector(Gmtry%DstrMngr,PptFld%Cvt%CvtType,ierr)
+        CALL DMCreateGlobalVector(Gmtry%DataMngr,CvtTypeGlobal,ierr)
+        CALL DMCreateLocalVector(Gmtry%DataMngr,PptFld%Cvt%CvtType,ierr)
 
         CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
         IF (process.EQ.0) THEN
@@ -86,9 +86,9 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
         CALL VecMax(CvtTypeGlobal,PETSC_NULL_INTEGER,ValR,ierr)
         CvtLen=INT(ValR)
 
-        CALL DMGlobalToLocalBegin(Gmtry%DstrMngr,CvtTypeGlobal,INSERT_VALUES,  &
+        CALL DMGlobalToLocalBegin(Gmtry%DataMngr,CvtTypeGlobal,INSERT_VALUES,  &
             & PptFld%Cvt%CvtType,ierr)
-        CALL DMGlobalToLocalEnd(Gmtry%DstrMngr,CvtTypeGlobal,INSERT_VALUES,    &
+        CALL DMGlobalToLocalEnd(Gmtry%DataMngr,CvtTypeGlobal,INSERT_VALUES,    &
             & PptFld%Cvt%CvtType,ierr)
 
         CALL VecDestroy(CvtTypeGlobal,ierr)
@@ -269,7 +269,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
 
     IF (.NOT.PptFld%Cvt%DefinedByInterface) THEN
         IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4).OR.(Ppt%StnclTplgy(ValI(1)).EQ.5)) THEN ! Only get properties for active blocks
-            CALL DMDAVecGetArrayreadF90(Gmtry%DstrMngr,PptFld%Cvt%CvtType,     &
+            CALL DMDAVecGetArrayreadF90(Gmtry%DataMngr,PptFld%Cvt%CvtType,     &
                 & TmpCvtTypeZone,ierr)
 
             ValI(1)=INT(TmpCvtTypeZone(i,j,k))
@@ -334,7 +334,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
             Ppt%CvtFz%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
             CALL TargetFullTensor(Ppt%CvtFz)
 
-            CALL DMDAVecRestoreArrayReadF90(Gmtry%DstrMngr,PptFld%Cvt%CvtType, &
+            CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%CvtType, &
                 & TmpCvtTypeZone,ierr)
 
         END IF

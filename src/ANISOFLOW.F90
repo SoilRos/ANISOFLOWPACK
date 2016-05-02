@@ -9,7 +9,6 @@ PROGRAM ANISOFLOW
 #include <petsc/finclude/petscvec.h>
 #include <petsc/finclude/petscmat.h>
 
-! #include <petsc/finclude/petscviewer.h>
 
     PetscErrorCode          :: ierr
     TYPE(Geometry)          :: Gmtry
@@ -18,11 +17,10 @@ PROGRAM ANISOFLOW
     Mat                     :: A
     Vec                     :: b,x
 
-    ! PetscViewer             :: H5viewer
-
     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     ! Initialize program
     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
     CALL PetscInitialize(PETSC_COMM_WORLD,ierr)
 
     CALL GetGeometry(Gmtry,ierr)
@@ -30,17 +28,6 @@ PROGRAM ANISOFLOW
     CALL GetBC(Gmtry,BCFld,ierr)
     CALL GetSystem(Gmtry,PptFld,BCFld,1,A,b,x,ierr)
     CALL SolveSystem(Gmtry,BCFld,A,b,x,ierr)
-    
-
-    ! Create the HDF5 viewer
-    ! CALL PetscViewerHDF5Open(PETSC_COMM_WORLD,"ANISOFLOW.h5",FILE_MODE_WRITE,H5viewer,ierr)
-    ! ! CALL PetscViewerSetFromOptions(H5viewer,ierr)
-
-    ! ! Write the H5 file 
-    ! CALL VecView(x,H5viewer,ierr)
-
-    ! ! Close the viewer
-    ! CALL PetscViewerDestroy(H5viewer,ierr)
 
     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     ! Finalize program

@@ -8,12 +8,14 @@ MODULE ANISOFLOW_Geometry
 
 CONTAINS
 
- !  - GetGeometry: It's a routine that fill a Geometry data structure with input files provided by
+ !  - GetGeometry: It's a routine that fills a Geometry data structure with input files provided by
  !                 the user.
  !    > OUT: Gmtry, ierr.
  !      + Gmtry: It's a Geometry data structure filled with input files provided by the user.
- !      + ierr: It's an integer that indicate whether an error has occurred during the call.
- !    > NOTES:
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
+ !    > NOTES: The Geometry is filled in two stages: to create a Data Manager (DataMngr) to control
+ !             information related to a regular rectangular grid, and Topology that describes the
+ !             geometry with identifiers.
 
 SUBROUTINE GetGeometry(Gmtry,ierr)
 
@@ -24,14 +26,20 @@ SUBROUTINE GetGeometry(Gmtry,ierr)
     PetscErrorCode,INTENT(INOUT)    :: ierr
     TYPE(Geometry),INTENT(OUT)      :: Gmtry
 
-    CALL GetDstrMngr(Gmtry,ierr)
-    ! CALL GetCoordinates(Gmtry,ierr)
+    CALL GetDataMngr(Gmtry%DataMngr,ierr)
     CALL GetTopology(Gmtry,ierr)
 
 END SUBROUTINE GetGeometry
 
+ !  - GetDataMngr: It's a routine that creates and fills the information related with a regular 
+ !                 rectangular grid.
+ !    > OUT: DataMngr, ierr.
+ !      + DataMngr: It's a DMDA PETSc structure that stores the information related with a regular 
+ !                 rectangular grid.
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
+ !    > NOTES: The DataMngr takes the size of the domain and assigning a subdomain to each processor.
 
-SUBROUTINE GetDstrMngr(Gmtry,ierr)
+SUBROUTINE GetDataMngr(DataMngr,ierr)
 
     USE ANISOFLOW_Interface
 
@@ -42,7 +50,7 @@ SUBROUTINE GetDstrMngr(Gmtry,ierr)
 #include <petsc/finclude/petscdmda.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
-    TYPE(Geometry),INTENT(INOUT)    :: Gmtry
+    DM,INTENT(INOUT)                :: DataMngr
 
     PetscMPIInt                     :: process
     PetscInt                        :: u,widthG(3)
@@ -53,26 +61,34 @@ SUBROUTINE GetDstrMngr(Gmtry,ierr)
 
     PARAMETER(u=01)
 
+    ! It obtains the route to open a geometry file.
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputType(InputType,ierr)
     CALL GetInputFileGmtry(InputFileGmtry,ierr)
 
+    ! It obtains run options.
     CALL GetRunOptions(RunOptions,ierr)
-
-    ! Information about geometry is read from master processor and sent to slaves
 
     CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
 
+    ! It obtains the global size of the domain on the first processor.
     IF (process.EQ.0) THEN
         Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileGmtry))
         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
+
+        ! It gets the size of the domain depending on the geometry file input.
+        !   1: Defined by Blessent. An example is provided in "../ex/Blessent/in/tsim_USMH.asc"
+        !   2: Defined by Perez. An example is provided in "../ex/Perez/in/sanpck.domnRST"
         IF (InputType%Gmtry.EQ.1) THEN
             READ(u, '((I10),(I10),(I10))')widthG(1),widthG(2),widthG(3)
         END IF
         CLOSE(u)
     END IF
+
+    ! It broadcasts the global size to other processors.
     CALL MPI_Bcast(widthG,3,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
 
+    ! It decides the stencil shape depending on the scheme used.
     IF (RunOptions%Scheme.EQ.1) THEN
         Stencil=DMDA_STENCIL_STAR
     ELSEIF (RunOptions%Scheme.EQ.2) THEN
@@ -83,34 +99,20 @@ SUBROUTINE GetDstrMngr(Gmtry,ierr)
         STOP
     END IF
 
+    ! It creates the Data Manager to Distributed Arrays by the information provided.
     CALL DMDACreate3d(PETSC_COMM_WORLD,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
         & DM_BOUNDARY_GHOSTED,Stencil,widthG(1),widthG(2),widthG(3),     &
         & PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,1,1,PETSC_NULL_INTEGER,       &
-        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,Gmtry%DstrMngr,ierr)
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,DataMngr,ierr)
 
-END SUBROUTINE GetDstrMngr
+END SUBROUTINE GetDataMngr
 
-SUBROUTINE GetCoordinates(Gmtry,ierr)
+ !  - GetTopology: It's a routine that creates and fills the information related to topology.
+ !                 It creates a vector and index sets to describe the geometry. 
+ !    > OUT: Gmtry, ierr.
+ !      + Gmtry: It's a Geometry data structure filled with input files provided by the user.
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
-    USE ANISOFLOW_Interface
-
-    IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-
-    PetscErrorCode,INTENT(INOUT)    :: ierr
-    TYPE(Geometry),INTENT(INOUT)    :: Gmtry
-    Vec                             :: Coord
-
-    ! CALL GetInputDir(InputDir,ierr)
-    ! CALL GetInputType(InputType,ierr)
-    ! CALL GetInputFileGmtry(InputFileGmtry,ierr)
-
-    CALL DMGetCoordinates(Gmtry%DstrMngr,Coord,ierr)
-    
-END SUBROUTINE GetCoordinates
 
 SUBROUTINE GetTopology(Gmtry,ierr)
 
@@ -134,46 +136,62 @@ SUBROUTINE GetTopology(Gmtry,ierr)
     TYPE(InputTypeVar)              :: InputType
     Vec                             :: TmpTplgy
 
+    ! It obtains the route to open a geometry file.
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputType(InputType,ierr)
     CALL GetInputFileGmtry(InputFileGmtry,ierr)
 
-    CALL DMCreateGlobalVector(Gmtry%DstrMngr,TmpTplgy,ierr)
+    ! It obtains a temporal Fortran array where will be filled each topology identifier.
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,TmpTplgy,ierr)
+    CALL DMDAVecGetArrayF90(Gmtry%DataMngr,TmpTplgy,TmpTplgyArray,ierr)
 
-    CALL DMDAVecGetArrayF90(Gmtry%DstrMngr,TmpTplgy,TmpTplgyArray,ierr)
-
-    CALL DMDAGetCorners(Gmtry%DstrMngr,corn(1),corn(2),corn(3),widthL(1),      &
+    CALL DMDAGetCorners(Gmtry%DataMngr,corn(1),corn(2),corn(3),widthL(1),      &
         & widthL(2),widthL(3),ierr)
+
+    ! It quantifies Dirichlet, Neumman, and Cauchy boundary condition on local and global processor.
     BCLenL(:)=0
     BCLenG(:)=0
 
+    ! It fills the temporal Fortran array depending on the topology file input.
+    !   1: Default topology, it doesn't need a file. Every face of the domain is a Neumman
+    !      condition but on the first layer where the boundary is dirichlet.
     IF (InputType%Tplgy.EQ.1) THEN
-        ! Default topology
 
-        CALL DMDAGetInfo(Gmtry%DstrMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+        ! It gets the global size from the geometry data manager.
+        CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
             & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
             & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
             & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
             & PETSC_NULL_INTEGER,ierr)
 
-        ValR=1.0 ! Active
+        ! It assigns active identifier to every cell.
+        ValR=1.0
         TmpTplgyArray(:,:,:)=ValR
+
+        ! It changes the identifier depending on the position.
         DO k=corn(3),corn(3)+widthL(3)-1
             DO j=corn(2),corn(2)+widthL(2)-1
                 DO i=corn(1),corn(1)+widthL(1)-1
-                    ValR=1.0 ! Active
+                    ValR=1.0
+                    ! Dirichlet on the border of the top layer.
+                    ! Neumman on the rest of the domain faces.
+                    ! Active in another case.
                     IF ((k.EQ.0).AND.((i.EQ.0).OR.(i.EQ.(widthG(1)-1)).OR.     &
                     & (j.EQ.0).OR.(j.EQ.(widthG(2)-1)))) THEN
-                        ValR=2.0    ! Dirichlet
+                        Dirichlet
+                        ValR=2.0
                         BCLenL(1)=BCLenL(1)+1
                     ELSEIF ((i.EQ.0).OR.(i.EQ.(widthG(1)-1))) THEN
-                        ValR=3.0    ! Neumann in x
+                        ! Neumann in x
+                        ValR=3.0
                         BCLenL(2)=BCLenL(2)+1
                     ELSEIF ((j.EQ.0).OR.(j.EQ.(widthG(2)-1))) THEN
-                        ValR=4.0    ! Neumann in y
+                        ! Neumann in y
+                        ValR=4.0    
                         BCLenL(2)=BCLenL(2)+1
                     ELSEIF ((k.EQ.0).OR.(k.EQ.(widthG(3)-1))) THEN
-                        ValR=5.0    ! Neumann in z
+                        ! Neumann in z
+                        ValR=5.0    
                         BCLenL(2)=BCLenL(2)+1
                     END IF
                     TmpTplgyArray(i,j,k)=ValR
@@ -182,13 +200,13 @@ SUBROUTINE GetTopology(Gmtry,ierr)
         END DO
     END IF
 
-    CALL DMDAVecRestoreArrayF90(Gmtry%DstrMngr,TmpTplgy,TmpTplgyArray,ierr)
+    ! It moves the temporal Fortran array to a petsc vector, Tplgy, stored in Gmtry.
+    CALL DMDAVecRestoreArrayF90(Gmtry%DataMngr,TmpTplgy,TmpTplgyArray,ierr)
+    CALL DMCreateLocalVector(Gmtry%DataMngr,Gmtry%Tplgy,ierr)
 
-    CALL DMCreateLocalVector(Gmtry%DstrMngr,Gmtry%Tplgy,ierr)
-
-    CALL DMGlobalToLocalBegin(Gmtry%DstrMngr,TmpTplgy,INSERT_VALUES,  &
+    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,TmpTplgy,INSERT_VALUES,  &
         & Gmtry%Tplgy,ierr)
-    CALL DMGlobalToLocalEnd(Gmtry%DstrMngr,TmpTplgy,INSERT_VALUES,    &
+    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,TmpTplgy,INSERT_VALUES,    &
         & Gmtry%Tplgy,ierr)
 
     CALL VecDestroy(TmpTplgy,ierr)
@@ -223,11 +241,11 @@ SUBROUTINE GetTopologyBC(Gmtry,BCLenG,ierr)
     IndexDirich(:)=0
     IndexNeumman(:)=0
     IndexCauchy(:)=0
-    CALL DMCreateGlobalVector(Gmtry%DstrMngr,TmpTplgy,ierr)
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,TmpTplgy,ierr)
 
-    CALL DMLocalToGlobalBegin(Gmtry%DstrMngr,Gmtry%Tplgy,INSERT_VALUES,  &
+    CALL DMLocalToGlobalBegin(Gmtry%DataMngr,Gmtry%Tplgy,INSERT_VALUES,  &
         & TmpTplgy,ierr)
-    CALL DMLocalToGlobalEnd(Gmtry%DstrMngr,Gmtry%Tplgy,INSERT_VALUES,    &
+    CALL DMLocalToGlobalEnd(Gmtry%DataMngr,Gmtry%Tplgy,INSERT_VALUES,    &
         & TmpTplgy,ierr)
 
     CALL VecGetOwnershipRange(TmpTplgy,Low,High,ierr)
@@ -259,9 +277,9 @@ SUBROUTINE GetTopologyBC(Gmtry,BCLenG,ierr)
 
     CALL VecRestoreArrayReadF90(TmpTplgy,TmpTplgyArray,ierr)
 
-    CALL DMGlobalToLocalBegin(Gmtry%DstrMngr,TmpTplgy,INSERT_VALUES,  &
+    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,TmpTplgy,INSERT_VALUES,  &
         & Gmtry%Tplgy,ierr)
-    CALL DMGlobalToLocalEnd(Gmtry%DstrMngr,TmpTplgy,INSERT_VALUES,    &
+    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,TmpTplgy,INSERT_VALUES,    &
         & Gmtry%Tplgy,ierr)
 
     CALL VecDestroy(TmpTplgy,ierr)
@@ -307,7 +325,7 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
 
     CALL GetRunOptions(RunOptions,ierr)
 
-    CALL DMDAVecGetArrayReadF90(Gmtry%DstrMngr,Gmtry%Tplgy,TmpTplgyArray,ierr)
+    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,Gmtry%Tplgy,TmpTplgyArray,ierr)
 
     IF (RunOptions%Scheme.EQ.1) THEN
         ALLOCATE(Ppt%StnclTplgy(7))
@@ -346,7 +364,7 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
             & "ERROR: Run_options_scheme command must be an integer between 1 and 2\n",ierr)
         STOP
     END IF
-    CALL DMDAVecRestoreArrayReadF90(Gmtry%DstrMngr,Gmtry%Tplgy,TmpTplgyArray,ierr)
+    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,Gmtry%Tplgy,TmpTplgyArray,ierr)
 
 END SUBROUTINE GetLocalTopology
 
@@ -362,7 +380,7 @@ SUBROUTINE GeometryDestroy(Gmtry,ierr)
     PetscErrorCode,INTENT(INOUT)    :: ierr
     TYPE(Geometry),INTENT(IN)       :: Gmtry ! INOUT or IN?
 
-    CALL DMDestroy(Gmtry%DstrMngr,ierr)
+    CALL DMDestroy(Gmtry%DataMngr,ierr)
     CALL VecDestroy(Gmtry%Tplgy,ierr)
 
 END SUBROUTINE GeometryDestroy

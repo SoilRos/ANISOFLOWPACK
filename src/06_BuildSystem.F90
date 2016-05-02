@@ -27,7 +27,7 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,Step,A,b,x,ierr)
 
     CALL GetRunOptions(RunOptions,ierr)
 
-    CALL DMCreateGlobalVector(Gmtry%DstrMngr,x,ierr)
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr)
 
     IF (Step.EQ.1) THEN
 
@@ -66,10 +66,10 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,BCFld,Step,A,b,ierr)
     TYPE(StencilVar)                        :: Stencil
     PetscReal                               :: RH
 
-    CALL DMCreateMatrix(Gmtry%DstrMngr,A,ierr)
-    CALL DMCreateGlobalVector(Gmtry%DstrMngr,b,ierr)
+    CALL DMCreateMatrix(Gmtry%DataMngr,A,ierr)
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
 
-    CALL DMDAGetCorners(Gmtry%DstrMngr,corn(1),corn(2),corn(3),widthL(1),      &
+    CALL DMDAGetCorners(Gmtry%DataMngr,corn(1),corn(2),corn(3),widthL(1),      &
             & widthL(2),widthL(3),ierr)
 
     DO k=corn(3),corn(3)+widthL(3)-1
