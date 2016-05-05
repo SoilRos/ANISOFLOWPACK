@@ -27,6 +27,7 @@ SUBROUTINE GetGeometry(Gmtry,ierr)
     TYPE(Geometry),INTENT(OUT)      :: Gmtry
 
     CALL GetDataMngr(Gmtry%DataMngr,ierr)
+    CALL GetGridCoord(Gmtry%DataMngr,Gmtry%x,Gmtry%y,Gmtry%z,ierr)
     CALL GetTopology(Gmtry,ierr)
 
 END SUBROUTINE GetGeometry
@@ -215,6 +216,35 @@ SUBROUTINE GetTopology(Gmtry,ierr)
     CALL GetTopologyBC(Gmtry,BCLenG,ierr)
 
 END SUBROUTINE GetTopology
+
+SUBROUTINE GetGridCoord(DataMngr,x,y,z,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscvec.h90>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    DM,INTENT(IN)                   :: DataMngr
+    Vec,INTENT(OUT)                 :: x,y,z
+
+    ! It obtains the route to open a geometry file.
+    CALL GetInputDir(InputDir,ierr)
+    CALL GetInputType(InputType,ierr)
+    CALL GetInputFileGmtry(InputFileGmtry,ierr)
+
+    ! It gets the global size from the geometry data manager.
+    CALL DMDAGetInfo(DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,ierr)
+
+    
+
+
+END SUBROUTINE GetGridCoord
 
 SUBROUTINE GetTopologyBC(Gmtry,BCLenG,ierr)
 

@@ -21,6 +21,7 @@ MODULE ANISOFLOW_Types
  !          3: Neumman on x boundary condition cell (dh/dx=0).
  !          4: Neumman on y boundary condition cell (dh/dy=0).
  !          5: Neumman on z boundary condition cell (dh/dz=0).
+ !      + x,y,z: It's a PETSc vector that contains the grid coordinates on each direction.
  !      + DirichIS: It's a PETSc index set that has a map between Dirichlet information and vecs 
  !                  produced by DataMngr.
  !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
@@ -33,6 +34,7 @@ MODULE ANISOFLOW_Types
     TYPE Geometry
         DM                              :: DataMngr
         Vec                             :: Tplgy
+        Vec                             :: x,y,z
         IS                              :: DirichIS,CauchyIS,NeummanIS
     END TYPE Geometry
 
