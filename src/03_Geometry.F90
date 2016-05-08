@@ -179,7 +179,7 @@ SUBROUTINE GetTopology(Gmtry,ierr)
                     ! Active in another case.
                     IF ((k.EQ.0).AND.((i.EQ.0).OR.(i.EQ.(widthG(1)-1)).OR.     &
                     & (j.EQ.0).OR.(j.EQ.(widthG(2)-1)))) THEN
-                        Dirichlet
+                        ! Dirichlet
                         ValR=2.0
                         BCLenL(1)=BCLenL(1)+1
                     ELSEIF ((i.EQ.0).OR.(i.EQ.(widthG(1)-1))) THEN
@@ -219,15 +219,22 @@ END SUBROUTINE GetTopology
 
 SUBROUTINE GetGridCoord(DataMngr,x,y,z,ierr)
 
+    USE ANISOFLOW_Interface
+
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscvec.h90>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: x,y,z
+
+    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry,Route
+    TYPE(InputTypeVar)              :: InputType
+    PetscInt                        :: widthG(3),size,i
+    PetscReal                       :: Value
+
 
     ! It obtains the route to open a geometry file.
     CALL GetInputDir(InputDir,ierr)
@@ -241,8 +248,44 @@ SUBROUTINE GetGridCoord(DataMngr,x,y,z,ierr)
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
         & PETSC_NULL_INTEGER,ierr)
 
-    
+    size=widthG(1)+1
+    CALL VecCreateSeq(PETSC_COMM_SELF,size,x,ierr)
 
+    size=widthG(2)+1
+    CALL VecCreateSeq(PETSC_COMM_SELF,size,y,ierr)
+
+    size=widthG(3)+1
+    CALL VecCreateSeq(PETSC_COMM_SELF,size,z,ierr)
+
+    IF (InputType%Gmtry.EQ.1) THEN
+        ! Default DX=DY=DZ=1.0
+        DO i=0,widthG(1)
+            Value=REAL(i)
+            print*,i,Value
+            CALL VecSetValue(x,i,Value,INSERT_VALUES,ierr)
+        END DO
+        DO i=0,widthG(2)
+            Value=REAL(i)
+            CALL VecSetValue(y,i,Value,INSERT_VALUES,ierr)
+        END DO
+        DO i=0,widthG(3)
+            Value=REAL(i)
+            CALL VecSetValue(z,i,Value,INSERT_VALUES,ierr)
+        END DO
+    END IF
+
+    CALL VecAssemblyBegin(x,ierr)
+    CALL VecAssemblyEnd(x,ierr)
+
+    CALL VecAssemblyBegin(y,ierr)
+    CALL VecAssemblyEnd(y,ierr)
+    
+    CALL VecAssemblyBegin(z,ierr)
+    CALL VecAssemblyEnd(z,ierr)
+
+    CALL VecView(x,PETSC_VIEWER_STDOUT_SELF,ierr)
+    CALL VecView(y,PETSC_VIEWER_STDOUT_SELF,ierr)
+    CALL VecView(z,PETSC_VIEWER_STDOUT_SELF,ierr)
 
 END SUBROUTINE GetGridCoord
 
@@ -412,6 +455,9 @@ SUBROUTINE GeometryDestroy(Gmtry,ierr)
 
     CALL DMDestroy(Gmtry%DataMngr,ierr)
     CALL VecDestroy(Gmtry%Tplgy,ierr)
+    CALL VecDestroy(Gmtry%x,ierr)
+    CALL VecDestroy(Gmtry%y,ierr)
+    CALL VecDestroy(Gmtry%z,ierr)
 
 END SUBROUTINE GeometryDestroy
 

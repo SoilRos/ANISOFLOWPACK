@@ -216,8 +216,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         IF (Ppt%StnclTplgy(1).EQ.1) THEN         ! Active
             Stencil%Values(1)=Ppt%dy*Ppt%dz*Ppt%CvtBy%yz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                             &+Ppt%dx*Ppt%dy*Ppt%CvtBz%zy/(Ppt%dyF+2*Ppt%dy+Ppt%dyB)
-        ELSEIF (Ppt%StnclTplgy(1).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(1)=one
         END IF
 
         ! 2-O Bloque izquierdo-centro-superior
@@ -231,8 +229,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         IF (Ppt%StnclTplgy(2).EQ.1) THEN         ! Active
             Stencil%Values(2)=Ppt%dy*Ppt%dz*Ppt%CvtBx%xz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                             &+Ppt%dx*Ppt%dy*Ppt%CvtBz%zx/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)
-        ELSEIF (Ppt%StnclTplgy(2).EQ.2) THEN     ! Diriclet
-            Stencil%Values(2)=one
         END IF
 
         ! 3-J Bloque centro-centro-superior
@@ -247,10 +243,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
             Stencil%Values(3)=Ppt%dy*Ppt%dz*(Ppt%CvtBx%xz-Ppt%CvtFx%xz)/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                             &+Ppt%dx*Ppt%dz*(Ppt%CvtBy%yz-Ppt%CvtFy%yz)/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                             &+Ppt%dx*Ppt%dy*2*Ppt%CvtBz%zz/(Ppt%dzB+Ppt%dz)
-        ELSEIF (Ppt%StnclTplgy(3).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(3)=one
-        ! ELSEIF (Ppt%StnclTplgy(3).EQ.5) THEN     ! Neumman z
-        !     Stencil%Values(3)=one
         END IF                   
 
         ! 4-H Bloque derecho-centro-superior
@@ -264,8 +256,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         IF (Ppt%StnclTplgy(4).EQ.1) THEN         ! Active
             Stencil%Values(4)=Ppt%dy*Ppt%dz*(-1)*Ppt%CvtFx%xz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                             &+Ppt%dx*Ppt%dy*(-1)*Ppt%CvtBz%zx/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)
-        ELSEIF (Ppt%StnclTplgy(4).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(4)=one
         END IF
 
         ! 5-Q Bloque centro-frontal-superior
@@ -279,8 +269,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         IF (Ppt%StnclTplgy(5).EQ.1) THEN         ! Active
             Stencil%Values(5)=Ppt%dy*Ppt%dz*(-1)*Ppt%CvtFy%yz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                             &+Ppt%dx*Ppt%dy*(-1)*Ppt%CvtBz%zy/(Ppt%dyF+2*Ppt%dy+Ppt%dyB)
-        ELSEIF (Ppt%StnclTplgy(5).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(5)=one
         END IF
 
         ! 6-M Bloque izquierdo-detras-centro
@@ -294,8 +282,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         IF (Ppt%StnclTplgy(6).EQ.1) THEN         ! Active
             Stencil%Values(6)=Ppt%dy*Ppt%dz*Ppt%CvtBx%xy/(Ppt%dyF+2*Ppt%dy+Ppt%dyB) &
                             &+Ppt%dx*Ppt%dz*Ppt%CvtBy%yx/(Ppt%dxF+2*Ppt%dxB+Ppt%dx) ! subindices del diferencial malos en el paper(?)
-        ELSEIF (Ppt%StnclTplgy(6).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(6)=one
         END IF
 
         ! 7-F Bloque centro-detras-centro
@@ -310,10 +296,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
             Stencil%Values(7)=Ppt%dy*Ppt%dz* (Ppt%CvtBx%xy-Ppt%CvtFx%xy)/(Ppt%dyF+2*Ppt%dy+Ppt%dyB)  &
                             &+Ppt%dx*Ppt%dz*2*Ppt%CvtBy%yy              /(Ppt%dy+Ppt%dyB)            &
                             &+Ppt%dx*Ppt%dy* (Ppt%CvtBz%zy-Ppt%CvtFz%zy)/(Ppt%dyF+2*Ppt%dy+Ppt%dyB) 
-        ELSEIF (Ppt%StnclTplgy(7).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(7)=one
-        ! ELSEIF (Ppt%StnclTplgy(7).EQ.4) THEN     ! Neumman y
-        !     Stencil%Values(7)=one
         END IF      
 
         ! 8-D Bloque derecho-detras-centro
@@ -327,8 +309,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         IF (Ppt%StnclTplgy(8).EQ.1) THEN         ! Active
             Stencil%Values(8)=Ppt%dy*Ppt%dz*(-1)*Ppt%CvtFx%xy/(Ppt%dyF+2*Ppt%dyB+Ppt%dy) & ! subindices del diferencial malos en el paper(?)
                             &+Ppt%dx*Ppt%dz*(-1)*Ppt%CvtBy%yx/(Ppt%dxF+2*Ppt%dxB+Ppt%dx)   ! subindices del diferencial malos en el paper(?)
-        ELSEIF (Ppt%StnclTplgy(8).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(8)=one
         END IF
 
         ! 9-K Bloque izquierdo-centro-centro
@@ -343,10 +323,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
             Stencil%Values(9)=Ppt%dy*Ppt%dz*2*Ppt%CvtBx%xx              /(Ppt%dx+Ppt%dxB)            &
                             &+Ppt%dx*Ppt%dz* (Ppt%CvtBy%yx-Ppt%CvtFy%yx)/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)  &
                             &+Ppt%dx*Ppt%dy* (Ppt%CvtBy%zx-Ppt%CvtFy%zx)/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)
-        ELSEIF (Ppt%StnclTplgy(9).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(9)=one
-        ! ELSEIF (Ppt%StnclTplgy(9).EQ.3) THEN     ! Neumman x
-        !     Stencil%Values(9)=one
         END IF      
 
         ! 10-B Bloque centro-centro-centro
@@ -366,10 +342,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
             Stencil%Values(11)=Ppt%dy*Ppt%dz*2*Ppt%CvtFx%xx             /(Ppt%dxF+Ppt%dx)            &
                             &+Ppt%dx*Ppt%dz* (Ppt%CvtFy%yx-Ppt%CvtBy%yx)/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)  &
                             &+Ppt%dx*Ppt%dy* (Ppt%CvtFz%zx-Ppt%CvtBz%zx)/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)
-        ELSEIF (Ppt%StnclTplgy(11).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(11)=one
-        ! ELSEIF (Ppt%StnclTplgy(11).EQ.3) THEN     ! Neumman x
-        !     Stencil%Values(11)=one
         END IF      
 
         ! 12-L Bloque izquierdo-frontal-centro
@@ -383,8 +355,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         IF (Ppt%StnclTplgy(12).EQ.1) THEN         ! Active
             Stencil%Values(12)=Ppt%dy*Ppt%dz*(-1)*Ppt%CvtBx%xy/(Ppt%dyF+2*Ppt%dy+Ppt%dyB) &
                              &+Ppt%dx*Ppt%dz*(-1)*Ppt%CvtFy%yx/(Ppt%dxF+2*Ppt%dxB+Ppt%dx)   ! subindices del diferencial malos en el paper(?)
-        ELSEIF (Ppt%StnclTplgy(12).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(12)=one
         END IF      
 
         ! 13-E Bloque centro-frontal-centro
@@ -399,10 +369,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
             Stencil%Values(13)=Ppt%dy*Ppt%dz* (Ppt%CvtFx%xy-Ppt%CvtBx%xy)/(Ppt%dyF+2*Ppt%dy+Ppt%dyB)  &
                              &+Ppt%dx*Ppt%dz*2*Ppt%CvtFy%yy              /(Ppt%dyF+Ppt%dy)            &
                              &+Ppt%dx*Ppt%dy* (Ppt%CvtFz%zy-Ppt%CvtBz%zy)/(Ppt%dyF+2*Ppt%dy+Ppt%dyB) 
-        ELSEIF (Ppt%StnclTplgy(13).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(13)=one
-        ! ELSEIF (Ppt%StnclTplgy(13).EQ.4) THEN     ! Neumman y
-        !     Stencil%Values(13)=one
         END IF
 
         ! 14-C Bloque derecho-frontal-centro
@@ -416,8 +382,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         IF (Ppt%StnclTplgy(14).EQ.1) THEN         ! Active
             Stencil%Values(14)=Ppt%dy*Ppt%dz*Ppt%CvtFx%xy/(Ppt%dyF+2*Ppt%dyB+Ppt%dy) & ! subindices del diferencial malos en el paper(?)
                              &+Ppt%dx*Ppt%dz*Ppt%CvtFy%yx/(Ppt%dxF+2*Ppt%dxB+Ppt%dx)   ! subindices del diferencial malos en el paper(?)
-        ELSEIF (Ppt%StnclTplgy(14).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(14)=one
         END IF
 
         ! 15-R Bloque centro-detras-inferior
@@ -431,8 +395,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         IF (Ppt%StnclTplgy(15).EQ.1) THEN         ! Active
             Stencil%Values(15)=Ppt%dy*Ppt%dz*(-1)*Ppt%CvtBy%yz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                              &+Ppt%dx*Ppt%dy*(-1)*Ppt%CvtFz%zy/(Ppt%dyF+2*Ppt%dy+Ppt%dyB)
-        ELSEIF (Ppt%StnclTplgy(15).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(15)=one
         END IF
 
         ! 16-N Bloque izquierdo-centro-inferior
@@ -446,8 +408,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         IF (Ppt%StnclTplgy(16).EQ.1) THEN         ! Active
             Stencil%Values(16)=Ppt%dy*Ppt%dz*(-1)*Ppt%CvtBx%xz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                              &+Ppt%dx*Ppt%dy*(-1)*Ppt%CvtFz%zx/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)
-        ELSEIF (Ppt%StnclTplgy(16).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(16)=one
         END IF
 
         ! 17-I Bloque centro-centro-inferior
@@ -462,10 +422,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
             Stencil%Values(17)=Ppt%dy*Ppt%dz*(Ppt%CvtFx%xz-Ppt%CvtBx%xz)/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                              &+Ppt%dx*Ppt%dz*(Ppt%CvtFy%yz-Ppt%CvtBy%yz)/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                              &+Ppt%dx*Ppt%dy*2*Ppt%CvtFz%zz/(Ppt%dzF+Ppt%dz)
-        ELSEIF (Ppt%StnclTplgy(17).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(17)=one
-        ! ELSEIF (Ppt%StnclTplgy(17).EQ.5) THEN     ! Neumman z
-        !     Stencil%Values(17)=one
         END IF
 
         ! 18-G Bloque derecho-centro-inferior
@@ -479,8 +435,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         IF (Ppt%StnclTplgy(18).EQ.1) THEN         ! Active
             Stencil%Values(18)=Ppt%dy*Ppt%dz*Ppt%CvtFx%xz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                              &+Ppt%dx*Ppt%dy*Ppt%CvtFz%zx/(Ppt%dxF+2*Ppt%dx+Ppt%dxB)
-        ELSEIF (Ppt%StnclTplgy(18).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(18)=one
         END IF
 
         ! 19-P Bloque centro-frontal-inferior
@@ -494,8 +448,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         IF (Ppt%StnclTplgy(19).EQ.1) THEN         ! Active
             Stencil%Values(19)=Ppt%dy*Ppt%dz*Ppt%CvtFy%yz/(Ppt%dzF+2*Ppt%dz+Ppt%dzB) &
                              &+Ppt%dx*Ppt%dy*Ppt%CvtFz%zy/(Ppt%dyF+2*Ppt%dy+Ppt%dyB)
-        ELSEIF (Ppt%StnclTplgy(19).EQ.2) THEN     ! Dirichlet
-            Stencil%Values(19)=one
         END IF
 
     ! If the current cell is an Neumman x cell:
