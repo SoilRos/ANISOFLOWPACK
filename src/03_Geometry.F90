@@ -28,7 +28,7 @@ SUBROUTINE GetGeometry(Gmtry,ierr)
 
     CALL GetDataMngr(Gmtry%DataMngr,ierr)
     CALL GetGridCoord(Gmtry%DataMngr,Gmtry%x,Gmtry%y,Gmtry%z,ierr)
-    CALL GetTopology(Gmtry,ierr)
+    CALL GetTopology(Gmtry%DataMngr,Gmtry%Tplgy,Gmtry%DirichIS,Gmtry%NeummanIS,Gmtry%CauchyIS,ierr)
 
 END SUBROUTINE GetGeometry
 
@@ -108,115 +108,6 @@ SUBROUTINE GetDataMngr(DataMngr,ierr)
 
 END SUBROUTINE GetDataMngr
 
- !  - GetTopology: It's a routine that creates and fills the information related to topology.
- !                 It creates a vector and index sets to describe the geometry. 
- !    > OUT: Gmtry, ierr.
- !      + Gmtry: It's a Geometry data structure filled with input files provided by the user.
- !      + ierr: It's an integer that indicates whether an error has occurred during the call.
-
-
-SUBROUTINE GetTopology(Gmtry,ierr)
-
-    USE ANISOFLOW_Interface
-
-    IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
-
-    PetscErrorCode,INTENT(INOUT)    :: ierr
-    TYPE(Geometry),INTENT(INOUT)    :: Gmtry
-
-    PetscReal,POINTER               :: TmpTplgyArray(:,:,:)
-    PetscReal                       :: ValR
-    PetscInt                        :: i,j,k,widthL(3),widthG(3),corn(3),BCLenL(3),BCLenG(3)
-    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry,Route
-    TYPE(InputTypeVar)              :: InputType
-    Vec                             :: TmpTplgy
-
-    ! It obtains the route to open a geometry file.
-    CALL GetInputDir(InputDir,ierr)
-    CALL GetInputType(InputType,ierr)
-    CALL GetInputFileGmtry(InputFileGmtry,ierr)
-
-    ! It obtains a temporal Fortran array where will be filled each topology identifier.
-    CALL DMCreateGlobalVector(Gmtry%DataMngr,TmpTplgy,ierr)
-    CALL DMDAVecGetArrayF90(Gmtry%DataMngr,TmpTplgy,TmpTplgyArray,ierr)
-
-    CALL DMDAGetCorners(Gmtry%DataMngr,corn(1),corn(2),corn(3),widthL(1),      &
-        & widthL(2),widthL(3),ierr)
-
-    ! It quantifies Dirichlet, Neumman, and Cauchy boundary condition on local and global processor.
-    BCLenL(:)=0
-    BCLenG(:)=0
-
-    ! It fills the temporal Fortran array depending on the topology file input.
-    !   1: Default topology, it doesn't need a file. Every face of the domain is a Neumman
-    !      condition but on the first layer where the boundary is dirichlet.
-    IF (InputType%Tplgy.EQ.1) THEN
-
-        ! It gets the global size from the geometry data manager.
-        CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
-            & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
-            & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
-            & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
-            & PETSC_NULL_INTEGER,ierr)
-
-        ! It assigns active identifier to every cell.
-        ValR=1.0
-        TmpTplgyArray(:,:,:)=ValR
-
-        ! It changes the identifier depending on the position.
-        DO k=corn(3),corn(3)+widthL(3)-1
-            DO j=corn(2),corn(2)+widthL(2)-1
-                DO i=corn(1),corn(1)+widthL(1)-1
-                    ValR=1.0
-                    ! Dirichlet on the border of the top layer.
-                    ! Neumman on the rest of the domain faces.
-                    ! Active in another case.
-                    IF ((k.EQ.0).AND.((i.EQ.0).OR.(i.EQ.(widthG(1)-1)).OR.     &
-                    & (j.EQ.0).OR.(j.EQ.(widthG(2)-1)))) THEN
-                        ! Dirichlet
-                        ValR=2.0
-                        BCLenL(1)=BCLenL(1)+1
-                    ELSEIF ((i.EQ.0).OR.(i.EQ.(widthG(1)-1))) THEN
-                        ! Neumann in x
-                        ValR=3.0
-                        BCLenL(2)=BCLenL(2)+1
-                    ELSEIF ((j.EQ.0).OR.(j.EQ.(widthG(2)-1))) THEN
-                        ! Neumann in y
-                        ValR=4.0    
-                        BCLenL(2)=BCLenL(2)+1
-                    ELSEIF ((k.EQ.0).OR.(k.EQ.(widthG(3)-1))) THEN
-                        ! Neumann in z
-                        ValR=5.0    
-                        BCLenL(2)=BCLenL(2)+1
-                    END IF
-                    TmpTplgyArray(i,j,k)=ValR
-                END DO
-            END DO
-        END DO
-    END IF
-
-    ! It moves the temporal Fortran array to a petsc vector, Tplgy, stored in Gmtry.
-    CALL DMDAVecRestoreArrayF90(Gmtry%DataMngr,TmpTplgy,TmpTplgyArray,ierr)
-    CALL DMCreateLocalVector(Gmtry%DataMngr,Gmtry%Tplgy,ierr)
-
-    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,TmpTplgy,INSERT_VALUES,  &
-        & Gmtry%Tplgy,ierr)
-    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,TmpTplgy,INSERT_VALUES,    &
-        & Gmtry%Tplgy,ierr)
-
-    CALL VecDestroy(TmpTplgy,ierr)
-
-    CALL MPI_ALLREDUCE(BCLenL,BCLenG,3,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
-    CALL GetTopologyBC(Gmtry,BCLenG,ierr)
-
-END SUBROUTINE GetTopology
-
 SUBROUTINE GetGridCoord(DataMngr,x,y,z,ierr)
 
     USE ANISOFLOW_Interface
@@ -261,7 +152,6 @@ SUBROUTINE GetGridCoord(DataMngr,x,y,z,ierr)
         ! Default DX=DY=DZ=1.0
         DO i=0,widthG(1)
             Value=REAL(i)
-            print*,i,Value
             CALL VecSetValue(x,i,Value,INSERT_VALUES,ierr)
         END DO
         DO i=0,widthG(2)
@@ -283,13 +173,107 @@ SUBROUTINE GetGridCoord(DataMngr,x,y,z,ierr)
     CALL VecAssemblyBegin(z,ierr)
     CALL VecAssemblyEnd(z,ierr)
 
-    CALL VecView(x,PETSC_VIEWER_STDOUT_SELF,ierr)
-    CALL VecView(y,PETSC_VIEWER_STDOUT_SELF,ierr)
-    CALL VecView(z,PETSC_VIEWER_STDOUT_SELF,ierr)
-
 END SUBROUTINE GetGridCoord
 
-SUBROUTINE GetTopologyBC(Gmtry,BCLenG,ierr)
+ !  - GetTopology: It's a routine that creates and fills the information related to topology.
+ !                 It creates a vector and index sets to describe the geometry. 
+ !    > OUT: Gmtry, ierr.
+ !      + Gmtry: It's a Geometry data structure filled with input files provided by the user.
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
+
+
+SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,ierr)
+
+    USE ANISOFLOW_Interface
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
+#include <petsc/finclude/petscdmda.h90>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    DM,INTENT(IN)                   :: DataMngr
+    Vec,INTENT(OUT)                 :: Tplgy
+    IS,INTENT(OUT)                  :: DirichIS,NeummanIS,CauchyIS
+
+    PetscReal,POINTER               :: TmpTplgyArray(:,:,:)
+    PetscReal                       :: ValR
+    PetscInt                        :: i,j,k,widthL(3),widthG(3),corn(3),BCLenL(3),BCLenG(3)
+    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry,Route
+    TYPE(InputTypeVar)              :: InputType
+    Vec                             :: TmpTplgy
+
+    ! It obtains the route to open a geometry file.
+    CALL GetInputDir(InputDir,ierr)
+    CALL GetInputType(InputType,ierr)
+    CALL GetInputFileGmtry(InputFileGmtry,ierr)
+
+    ! It obtains a temporal Fortran array where will be filled each topology identifier.
+    CALL DMCreateGlobalVector(DataMngr,TmpTplgy,ierr)
+    CALL DMDAVecGetArrayF90(DataMngr,TmpTplgy,TmpTplgyArray,ierr)
+
+    ! It quantifies Dirichlet, Neumman, and Cauchy boundary condition on local and global processor.
+    BCLenL(:)=0
+    BCLenG(:)=0
+
+    ! It fills the temporal Fortran array depending on the topology file input.
+    !   1: Default topology, it doesn't need a file. The first border layer is Dirichlet, active in other case
+    IF (InputType%Tplgy.EQ.1) THEN
+
+        ! It gets the global size from the geometry data manager.
+        CALL DMDAGetInfo(DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+            & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+            & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+            & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+            & PETSC_NULL_INTEGER,ierr)
+
+        CALL DMDAGetCorners(DataMngr,corn(1),corn(2),corn(3),widthL(1),  &
+            & widthL(2),widthL(3),ierr)
+
+        ! It assigns active identifier to every cell.
+        ValR=1.0
+        TmpTplgyArray(:,:,:)=ValR
+
+        ! It changes the identifier depending on the position.
+        DO k=corn(3),corn(3)+widthL(3)-1
+            DO j=corn(2),corn(2)+widthL(2)-1
+                DO i=corn(1),corn(1)+widthL(1)-1
+                    ValR=1.0
+                    ! Dirichlet on the border of the top layer.
+                    ! Active in nother case.
+                    IF ((k.EQ.0).AND.((i.EQ.0).OR.(i.EQ.(widthG(1)-1)).OR.     &
+                    & (j.EQ.0).OR.(j.EQ.(widthG(2)-1)))) THEN
+                        ! Dirichlet
+                        ValR=2.0
+                        BCLenL(1)=BCLenL(1)+1
+                    END IF
+                    TmpTplgyArray(i,j,k)=ValR
+                END DO
+            END DO
+        END DO
+    END IF
+
+    ! It moves the temporal Fortran array to a petsc vector, Tplgy, stored in Gmtry.
+    CALL DMDAVecRestoreArrayF90(DataMngr,TmpTplgy,TmpTplgyArray,ierr)
+    CALL DMCreateLocalVector(DataMngr,Tplgy,ierr)
+
+    CALL DMGlobalToLocalBegin(DataMngr,TmpTplgy,INSERT_VALUES,  &
+        & Tplgy,ierr)
+    CALL DMGlobalToLocalEnd(DataMngr,TmpTplgy,INSERT_VALUES,    &
+        & Tplgy,ierr)
+
+    CALL VecDestroy(TmpTplgy,ierr)
+
+    CALL MPI_ALLREDUCE(BCLenL,BCLenG,3,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
+
+    CALL GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,ierr)
+
+END SUBROUTINE GetTopology
+
+SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,ierr)
 
     IMPLICIT NONE
 
@@ -299,8 +283,10 @@ SUBROUTINE GetTopologyBC(Gmtry,BCLenG,ierr)
 #include <petsc/finclude/petscvec.h90>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
-    TYPE(Geometry),INTENT(INOUT)    :: Gmtry
+    DM,INTENT(IN)                   :: DataMngr
+    Vec,INTENT(IN)                  :: Tplgy
     PetscInt,INTENT(IN)             :: BCLenG(3)
+    IS,INTENT(OUT)                  :: DirichIS,NeummanIS,CauchyIS
 
     PetscInt,ALLOCATABLE            :: IndexDirich(:),IndexNeumman(:)
     PetscInt,ALLOCATABLE            :: IndexCauchy(:)
@@ -314,11 +300,11 @@ SUBROUTINE GetTopologyBC(Gmtry,BCLenG,ierr)
     IndexDirich(:)=0
     IndexNeumman(:)=0
     IndexCauchy(:)=0
-    CALL DMCreateGlobalVector(Gmtry%DataMngr,TmpTplgy,ierr)
+    CALL DMCreateGlobalVector(DataMngr,TmpTplgy,ierr)
 
-    CALL DMLocalToGlobalBegin(Gmtry%DataMngr,Gmtry%Tplgy,INSERT_VALUES,  &
+    CALL DMLocalToGlobalBegin(DataMngr,Tplgy,INSERT_VALUES,  &
         & TmpTplgy,ierr)
-    CALL DMLocalToGlobalEnd(Gmtry%DataMngr,Gmtry%Tplgy,INSERT_VALUES,    &
+    CALL DMLocalToGlobalEnd(DataMngr,Tplgy,INSERT_VALUES,    &
         & TmpTplgy,ierr)
 
     CALL VecGetOwnershipRange(TmpTplgy,Low,High,ierr)
@@ -350,20 +336,19 @@ SUBROUTINE GetTopologyBC(Gmtry,BCLenG,ierr)
 
     CALL VecRestoreArrayReadF90(TmpTplgy,TmpTplgyArray,ierr)
 
-    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,TmpTplgy,INSERT_VALUES,  &
-        & Gmtry%Tplgy,ierr)
-    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,TmpTplgy,INSERT_VALUES,    &
-        & Gmtry%Tplgy,ierr)
+    CALL DMGlobalToLocalBegin(DataMngr,TmpTplgy,INSERT_VALUES,  &
+        & Tplgy,ierr)
+    CALL DMGlobalToLocalEnd(DataMngr,TmpTplgy,INSERT_VALUES,    &
+        & Tplgy,ierr)
 
     CALL VecDestroy(TmpTplgy,ierr)
 
     CALL ISCreateGeneral(MPI_COMM_WORLD,BCLenG(1),IndexDirich,                 &
-        & PETSC_COPY_VALUES,Gmtry%DirichIS,ierr)
+        & PETSC_COPY_VALUES,DirichIS,ierr)
     CALL ISCreateGeneral(PETSC_COMM_WORLD,BCLenG(2),IndexNeumman,              &
-        & PETSC_COPY_VALUES,Gmtry%NeummanIS,ierr)
+        & PETSC_COPY_VALUES,NeummanIS,ierr)
     CALL ISCreateGeneral(PETSC_COMM_WORLD,BCLenG(3),IndexCauchy,               &
-        & PETSC_COPY_VALUES,Gmtry%CauchyIS,ierr)
-
+        & PETSC_COPY_VALUES,CauchyIS,ierr)
 
     DEALLOCATE(IndexDirich)
     DEALLOCATE(IndexNeumman)
