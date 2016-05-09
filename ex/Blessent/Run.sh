@@ -13,6 +13,6 @@ InputFileCvt=matrix.mprops									# Conductivity file
 InputFileCvtByZones=tsim_USMH.asc 							# Conductivity by zones file
 InputFileBC=grid_400_400.nch_nprop_list.lateral_boundary 	# Boundary Condition file
 
-Scheme=2
+Scheme=2 													# Scheme type used 
 
 mpiexec -n $np ./$ProgramDir$ProgramName -Input_type $InputType -Input_Dir $InputDir -Input_file_gmtry $InputFileGmtry -Input_file_cvt $InputFileCvt -Input_file_cvt_by_zones $InputFileCvtByZones -Input_file_bc $InputFileBC -Run_options_scheme $Scheme

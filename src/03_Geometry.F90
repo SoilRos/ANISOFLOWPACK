@@ -365,6 +365,7 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
 
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscvec.h90>
 #include <petsc/finclude/petscdm.h>
 #include <petsc/finclude/petscdmda.h>
 #include <petsc/finclude/petscdmda.h90>
@@ -373,13 +374,38 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
     TYPE(Property),INTENT(INOUT)        :: Ppt
     PetscErrorCode,INTENT(INOUT)        :: ierr
 
-    PetscReal,POINTER                   :: TmpTplgyArray(:,:,:)
-    PetscInt                            :: i,j,k
+    PetscReal,POINTER                   :: TmpTplgyArray(:,:,:),xArray(:),yArray(:),zArray(:)
+    PetscInt                            :: i,j,k,xSize,ySize,zSize
     TYPE(RunOptionsVar)                 :: RunOptions
 
     i=Ppt%Pstn%i
     j=Ppt%Pstn%j
     k=Ppt%Pstn%k
+
+    CALL VecGetSize(Gmtry%x,xSize,ierr)
+    CALL VecGetArrayReadF90(Gmtry%x,xArray,ierr)
+    Ppt%dxB=xArray(i+1)-xArray(i)
+    Ppt%dx =xArray(i+2)-xArray(i+1)
+    Ppt%dxF=xArray(i+3)-xArray(i+2)
+    CALL VecRestoreArrayReadF90(Gmtry%x,xArray,ierr)
+
+
+    CALL VecGetSize(Gmtry%y,ySize,ierr)
+    CALL VecGetArrayReadF90(Gmtry%y,yArray,ierr)
+    Ppt%dyB=yArray(j+1)-yArray(j)
+    Ppt%dy =yArray(j+2)-yArray(j+1)
+    Ppt%dyF=yArray(j+3)-yArray(j+2)
+    CALL VecRestoreArrayReadF90(Gmtry%y,yArray,ierr)
+
+
+    CALL VecGetSize(Gmtry%z,zSize,ierr)
+    CALL VecGetArrayReadF90(Gmtry%z,zArray,ierr)
+    Ppt%dzB=zArray(k+1)-zArray(k)
+    Ppt%dz =zArray(k+2)-zArray(k+1)
+    Ppt%dzF=zArray(k+3)-zArray(k+2)
+    CALL VecRestoreArrayReadF90(Gmtry%z,zArray,ierr)
+
+    ! Revisar los diferenciales de x,y,z que se usan como dividendo, si los valores son cercanos a cero puede haber problemas!!!!
 
     CALL GetRunOptions(RunOptions,ierr)
 

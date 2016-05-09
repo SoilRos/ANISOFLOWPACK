@@ -29,7 +29,7 @@ SUBROUTINE SolveSystem(Gmtry,BCFld,A,b,x,ierr)
     IF (RunOptions%Time) THEN
 
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
-            & "ERROR: Transitory not implemented yet, please use steady simulation for now",ierr)
+            & "ERROR: Transitory is not implemented yet, please use steady simulation for now",ierr)
         STOP
 
     ELSE

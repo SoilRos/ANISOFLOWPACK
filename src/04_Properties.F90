@@ -204,16 +204,6 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
     j=Ppt%Pstn%j
     k=Ppt%Pstn%k
 
-    Ppt%dx=1  !TO DO: Coordenate sistem on DM
-    Ppt%dy=1  !TO DO: Coordenate sistem on DM
-    Ppt%dz=1  !TO DO: Coordenate sistem on DM
-    Ppt%dxB=1 !TO DO: Coordenate sistem on DM
-    Ppt%dxF=1 !TO DO: Coordenate sistem on DM
-    Ppt%dyB=1 !TO DO: Coordenate sistem on DM
-    Ppt%dyF=1 !TO DO: Coordenate sistem on DM
-    Ppt%dzB=1 !TO DO: Coordenate sistem on DM
-    Ppt%dzF=1 !TO DO: Coordenate sistem on DM
-
     Ppt%CvtBx%xx=0.0
     Ppt%CvtBx%xy=0.0
     Ppt%CvtBx%xz=0.0
