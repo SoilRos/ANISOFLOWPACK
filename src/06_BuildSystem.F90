@@ -442,15 +442,10 @@ SUBROUTINE ApplyDirichlet(Gmtry,BCFld,TimeZone,b,ierr)
     PetscInt                                :: DirichSize
     PetscReal                               :: one=1.0
 
-<<<<<<< HEAD
-    CALL VecGetSize(BCFld%Dirich(TimeZone),Size1,ierr)
+
+    CALL VecGetSize(BCFld%Dirich(TimeZone),DirichSize,ierr)
     CALL VecDuplicate(BCFld%Dirich(TimeZone),VecTmp,ierr)
     CALL VecCopy(BCFld%Dirich(TimeZone),VecTmp,ierr)
-=======
-    CALL VecGetSize(BCFld%Step(Step)%Dirich,DirichSize,ierr)
-    CALL VecDuplicate(BCFld%Step(Step)%Dirich,VecTmp,ierr)
-    CALL VecCopy(BCFld%Step(Step)%Dirich,VecTmp,ierr)
->>>>>>> petsc-update
 
     CALL VecScale(VecTmp,-one,ierr)
 
@@ -513,9 +508,9 @@ SUBROUTINE GetDT(BCFld,TimeZone,TimeStep,DT,ierr)
     PetscInt,INTENT(IN)                     :: TimeZone,TimeStep
     PetscReal,INTENT(OUT)                   :: DT
 
-    PetscInt                                :: TimeZoneSize
-    PetscReal                               :: Time1,Time2
-    PetscReal,POINTER                       :: TimeArray(:)
+    !PetscInt                                :: TimeZoneSize
+    !PetscReal                               :: Time1,Time2
+    !PetscReal,POINTER                       :: TimeArray(:)
 
 !     IF ((TimeZone.EQ.1).AND.(TimeStep.EQ.1)) THEN
 !         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &

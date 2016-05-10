@@ -3,7 +3,7 @@
 ProgramDir=../../src/
 ProgramName=ANISOFLOW.exe
 
-np=1														# Number of processors to be used
+np=2														# Number of processors to be used
 
 
 InputType=1													# Input files type
