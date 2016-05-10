@@ -38,9 +38,8 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertyField),INTENT(INOUT)   :: PptFld
 
-    PetscInt                            :: u,i,j,k,width(3),corn(3),ValI,CvtLen
+    PetscInt                            :: u,i,j,width(3),ValI,CvtLen
     PetscReal                           :: ValR
-    PetscReal,POINTER                   :: CvtTypeZone(:,:,:)
     PetscMPIInt                         :: process
     Vec                                 :: CvtTypeGlobal
     TYPE(InputTypeVar)                  :: InputType
@@ -194,7 +193,6 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
     PetscErrorCode,INTENT(INOUT)        :: ierr
 
     TYPE(InputTypeVar)                  :: InputType
-    Vec                                 :: TmpCvtType
     PetscReal,POINTER                   :: TmpCvtTypeZone(:,:,:)
     PetscInt                            :: ValI(2),i,j,k
 

@@ -140,8 +140,6 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
     TYPE(Property),INTENT(IN)               :: Ppt
     TYPE(StencilVar),INTENT(INOUT)          :: Stencil
 
-    PetscInt                                :: i,j,k
-
     ALLOCATE(Stencil%idx_clmns(4,7))
     ALLOCATE(Stencil%Values(7))
     Stencil%Size=7
@@ -441,16 +439,22 @@ SUBROUTINE ApplyDirichlet(Gmtry,BCFld,TimeZone,b,ierr)
     Vec                                     :: VecTmp
     VecScatter                              :: Scatter
     IS                                      :: NaturalOrder
-    PetscInt                                :: Size1,Size2
+    PetscInt                                :: DirichSize
     PetscReal                               :: one=1.0
 
+<<<<<<< HEAD
     CALL VecGetSize(BCFld%Dirich(TimeZone),Size1,ierr)
     CALL VecDuplicate(BCFld%Dirich(TimeZone),VecTmp,ierr)
     CALL VecCopy(BCFld%Dirich(TimeZone),VecTmp,ierr)
+=======
+    CALL VecGetSize(BCFld%Step(Step)%Dirich,DirichSize,ierr)
+    CALL VecDuplicate(BCFld%Step(Step)%Dirich,VecTmp,ierr)
+    CALL VecCopy(BCFld%Step(Step)%Dirich,VecTmp,ierr)
+>>>>>>> petsc-update
 
     CALL VecScale(VecTmp,-one,ierr)
 
-    CALL ISCreateStride(PETSC_COMM_WORLD,Size1,0,1,NaturalOrder,ierr)
+    CALL ISCreateStride(PETSC_COMM_WORLD,DirichSize,0,1,NaturalOrder,ierr)
     CALL VecScatterCreate(VecTmp,NaturalOrder,b,Gmtry%DirichIS,Scatter,ierr)
 
     CALL VecScatterBegin(Scatter,VecTmp,b,INSERT_VALUES,SCATTER_FORWARD,ierr)
