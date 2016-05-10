@@ -4,7 +4,7 @@ MODULE ANISOFLOW_BuildSystem
 
 CONTAINS
 
-SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,Step,A,b,x,ierr)
+SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions,PropertyField
     USE ANISOFLOW_Interface
@@ -19,29 +19,34 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,Step,A,b,x,ierr)
     TYPE(Geometry),INTENT(IN)               :: Gmtry
     TYPE(PropertyField),INTENT(IN)          :: PptFld
     TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
-    PetscInt,INTENT(IN)                     :: Step
+    PetscInt,INTENT(IN)                     :: TimeZone,TimeStep
     Mat,INTENT(INOUT)                       :: A
     Vec,INTENT(INOUT)                       :: b,x
 
     TYPE(RunOptionsVar)                     :: RunOptions
+    PetscReal :: maxx
 
     CALL GetRunOptions(RunOptions,ierr)
 
-    CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr)
+    IF ((TimeZone.EQ.1).AND.(TimeStep.EQ.1)) THEN
+        CALL BuildSystem(Gmtry,PptFld,A,ierr)
+        CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr)
+        CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
+    END IF
 
-    IF (Step.EQ.1) THEN
+    CALL ApplyDirichlet(Gmtry,BCFld,TimeZone,b,ierr)
+    ! CALL ApplyCauchy(Gmtry,BCFld,TimeZone,A,b,ierr)
+    ! CALL ApplyNeumman(Gmtry,BCFld,TimeZone,b,ierr)
 
-        CALL BuildSystem(Gmtry,PptFld,BCFld,Step,A,b,ierr)
-
-    ELSEIF (.FALSE.) THEN ! TO DO: It need check if has differences between current and previus BCField%Step
-        RETURN
-    ELSE ! TO DO: Modify the system with new BCField
-        RETURN
+    IF ((RunOptions%Time).AND..NOT.((TimeZone.EQ.1).AND.(TimeStep.EQ.1))) THEN
+        CALL VecMax(x,PETSC_NULL_INTEGER,maxx,ierr)
+        PRINT*,maxx
+        CALL ApplyTimeDiff(BCFld,TimeZone,TimeStep,A,b,x,ierr)
     END IF
 
 END SUBROUTINE GetSystem
 
-SUBROUTINE BuildSystem(Gmtry,PptFld,BCFld,Step,A,b,ierr)
+SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions,PropertyField,Property,StencilVar
     USE ANISOFLOW_Properties, ONLY : GetLocalProperty
@@ -56,18 +61,13 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,BCFld,Step,A,b,ierr)
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Geometry),INTENT(IN)               :: Gmtry
     TYPE(PropertyField),INTENT(IN)          :: PptFld
-    TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
-    PetscInt,INTENT(IN)                     :: Step
     Mat,INTENT(OUT)                         :: A
-    Vec,INTENT(OUT)                         :: b
 
     PetscInt                                :: i,j,k,corn(3),widthL(3)
     TYPE(Property)                          :: Ppt
     TYPE(StencilVar)                        :: Stencil
-    PetscReal                               :: RH
 
     CALL DMCreateMatrix(Gmtry%DataMngr,A,ierr)
-    CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
 
     CALL DMDAGetCorners(Gmtry%DataMngr,corn(1),corn(2),corn(3),widthL(1),      &
             & widthL(2),widthL(3),ierr)
@@ -87,8 +87,6 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,BCFld,Step,A,b,ierr)
 
     CALL MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY,ierr)
     CALL MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY,ierr)  
-    
-    CALL ApplyDirichlet(Gmtry,BCFld,Step,b,ierr)
 
 END SUBROUTINE BuildSystem
 
@@ -425,7 +423,7 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
 
 END SUBROUTINE GetLiStencil
 
-SUBROUTINE ApplyDirichlet(Gmtry,BCFld,Step,b,ierr)
+SUBROUTINE ApplyDirichlet(Gmtry,BCFld,TimeZone,b,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
 
@@ -437,7 +435,7 @@ SUBROUTINE ApplyDirichlet(Gmtry,BCFld,Step,b,ierr)
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Geometry),INTENT(IN)               :: Gmtry
     TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
-    PetscInt,INTENT(IN)                     :: Step
+    PetscInt,INTENT(IN)                     :: TimeZone
     Vec,INTENT(INOUT)                       :: b
 
     Vec                                     :: VecTmp
@@ -446,9 +444,9 @@ SUBROUTINE ApplyDirichlet(Gmtry,BCFld,Step,b,ierr)
     PetscInt                                :: Size1,Size2
     PetscReal                               :: one=1.0
 
-    CALL VecGetSize(BCFld%Step(Step)%Dirich,Size1,ierr)
-    CALL VecDuplicate(BCFld%Step(Step)%Dirich,VecTmp,ierr)
-    CALL VecCopy(BCFld%Step(Step)%Dirich,VecTmp,ierr)
+    CALL VecGetSize(BCFld%Dirich(TimeZone),Size1,ierr)
+    CALL VecDuplicate(BCFld%Dirich(TimeZone),VecTmp,ierr)
+    CALL VecCopy(BCFld%Dirich(TimeZone),VecTmp,ierr)
 
     CALL VecScale(VecTmp,-one,ierr)
 
@@ -463,6 +461,75 @@ SUBROUTINE ApplyDirichlet(Gmtry,BCFld,Step,b,ierr)
     CALL VecDestroy(VecTmp,ierr)
 
 END SUBROUTINE ApplyDirichlet
+
+SUBROUTINE ApplyTimeDiff(BCFld,TimeZone,TimeStep,A,b,x,ierr)
+
+    USE ANISOFLOW_Types, ONLY : BoundaryConditions
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscmat.h>
+
+    PetscErrorCode,INTENT(INOUT)            :: ierr
+    TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
+    PetscInt,INTENT(IN)                     :: TimeZone,TimeStep
+    Mat,INTENT(INOUT)                       :: A
+    Vec,INTENT(INOUT)                       :: b,x
+
+    Vec                                     :: VecDT
+    PetscReal                               :: DT,one=1.0
+
+
+    CALL GetDT(BCFld,TimeZone,TimeStep,DT,ierr)
+
+    CALL VecDuplicate(x,VecDT,ierr)
+    CALL VecSet(VecDT,-one/DT,ierr)
+    CALL MatDiagonalSet(A,VecDT,ADD_VALUES,ierr)
+    CALL VecDestroy(VecDT,ierr)
+
+    CALL VecAXPY(b,-one/DT,x,ierr)
+
+END SUBROUTINE ApplyTimeDiff
+
+SUBROUTINE GetDT(BCFld,TimeZone,TimeStep,DT,ierr)
+
+    USE ANISOFLOW_Types, ONLY : BoundaryConditions
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscvec.h90>
+#include <petsc/finclude/petscmat.h>
+
+    PetscErrorCode,INTENT(INOUT)            :: ierr
+    TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
+    PetscInt,INTENT(IN)                     :: TimeZone,TimeStep
+    PetscReal,INTENT(OUT)                   :: DT
+
+    PetscInt                                :: TimeZoneSize
+    PetscReal                               :: Time1,Time2
+    PetscReal,POINTER                       :: TimeArray(:)
+
+!     IF ((TimeZone.EQ.1).AND.(TimeStep.EQ.1)) THEN
+!         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+!             & "ERROR: It's not posible get a DT in the fisrt time.\n",ierr)
+!         STOP
+!     END IF
+
+!     Time2=BCFld%TimeZone(TimeZone)%Time(TimeStep)
+!     IF (TimeStep.NE.1) Time1=BCFld%TimeZone(TimeZone)%Time(TimeStep-1)
+!     PRINT*,Time1
+!     IF (TimeStep.EQ.1) THEN
+!         TimeZoneSize=SIZE(BCFld%TimeZone(TimeZone-1)%Time) 
+!         Time1=BCFld%TimeZone(TimeZone-1)%Time(TimeZoneSize)
+!     END IF
+! PRINT*,Time2
+    DT=0.5!Time1-Time2
+
+END SUBROUTINE GetDT
 
 SUBROUTINE SystemDestroy(A,b,x,ierr)
 

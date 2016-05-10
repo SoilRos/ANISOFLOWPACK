@@ -143,6 +143,10 @@ MODULE ANISOFLOW_Types
         TYPE(ConductivityField)         :: Cvt
     END TYPE PropertyField
 
+    TYPE TimeZoneVar
+        PetscReal,ALLOCATABLE           :: Time(:)
+    END TYPE TimeZoneVar
+
  !  - StepBC: It's a data structure that contains a Boundary Condition set.
  !    > VARIABLES: Diricl, Cauchy.
  !      + Diricl: It's a PETSc vector with the values of the Dirichlet cells. It must have the same 
@@ -152,16 +156,14 @@ MODULE ANISOFLOW_Types
  !    > NOTES: The Index Sets defined in Geometry for each boundary condition point the value of  
  !             Dirich and Cauchy vectors to the real position of every global vector created with
  !             DataMngr defined in Geometry.
-    TYPE StepBC
-        Vec                             :: Dirich,Cauchy
-    END TYPE StepBC
 
  !  - BoundaryConditions: It's a data structure wich contains a series Boundary Conditions to be  
  !                        used in several times or zones of time.
  !      + Step: It's a StepBc array with several values of Boundary Conditions.
 
     TYPE BoundaryConditions
-        TYPE(StepBC),ALLOCATABLE        :: Step(:)
+        Vec,ALLOCATABLE                 :: Dirich(:),Cauchy(:)
+        TYPE(TimeZoneVar),ALLOCATABLE   :: TimeZone(:)
     END TYPE BoundaryConditions
 
  !  - StensilVar: It's a auxilar data structure to build the matrix.

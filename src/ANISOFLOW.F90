@@ -31,8 +31,8 @@ PROGRAM ANISOFLOW
     CALL GetGeometry(Gmtry,ierr)
     CALL GetProrperties(Gmtry,PptFld,ierr)
     CALL GetBC(Gmtry,BCFld,ierr)
-    CALL GetSystem(Gmtry,PptFld,BCFld,1,A,b,x,ierr)
-    CALL SolveSystem(Gmtry,BCFld,A,b,x,ierr)
+    CALL GetSystem(Gmtry,PptFld,BCFld,1,1,A,b,x,ierr)
+    CALL SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     ! Finalize program

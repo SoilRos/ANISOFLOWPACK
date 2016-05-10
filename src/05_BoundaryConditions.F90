@@ -15,19 +15,30 @@ SUBROUTINE GetBC(Gmtry,BCFld,ierr)
 
 #include <petsc/finclude/petscsys.h>
 
+#include <petsc/finclude/petscvec.h>
+
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Geometry),INTENT(IN)               :: Gmtry
     TYPE(BoundaryConditions),INTENT(OUT)    :: BCFld
 
     TYPE(RunOptionsVar)                     :: RunOptions
 
+    PetscReal                               :: Value
+    PetscInt                                :: i
+
     CALL GetRunOptions(RunOptions,ierr)
 
-    IF (RunOptions%time) THEN
+    ALLOCATE(BCFld%TimeZone(1))                                         ! TEST!!!!
+    ALLOCATE(BCFld%TimeZone(1)%Time(10))
+    DO i=0,9                                                        ! TEST!!!!
+        BCFld%TimeZone(1)%Time(i+1)=REAL(i)
+    END DO                                                          ! TEST!!!!
+
+    ! IF (RunOptions%Time) THEN
         ! CALL GetTransientBC(Gmtry,BCFld,ierr)
-    ELSE
+    ! ELSE
         CALL GetSteadyBC(Gmtry,BCFld,ierr)
-    END IF
+    ! END IF
 
 END SUBROUTINE GetBC
 
@@ -43,7 +54,7 @@ SUBROUTINE GetSteadyBC(Gmtry,BCFld,ierr)
     TYPE(Geometry),INTENT(IN)               :: Gmtry
     TYPE(BoundaryConditions),INTENT(OUT)    :: BCFld
 
-    ALLOCATE(BCFld%Step(1))
+    ALLOCATE(BCFld%Dirich(1))
     CALL GetSteadyBCDirichlet(Gmtry,BCFld,ierr)
     ! CALL GetSteadyBCCauchy(Gmtry,BCFld,ierr)
 
@@ -91,11 +102,11 @@ SUBROUTINE GetSteadyBCDirichlet(Gmtry,BCFld,ierr)
 
         CALL MPI_Bcast(DirichLen,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
         CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,DirichLen,             &
-            & BCFld%Step(1)%Dirich,ierr)
+            & BCFld%Dirich(1),ierr)
         IF (process.EQ.0) THEN
             DO i=1,DirichLen
                 READ(u, '(I12,F15.10)')IndexDirich(i),ValR
-                CALL VecSetValue(BCFld%Step(1)%Dirich,i-1,ValR,INSERT_VALUES,  &
+                CALL VecSetValue(BCFld%Dirich(1),i-1,ValR,INSERT_VALUES,  &
                     & ierr)
             END DO
             CLOSE(u)
@@ -103,8 +114,8 @@ SUBROUTINE GetSteadyBCDirichlet(Gmtry,BCFld,ierr)
             ALLOCATE(IndexDirich(DirichLen))
         END IF
 
-        CALL VecAssemblyBegin(BCFld%Step(1)%Dirich,ierr)
-        CALL VecAssemblyEnd(BCFld%Step(1)%Dirich,ierr)
+        CALL VecAssemblyBegin(BCFld%Dirich(1),ierr)
+        CALL VecAssemblyEnd(BCFld%Dirich(1),ierr)
 
         CALL MPI_Bcast(DirichLen,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
         CALL MPI_Bcast(IndexDirich,DirichLen,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
@@ -162,7 +173,7 @@ SUBROUTINE BCDestroy(BCFld,ierr)
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(BoundaryConditions),INTENT(IN) :: BCFld ! INOUT or IN?
 
-    CALL VecDestroy(BCFld%Step%Dirich,ierr)
+    CALL VecDestroy(BCFld%Dirich,ierr)
     ! CALL VecDestroy(BCFld%Cauchy,ierr)
 
 END SUBROUTINE BCDestroy
