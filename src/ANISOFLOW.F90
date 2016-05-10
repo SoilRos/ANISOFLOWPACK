@@ -9,8 +9,6 @@ PROGRAM ANISOFLOW
 #include <petsc/finclude/petscvec.h>
 #include <petsc/finclude/petscmat.h>
 
-#include <petsc/finclude/petscviewer.h>
-
 
     PetscErrorCode          :: ierr
     TYPE(Geometry)          :: Gmtry
@@ -18,9 +16,7 @@ PROGRAM ANISOFLOW
     TYPE(BoundaryConditions):: BCFld
     Mat                     :: A
     Vec                     :: b,x
-    Vec                     :: Tplgy
 
-    PetscViewer             :: H5viewer
 
     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     ! Initialize program

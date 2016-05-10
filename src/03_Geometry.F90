@@ -121,7 +121,7 @@ SUBROUTINE GetGridCoord(DataMngr,x,y,z,ierr)
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: x,y,z
 
-    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry,Route
+    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry!,Route
     TYPE(InputTypeVar)              :: InputType
     PetscInt                        :: widthG(3),size,i
     PetscReal                       :: Value
@@ -202,7 +202,7 @@ SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,ierr)
     PetscReal,POINTER               :: TmpTplgyArray(:,:,:)
     PetscReal                       :: ValR
     PetscInt                        :: i,j,k,widthL(3),widthG(3),corn(3),BCLenL(3),BCLenG(3)
-    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry,Route
+    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry!,Route
     TYPE(InputTypeVar)              :: InputType
     Vec                             :: TmpTplgy
 

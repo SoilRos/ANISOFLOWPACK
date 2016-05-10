@@ -64,7 +64,6 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,BCFld,Step,A,b,ierr)
     PetscInt                                :: i,j,k,corn(3),widthL(3)
     TYPE(Property)                          :: Ppt
     TYPE(StencilVar)                        :: Stencil
-    PetscReal                               :: RH
 
     CALL DMCreateMatrix(Gmtry%DataMngr,A,ierr)
     CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
@@ -141,8 +140,6 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Property),INTENT(IN)               :: Ppt
     TYPE(StencilVar),INTENT(INOUT)          :: Stencil
-
-    PetscInt                                :: i,j,k
 
     ALLOCATE(Stencil%idx_clmns(4,7))
     ALLOCATE(Stencil%Values(7))
@@ -443,16 +440,16 @@ SUBROUTINE ApplyDirichlet(Gmtry,BCFld,Step,b,ierr)
     Vec                                     :: VecTmp
     VecScatter                              :: Scatter
     IS                                      :: NaturalOrder
-    PetscInt                                :: Size1,Size2
+    PetscInt                                :: DirichSize
     PetscReal                               :: one=1.0
 
-    CALL VecGetSize(BCFld%Step(Step)%Dirich,Size1,ierr)
+    CALL VecGetSize(BCFld%Step(Step)%Dirich,DirichSize,ierr)
     CALL VecDuplicate(BCFld%Step(Step)%Dirich,VecTmp,ierr)
     CALL VecCopy(BCFld%Step(Step)%Dirich,VecTmp,ierr)
 
     CALL VecScale(VecTmp,-one,ierr)
 
-    CALL ISCreateStride(PETSC_COMM_WORLD,Size1,0,1,NaturalOrder,ierr)
+    CALL ISCreateStride(PETSC_COMM_WORLD,DirichSize,0,1,NaturalOrder,ierr)
     CALL VecScatterCreate(VecTmp,NaturalOrder,b,Gmtry%DirichIS,Scatter,ierr)
 
     CALL VecScatterBegin(Scatter,VecTmp,b,INSERT_VALUES,SCATTER_FORWARD,ierr)
