@@ -41,11 +41,13 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
         CALL VecDuplicate(x,diagA,ierr)
         CALL MatGetDiagonal(A,diagA,ierr)
-        Count=2
+        Count=102
         DO i=1,BCFld%SizeTimeZone
 
             initTime=1
             IF (i.EQ.1) initTime=2 
+
+
 
             DO j=initTime,BCFld%TimeZone(i)%SizeTime
 
@@ -62,10 +64,11 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
                 CALL ViewSolution(x,Name,ierr)
                 Count=Count+1
 
+                CALL MatDiagonalSet(A,diagA,INSERT_VALUES,ierr)
+                CALL VecSet(b,zero,ierr)
             END DO
 
-            CALL MatDiagonalSet(A,diagA,INSERT_VALUES,ierr)
-            CALL VecSet(b,zero,ierr)
+
 
         END DO
 

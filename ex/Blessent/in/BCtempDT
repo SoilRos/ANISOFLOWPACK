@@ -1,5 +1,5 @@
 Timezones:          2       
-Timezone(1       ): 300
+Timezone(1       ): 100
 DT: 0.5
 DirichletBoundaryCondition(1       ): 320
            1   6.704865    
@@ -92,11 +92,11 @@ DirichletBoundaryCondition(1       ): 320
          325   6.840320    
          405   6.015694    
          406   6.871520    
-         486   10.999403    
+         486   5.999403    
          487   6.901060    
-         567   10.985841    
+         567   5.985841    
          568   6.928541    
-         648   10.997468    
+         648   5.997468    
          649   6.953629    
          729   6.081318    
          730   6.975559    
@@ -324,7 +324,7 @@ DirichletBoundaryCondition(1       ): 320
         6561   4.534512    
 NeummanBoundaryCondition(1       ): 0
 CauchyBoundaryCondition(1       ): 0
-Timezone(2       ): 2
+Timezone(2       ): 100
 DT: 0.5
 DirichletBoundaryCondition(2       ): 320
            1   12.704865    
