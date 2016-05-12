@@ -34,16 +34,17 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
         CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
     END IF
 
+
+
     CALL ApplyDirichlet(Gmtry,BCFld,TimeZone,b,ierr)
     ! CALL ApplyCauchy(Gmtry,BCFld,TimeZone,A,b,ierr)
     ! CALL ApplyNeumman(Gmtry,BCFld,TimeZone,b,ierr)
-
+    
     IF ((RunOptions%Time).AND..NOT.((TimeZone.EQ.1).AND.(TimeStep.EQ.1))) THEN
         CALL VecMax(x,PETSC_NULL_INTEGER,maxx,ierr)
-        PRINT*,maxx
+        PRINT*,"Max value of head (just for test):",maxx
         CALL ApplyTimeDiff(BCFld,TimeZone,TimeStep,A,b,x,ierr)
     END IF
-
 END SUBROUTINE GetSystem
 
 SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)

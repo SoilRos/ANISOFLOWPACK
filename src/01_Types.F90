@@ -144,6 +144,7 @@ MODULE ANISOFLOW_Types
     END TYPE PropertyField
 
     TYPE TimeZoneVar
+        PetscInt                        :: SizeTime
         PetscReal,ALLOCATABLE           :: Time(:)
     END TYPE TimeZoneVar
 
@@ -162,7 +163,8 @@ MODULE ANISOFLOW_Types
  !      + Step: It's a StepBc array with several values of Boundary Conditions.
 
     TYPE BoundaryConditions
-        Vec,ALLOCATABLE                 :: Dirich(:),Cauchy(:)
+        PetscInt                        :: SizeTimeZone,SizeDirich,SizeNeumman,SizeCauchy
+        Vec,ALLOCATABLE                 :: Dirich(:),Neumman(:),Cauchy(:)
         TYPE(TimeZoneVar),ALLOCATABLE   :: TimeZone(:)
     END TYPE BoundaryConditions
 
@@ -249,6 +251,10 @@ MODULE ANISOFLOW_Types
     TYPE InputTypeVar
         PetscInt                        :: Gmtry,Tplgy,Cvt,BC
     END TYPE InputTypeVar
+
+    TYPE OuputTypeVar
+        PetscInt                        :: Sol
+    END TYPE OuputTypeVar
 
 CONTAINS
 

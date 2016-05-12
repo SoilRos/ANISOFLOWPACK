@@ -3,7 +3,7 @@ MODULE ANISOFLOW_Interface
 ! ANISOFLOW_Interface it's a module that contains routines that serve as a bridge between user and
 ! program.
 
-    USE ANISOFLOW_Types, ONLY : InputTypeVar
+    USE ANISOFLOW_Types, ONLY : InputTypeVar,OuputTypeVar
     USE ANISOFLOW_Types, ONLY : RunOptionsVar
 
     IMPLICIT NONE
@@ -417,6 +417,88 @@ SUBROUTINE GetInputFileBC(InputFileBC,ierr)
     InputFileBC=TRIM(InputFileBC)
 
 END SUBROUTINE GetInputFileBC
+
+ !    
+
+SUBROUTINE GetOuputDir(OuputDir,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    CHARACTER(LEN=200),INTENT(OUT)  :: OuputDir
+
+    PetscBool                       :: OuputDirFlg
+
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Ouput_dir",OuputDir,     &
+        & OuputDirFlg,ierr)
+    IF (.NOT.OuputDirFlg) OuputDir="/"
+    OuputDir=TRIM(OuputDir)
+
+END SUBROUTINE GetOuputDir
+
+ !
+
+SUBROUTINE GetOuputType(OuputType,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    Type(OuputTypeVar),INTENT(OUT)  :: OuputType
+
+    PetscBool                       :: OuputTypeFlg
+    PetscInt                        :: OuputTypeTmp
+
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Ouput_type",OuputTypeTmp,   &
+        & OuputTypeFlg,ierr)
+
+    IF (OuputTypeFlg) THEN
+        IF (OuputTypeTmp.EQ.1) THEN
+            OuputType%Sol=1
+        ELSE
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
+                & "ERROR: Ouput_type used is invalid\n",ierr)
+            STOP
+        END IF
+    ELSE
+        ! Presseting default OuputType
+        OuputType%Sol=1
+    END IF
+    
+    ! Setting OuputType from interface
+    CALL GetOuputTypeSol(OuputType,ierr)
+
+
+END SUBROUTINE GetOuputType
+
+ !
+
+SUBROUTINE GetOuputTypeSol(OuputType,ierr)
+    IMPLICIT NONE
+#include <petsc/finclude/petscsys.h>
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    Type(OuputTypeVar),INTENT(INOUT)    :: OuputType
+
+    PetscBool                       :: OuputTypeSolFlg
+    PetscInt                        :: OuputTypeSolTmp
+
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Ouput_type_sol",          &
+        & OuputTypeSolTmp,OuputTypeSolFlg,ierr)
+
+    IF (OuputTypeSolFlg) THEN
+        IF (OuputTypeSolTmp.EQ.1) THEN
+            OuputType%Sol=OuputTypeSolTmp
+        ELSE
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
+                & "ERROR: Ouput_type_sol used is invalid\n",ierr)
+            STOP
+        END IF
+    END IF
+
+END SUBROUTINE GetOuputTypeSol
 
  !  - GetRunOptions: It's a routine that provides RunOptionVar structure that contains all options 
  !                   related with the running.

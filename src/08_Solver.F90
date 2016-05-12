@@ -8,6 +8,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions,PropertyField
     USE ANISOFLOW_BuildSystem, ONLY : GetSystem
+    USE ANISOFLOW_View, ONLY : ViewSolution
     USE ANISOFLOW_Interface
 
     IMPLICIT NONE
@@ -28,11 +29,10 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
     KSP                                     :: Solver
     TYPE(RunOptionsVar)                     :: RunOptions
     Vec                                     :: diagA
+    CHARACTER(LEN=200)                      :: Name,CharCount
 
-    PetscInt                                :: i
-    PetscViewer             :: H5viewer
-    CHARACTER(LEN=200)                  :: Name,tx
-    PetscReal                           :: zero=0.0
+    PetscInt                                :: i,j,initTime,Count
+    PetscReal                               :: zero=0.0
 
     CALL KSPCreate(PETSC_COMM_WORLD,Solver,ierr)
     CALL GetRunOptions(RunOptions,ierr)
@@ -41,36 +41,33 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
         CALL VecDuplicate(x,diagA,ierr)
         CALL MatGetDiagonal(A,diagA,ierr)
-        DO i=2,500                                               ! TEST!!!!
-            PRINT*,i
-            CALL GetSystem(Gmtry,PptFld,BCFld,1,i,A,b,x,ierr)   ! TEST!!!!
-            CALL KSPSetOperators(Solver,A,A,ierr)
-            CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,    &
-                & PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)
-            CALL KSPSetFromOptions(Solver,ierr)
-            CALL KSPSolve(Solver,b,x,ierr)
+        Count=2
+        DO i=1,BCFld%SizeTimeZone
+
+            initTime=1
+            IF (i.EQ.1) initTime=2 
+
+            DO j=initTime,BCFld%TimeZone(i)%SizeTime
+
+                CALL GetSystem(Gmtry,PptFld,BCFld,i,j,A,b,x,ierr)
+                CALL KSPSetOperators(Solver,A,A,ierr)
+                CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,    &
+                    & PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)
+                CALL KSPSetFromOptions(Solver,ierr)
+                CALL KSPSolve(Solver,b,x,ierr)
+            
+                WRITE(CharCount,*)Count
+                Name="ANISOFLOW_sol_"//TRIM(CharCount)//".h5"
+                Name=ADJUSTL(Name)
+                CALL ViewSolution(x,Name,ierr)
+                Count=Count+1
+
+            END DO
 
             CALL MatDiagonalSet(A,diagA,INSERT_VALUES,ierr)
             CALL VecSet(b,zero,ierr)
-    ! Create the HDF5 viewer
-        WRITE(tx,'(I5)')i-1
-        tx=ADJUSTL(tx); tx=TRIM(tx)
-    Name="ANISOFLOW_x"//TRIM(tx)//".h5"
-    CALL PetscObjectSetName(x,"Altura piezometrica",ierr)
-    CALL PetscViewerHDF5Open(PETSC_COMM_WORLD,Name,FILE_MODE_WRITE,H5viewer,ierr)
-    ! CALL PetscViewerSetFromOptions(H5viewer,ierr)
 
-    ! Write the H5 file 
-    CALL VecView(x,H5viewer,ierr)
-
-    ! Close the viewer
-    CALL PetscViewerDestroy(H5viewer,ierr)
-
-        END DO                                                  ! TEST!!!!
-
-        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
-            & "ERROR: Transitory is not implemented yet, please use steady simulation for now",ierr)
-        STOP
+        END DO
 
     ELSE
 
@@ -79,6 +76,8 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
             & PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)
         CALL KSPSetFromOptions(Solver,ierr)
         CALL KSPSolve(Solver,b,x,ierr)
+        Name="ANISOFLOW_sol.h5"
+        CALL ViewSolution(x,Name,ierr)
 
     END IF
 
