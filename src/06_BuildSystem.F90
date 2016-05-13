@@ -118,6 +118,10 @@ SUBROUTINE GetStencil(Ppt,Stencil,ierr)
     ELSEIF (RunOptions%Scheme.EQ.2) THEN
     
         CALL GetLiStencil(Ppt,Stencil,ierr)
+
+    ELSEIF (RunOptions%Scheme.EQ.3) THEN
+    
+        CALL AnisoflowStencil(Ppt,Stencil,ierr)
     
     ELSE
     
@@ -128,6 +132,8 @@ SUBROUTINE GetStencil(Ppt,Stencil,ierr)
     END IF
 
 END SUBROUTINE GetStencil
+
+!FALTANTE: Subrutina que haga calculo de matriz de almacenamiento especifico
 
 SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
 
@@ -147,9 +153,155 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
     ALLOCATE(Stencil%idx_clmns(4,7))
     ALLOCATE(Stencil%Values(7))
     Stencil%Size=7
-    CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                             &
-        & "ERROR: Traditional system hasn't implemented yet, please use Li system for now\n",ierr)
-    STOP
+ !   CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                             &
+ !       & "ERROR: Traditional system hasn't implemented yet, please use Li system for now\n",ierr)
+ !   STOP
+
+    ! It gets the position of the cell.
+    i=Ppt%Pstn%i
+    j=Ppt%Pstn%j
+    k=Ppt%Pstn%k
+
+    ! Rows to modify
+    Stencil%idx_rws(MatStencil_i,1) = i
+    Stencil%idx_rws(MatStencil_j,1) = j
+    Stencil%idx_rws(MatStencil_k,1) = k
+    ! Columns to modify
+    Stencil%idx_clmns(MatStencil_i,:) = i
+    Stencil%idx_clmns(MatStencil_j,:) = j
+    Stencil%idx_clmns(MatStencil_k,:) = k
+
+    ! Initial stencil vaulues
+    Stencil%Values(:)=0.0
+
+    TYPE Property
+        TYPE(Position)                  :: Pstn
+        PetscInt                        :: StnclType=0
+        PetscInt,ALLOCATABLE            :: StnclTplgy(:)
+        PetscReal                       :: dx,dy,dz,dxB,dxF,dyB,dyF,dzB,dzF
+        PetscBool                       :: CvtOnInterface=.FALSE.,CvtOnBlock=.FALSE.
+        TYPE(Tensor)                    :: CvtBlock,CvtBx,CvtFx,CvtBy,CvtFy,CvtBz,CvtFz
+    END TYPE Property
+
+    ! If the current cell is an active cell:
+    IF (Ppt%StnclTplgy(4).EQ.1) THEN
+
+        IF (Ppt%StnclTplgy(1).EQ.1) THEN
+            Stencil%idx_clmns(MatStencil_i,1) = i
+            Stencil%idx_clmns(MatStencil_j,1) = j
+            Stencil%idx_clmns(MatStencil_k,1) = k-1
+            Stencil%Values(1)=Ppt%dy*Ppt%dz*KxxB/Ppt%dxB 
+        END IF
+
+        IF (Ppt%StnclTplgy(2).EQ.1) THEN
+            Stencil%idx_clmns(MatStencil_i,2) = i
+            Stencil%idx_clmns(MatStencil_j,2) = j-1
+            Stencil%idx_clmns(MatStencil_k,2) = k
+            Stencil%Values(2)=Ppt%dx*Ppt%dz*KyyB/Ppt%dyB 
+        END IF
+
+        IF (Ppt%StnclTplgy(3).EQ.1) THEN
+            Stencil%idx_clmns(MatStencil_i,3) = i-1
+            Stencil%idx_clmns(MatStencil_j,3) = j
+            Stencil%idx_clmns(MatStencil_k,3) = k
+            Stencil%Values(3)=Ppt%dx*Ppt%dy*KzzB/Ppt%dzB
+        END IF
+
+        IF (Ppt%StnclTplgy(4).EQ.1) THEN
+            Stencil%idx_clmns(MatStencil_i,4) = i
+            Stencil%idx_clmns(MatStencil_j,4) = j
+            Stencil%idx_clmns(MatStencil_k,4) = k
+            Stencil%Values(4)=-(Ppt%dy*Ppt%dz*KxxF/Ppt%dxF+Ppt%dy*Ppt%dz*KxxB/Ppt%dxB &
+                & +Ppt%dx*Ppt%dz*KyyF/Ppt%dyF+Ppt%dx*Ppt%dz*KyyB/Ppt%dyB              &
+                & +Ppt%dx*Ppt%dy*KzzF/Ppt%dzF+Ppt%dx*Ppt%dy*KzzB/Ppt%dzB              &
+                & +Ss*Ppt%dx*Ppt%dy*Ppt%dz)
+        END IF
+
+        IF (Ppt%StnclTplgy(5).EQ.1) THEN
+            Stencil%idx_clmns(MatStencil_i,5) = i+1
+            Stencil%idx_clmns(MatStencil_j,5) = j
+            Stencil%idx_clmns(MatStencil_k,5) = k
+            Stencil%Values(5)=pt%dy*Ppt%dz*KxxF/Ppt%dxF
+        END IF
+
+        IF (Ppt%StnclTplgy(6).EQ.1) THEN
+            Stencil%idx_clmns(MatStencil_i,6) = i
+            Stencil%idx_clmns(MatStencil_j,6) = j+1
+            Stencil%idx_clmns(MatStencil_k,6) = k
+            Stencil%Values(6)=Ppt%dx*Ppt%dz*KyyF/Ppt%dyF
+        END IF
+
+        IF (Ppt%StnclTplgy(7).EQ.1) THEN
+            Stencil%idx_clmns(MatStencil_i,7) = i
+            Stencil%idx_clmns(MatStencil_j,7) = j
+            Stencil%idx_clmns(MatStencil_k,7) = k+1
+            Stencil%Values(7)=Ppt%dx*Ppt%dy*KzzF/Ppt%dzF
+        END IF
+    ! If the current cell is an Neumman x cell:
+    ELSEIF (Ppt%StnclTplgy(10).EQ.3) THEN ! Neumman x
+
+        Stencil%Values(10)=-one
+
+        ! It is a decision of wich cell is in Neumman x condition to assign the equality.
+        IF ((Ppt%StnclTplgy(9).EQ.1).AND.(Ppt%StnclTplgy(11).EQ.1)) THEN
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+                & "ERROR: Neumman on x axis was bad defined\n",ierr)
+            STOP
+        ELSEIF (Ppt%StnclTplgy(9).EQ.1) THEN
+            Stencil%Values(9)=one
+            Stencil%idx_clmns(MatStencil_i,9) = i-1
+            Stencil%idx_clmns(MatStencil_j,9) = j
+            Stencil%idx_clmns(MatStencil_k,9) = k
+        ELSEIF (Ppt%StnclTplgy(11).EQ.1) THEN
+            Stencil%Values(11)=one
+            Stencil%idx_clmns(MatStencil_i,11) = i+1
+            Stencil%idx_clmns(MatStencil_j,11) = j
+            Stencil%idx_clmns(MatStencil_k,11) = k
+        END IF
+
+    ! If the current cell is an Neumman y cell:
+    ELSEIF (Ppt%StnclTplgy(10).EQ.4) THEN ! Neumman y
+        Stencil%Values(10)=-one
+        ! It is a decision of wich cell is in Neumman y condition to assign the equality.
+        IF ((Ppt%StnclTplgy(7).EQ.1).AND.(Ppt%StnclTplgy(13).EQ.1)) THEN
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+                & "ERROR: Neumman on y axis was bad defined\n",ierr)
+            STOP
+        ELSEIF (Ppt%StnclTplgy(7).EQ.1) THEN
+            Stencil%Values(7)=one
+            Stencil%idx_clmns(MatStencil_i,7) = i
+            Stencil%idx_clmns(MatStencil_j,7) = j-1
+            Stencil%idx_clmns(MatStencil_k,7) = k
+        ELSEIF (Ppt%StnclTplgy(13).EQ.1) THEN
+            Stencil%Values(13)=one
+            Stencil%idx_clmns(MatStencil_i,13) = i
+            Stencil%idx_clmns(MatStencil_j,13) = j+1
+            Stencil%idx_clmns(MatStencil_k,13) = k
+        END IF
+
+    ! If the current cell is an Neumman z cell:
+    ELSEIF (Ppt%StnclTplgy(10).EQ.5) THEN ! Neumman z
+        Stencil%Values(10)=-one
+        ! It is a decision of wich cell is in Neumman z condition to assign the equality.
+        IF ((Ppt%StnclTplgy(3).EQ.1).AND.(Ppt%StnclTplgy(17).EQ.1)) THEN
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+                & "ERROR: Neumman on z axis was bad defined\n",ierr)
+            STOP
+        ELSEIF (Ppt%StnclTplgy(3).EQ.1) THEN
+            Stencil%Values(3)=one
+            Stencil%idx_clmns(MatStencil_i,3) = i
+            Stencil%idx_clmns(MatStencil_j,3) = j
+            Stencil%idx_clmns(MatStencil_k,3) = k-1
+        ELSEIF (Ppt%StnclTplgy(17).EQ.1) THEN
+            Stencil%Values(17)=one
+            Stencil%idx_clmns(MatStencil_i,17) = i
+            Stencil%idx_clmns(MatStencil_j,17) = j
+            Stencil%idx_clmns(MatStencil_k,17) = k+1
+        END IF
+    ELSEIF (Ppt%StnclTplgy(10).EQ.2) THEN ! Dirichlet
+        Stencil%Values(10)=-one
+    END IF
+
 
 END SUBROUTINE GetTraditionalStencil
 
@@ -203,7 +355,7 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
     ! If the current cell is an active cell:
     IF (Ppt%StnclTplgy(10).EQ.1) THEN
 
-        ! 1-S Bloque centro-detras-superior
+    ! 1-S Bloque centro-detras-superior
         ! It sets the column position on the matrix
         Stencil%idx_clmns(MatStencil_i,1) = i
         Stencil%idx_clmns(MatStencil_j,1) = j-1
@@ -424,6 +576,246 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
     END IF
 
 END SUBROUTINE GetLiStencil
+
+SUBROUTINE AnisoflowStencil(Ppt,Stencil,ierr)
+
+    USE ANISOFLOW_Types, ONLY : Property,StencilVar
+    USE ANISOFLOW_Interface
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)            :: ierr
+    TYPE(Property),INTENT(IN)               :: Ppt
+    TYPE(StencilVar),INTENT(INOUT)          :: Stencil
+
+    PetscInt                                :: i,j,k
+    PetscReal                               :: one=1.0
+
+    ! The Li stencil is based on 19 cells.
+    ALLOCATE(Stencil%idx_clmns(4,19))
+    ALLOCATE(Stencil%Values(19))
+    Stencil%Size=19
+
+    ! It gets the position of the cell.
+    i=Ppt%Pstn%i
+    j=Ppt%Pstn%j
+    k=Ppt%Pstn%k
+
+    ! Rows to modify
+    Stencil%idx_rws(MatStencil_i,1) = i
+    Stencil%idx_rws(MatStencil_j,1) = j
+    Stencil%idx_rws(MatStencil_k,1) = k
+    ! Columns to modify
+    Stencil%idx_clmns(MatStencil_i,:) = i
+    Stencil%idx_clmns(MatStencil_j,:) = j
+    Stencil%idx_clmns(MatStencil_k,:) = k
+
+    ! Initial stencil vaulues
+    Stencil%Values(:)=0.0
+
+    ! If the current cell is an active cell:
+    IF (Ppt%StnclTplgy(10).EQ.1) THEN
+
+        ! 1-S Bloque centro-detras-superior
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,1) = i
+        Stencil%idx_clmns(MatStencil_j,1) = j-1
+        Stencil%idx_clmns(MatStencil_k,1) = k-1
+        Stencil%Values(1)=
+
+        ! 2-O Bloque izquierdo-centro-superior
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,2) = i-1
+        Stencil%idx_clmns(MatStencil_j,2) = j
+        Stencil%idx_clmns(MatStencil_k,2) = k-1
+        Stencil%Values(2)=
+
+        ! 3-J Bloque centro-centro-superior
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,3) = i
+        Stencil%idx_clmns(MatStencil_j,3) = j
+        Stencil%idx_clmns(MatStencil_k,3) = k-1
+        Stencil%Values(3)=Ppt%dy*Ppt%dz*KxxB/Ppt%dxB 
+
+        ! 4-H Bloque derecho-centro-superior
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,4) = i+1
+        Stencil%idx_clmns(MatStencil_j,4) = j
+        Stencil%idx_clmns(MatStencil_k,4) = k-1
+        Stencil%Values(4)=
+
+        ! 5-Q Bloque centro-frontal-superior
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,5) = i
+        Stencil%idx_clmns(MatStencil_j,5) = j+1
+        Stencil%idx_clmns(MatStencil_k,5) = k-1
+        Stencil%Values(5)=
+
+        ! 6-M Bloque izquierdo-detras-centro
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,6) = i-1
+        Stencil%idx_clmns(MatStencil_j,6) = j-1
+        Stencil%idx_clmns(MatStencil_k,6) = k
+        Stencil%Values(6)=-(Ppt%dy*Ppt%dz(CvtBx%xy/()))
+
+        ! 7-F Bloque centro-detras-centro
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,7) = i
+        Stencil%idx_clmns(MatStencil_j,7) = j-1
+        Stencil%idx_clmns(MatStencil_k,7) = k
+        Stencil%Values(7)=Ppt%dx*Ppt%dz*KyyB/Ppt%dyB 
+
+        ! 8-D Bloque derecho-detras-centro
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,8) = i+1
+        Stencil%idx_clmns(MatStencil_j,8) = j-1
+        Stencil%idx_clmns(MatStencil_k,8) = k
+        Stencil%Values(8)=
+
+        ! 9-K Bloque izquierdo-centro-centro
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,9) = i-1
+        Stencil%idx_clmns(MatStencil_j,9) = j
+        Stencil%idx_clmns(MatStencil_k,9) = k
+        Stencil%Values(9)=Ppt%dx*Ppt%dy*KzzB/Ppt%dzB
+
+        ! 10-B Bloque centro-centro-centro
+        Stencil%Values(10)=-(Ppt%dy*Ppt%dz*KxxF/Ppt%dxF+Ppt%dy*Ppt%dz*KxxB/Ppt%dxB &
+                        & +Ppt%dx*Ppt%dz*KyyF/Ppt%dyF+Ppt%dx*Ppt%dz*KyyB/Ppt%dyB              &
+                        & +Ppt%dx*Ppt%dy*KzzF/Ppt%dzF+Ppt%dx*Ppt%dy*KzzB/Ppt%dzB              &
+                        & +Ss*Ppt%dx*Ppt%dy*Ppt%dz)
+
+        ! 11-A Bloque derecho-centro-centro
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,11) = i+1
+        Stencil%idx_clmns(MatStencil_j,11) = j
+        Stencil%idx_clmns(MatStencil_k,11) = k
+        Stencil%Values(11)=pt%dy*Ppt%dz*KxxF/Ppt%dxF
+
+        ! 12-L Bloque izquierdo-frontal-centro
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,12) = i-1
+        Stencil%idx_clmns(MatStencil_j,12) = j+1
+        Stencil%idx_clmns(MatStencil_k,12) = k
+        Stencil%Values(12)=
+
+        ! 13-E Bloque centro-frontal-centro
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,13) = i
+        Stencil%idx_clmns(MatStencil_j,13) = j+1
+        Stencil%idx_clmns(MatStencil_k,13) = k
+        Stencil%Values(13)=Ppt%dx*Ppt%dz*KyyF/Ppt%dyF
+
+        ! 14-C Bloque derecho-frontal-centro
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,14) = i+1
+        Stencil%idx_clmns(MatStencil_j,14) = j+1
+        Stencil%idx_clmns(MatStencil_k,14) = k
+        Stencil%Values(14)=
+
+        ! 15-R Bloque centro-detras-inferior
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,15) = i
+        Stencil%idx_clmns(MatStencil_j,15) = j-1
+        Stencil%idx_clmns(MatStencil_k,15) = k+1
+        Stencil%Values(15)=
+
+        ! 16-N Bloque izquierdo-centro-inferior
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,16) = i-1
+        Stencil%idx_clmns(MatStencil_j,16) = j
+        Stencil%idx_clmns(MatStencil_k,16) = k+1
+        Stencil%Values(16)=
+
+        ! 17-I Bloque centro-centro-inferior
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,17) = i
+        Stencil%idx_clmns(MatStencil_j,17) = j
+        Stencil%idx_clmns(MatStencil_k,17) = k+1
+        Stencil%Values(17)=Ppt%dx*Ppt%dy*KzzF/Ppt%dzF
+
+        ! 18-G Bloque derecho-centro-inferior
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,18) = i+1
+        Stencil%idx_clmns(MatStencil_j,18) = j
+        Stencil%idx_clmns(MatStencil_k,18) = k+1
+        Stencil%Values(18)=
+
+        ! 19-P Bloque centro-frontal-inferior
+        ! It sets the column position on the matrix
+        Stencil%idx_clmns(MatStencil_i,19) = i
+        Stencil%idx_clmns(MatStencil_j,19) = j+1
+        Stencil%idx_clmns(MatStencil_k,19) = k+1
+        Stencil%Values(19)=        
+
+    ! If the current cell is an Neumman x cell:
+    ELSEIF (Ppt%StnclTplgy(10).EQ.3) THEN ! Neumman x
+
+        Stencil%Values(10)=-one
+
+        ! It is a decision of wich cell is in Neumman x condition to assign the equality.
+        IF ((Ppt%StnclTplgy(9).EQ.1).AND.(Ppt%StnclTplgy(11).EQ.1)) THEN
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+                & "ERROR: Neumman on x axis was bad defined\n",ierr)
+            STOP
+        ELSEIF (Ppt%StnclTplgy(9).EQ.1) THEN
+            Stencil%Values(9)=one
+            Stencil%idx_clmns(MatStencil_i,9) = i-1
+            Stencil%idx_clmns(MatStencil_j,9) = j
+            Stencil%idx_clmns(MatStencil_k,9) = k
+        ELSEIF (Ppt%StnclTplgy(11).EQ.1) THEN
+            Stencil%Values(11)=one
+            Stencil%idx_clmns(MatStencil_i,11) = i+1
+            Stencil%idx_clmns(MatStencil_j,11) = j
+            Stencil%idx_clmns(MatStencil_k,11) = k
+        END IF
+
+    ! If the current cell is an Neumman y cell:
+    ELSEIF (Ppt%StnclTplgy(10).EQ.4) THEN ! Neumman y
+        Stencil%Values(10)=-one
+        ! It is a decision of wich cell is in Neumman y condition to assign the equality.
+        IF ((Ppt%StnclTplgy(7).EQ.1).AND.(Ppt%StnclTplgy(13).EQ.1)) THEN
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+                & "ERROR: Neumman on y axis was bad defined\n",ierr)
+            STOP
+        ELSEIF (Ppt%StnclTplgy(7).EQ.1) THEN
+            Stencil%Values(7)=one
+            Stencil%idx_clmns(MatStencil_i,7) = i
+            Stencil%idx_clmns(MatStencil_j,7) = j-1
+            Stencil%idx_clmns(MatStencil_k,7) = k
+        ELSEIF (Ppt%StnclTplgy(13).EQ.1) THEN
+            Stencil%Values(13)=one
+            Stencil%idx_clmns(MatStencil_i,13) = i
+            Stencil%idx_clmns(MatStencil_j,13) = j+1
+            Stencil%idx_clmns(MatStencil_k,13) = k
+        END IF
+
+    ! If the current cell is an Neumman z cell:
+    ELSEIF (Ppt%StnclTplgy(10).EQ.5) THEN ! Neumman z
+        Stencil%Values(10)=-one
+        ! It is a decision of wich cell is in Neumman z condition to assign the equality.
+        IF ((Ppt%StnclTplgy(3).EQ.1).AND.(Ppt%StnclTplgy(17).EQ.1)) THEN
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+                & "ERROR: Neumman on z axis was bad defined\n",ierr)
+            STOP
+        ELSEIF (Ppt%StnclTplgy(3).EQ.1) THEN
+            Stencil%Values(3)=one
+            Stencil%idx_clmns(MatStencil_i,3) = i
+            Stencil%idx_clmns(MatStencil_j,3) = j
+            Stencil%idx_clmns(MatStencil_k,3) = k-1
+        ELSEIF (Ppt%StnclTplgy(17).EQ.1) THEN
+            Stencil%Values(17)=one
+            Stencil%idx_clmns(MatStencil_i,17) = i
+            Stencil%idx_clmns(MatStencil_j,17) = j
+            Stencil%idx_clmns(MatStencil_k,17) = k+1
+        END IF
+    ELSEIF (Ppt%StnclTplgy(10).EQ.2) THEN ! Dirichlet
+        Stencil%Values(10)=-one
+    END IF
+
+END SUBROUTINE AnisoflowStencil
 
 SUBROUTINE ApplyDirichlet(Gmtry,BCFld,Step,b,ierr)
 
