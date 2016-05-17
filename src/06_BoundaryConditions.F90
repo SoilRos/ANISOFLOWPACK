@@ -1,5 +1,6 @@
 MODULE ANISOFLOW_BoundaryConditions
 
+    USE ANISOFLOW_Interface, ONLY : GetVerbose
     USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
 
     IMPLICIT NONE
@@ -20,6 +21,14 @@ SUBROUTINE GetBC(Gmtry,BCFld,ierr)
     TYPE(BoundaryConditions),INTENT(OUT)    :: BCFld
 
     TYPE(InputTypeVar)                      :: InputType
+    PetscLogStage                           :: Stage
+    PetscBool                               :: Verbose
+
+    CALL PetscLogStageRegister("GetBC", stage,ierr)
+    CALL PetscLogStagePush(Stage,ierr)
+
+    CALL GetVerbose(Verbose,ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetBC Stage] Inizialited\n",ierr)
 
     CALL GetInputType(InputType,ierr)
 
@@ -27,9 +36,12 @@ SUBROUTINE GetBC(Gmtry,BCFld,ierr)
         CALL GetBC_1(Gmtry,BCFld,ierr)
     ELSE 
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: Boundary Condition InputType wrong\n",ierr)
+            & "[ERROR] Boundary Condition InputType wrong\n",ierr)
         STOP
     END IF
+
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetBC Stage] Finalized\n",ierr)
+    CALL PetscLogStagePop(Stage,ierr)
 
 END SUBROUTINE GetBC
 
@@ -59,8 +71,11 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
     CHARACTER(LEN=25)                       :: Text1Neumman
     CHARACTER(LEN=24)                       :: Text1Cauchy
     PetscBool                               :: AllocationFlag
+    PetscBool                               :: Verbose
 
     PARAMETER(u=01)
+
+    CALL GetVerbose(Verbose,ierr)
 
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputFileBC(InputFileBC,ierr)
@@ -177,9 +192,11 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
 
     END DO
 
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetBC Stage] Boundary Conditions were satisfactorily created\n",ierr)
+
 END SUBROUTINE GetBC_1
 
-SUBROUTINE BCDestroy(BCFld,ierr)
+SUBROUTINE DestroyBC(BCFld,ierr)
 
     IMPLICIT NONE
 
@@ -188,13 +205,29 @@ SUBROUTINE BCDestroy(BCFld,ierr)
 #include <petsc/finclude/petscdm.h>
 #include <petsc/finclude/petscdmda.h>
 
-    PetscErrorCode,INTENT(INOUT)        :: ierr
-    TYPE(BoundaryConditions),INTENT(IN) :: BCFld ! INOUT or IN?
+    PetscErrorCode,INTENT(INOUT)            :: ierr
+    TYPE(BoundaryConditions),INTENT(INOUT)  :: BCFld
 
-    ! CALL VecDestroy(BCFld%Dirich,ierr)
-    ! CALL VecDestroy(BCFld%Cauchy,ierr)
-    ! CALL VecDestroy(BCFld%Cauchy,ierr)
+    PetscInt                                :: i
+    PetscLogStage                           :: Stage
+    PetscBool                               :: Verbose
 
-END SUBROUTINE BCDestroy
+    CALL PetscLogStageRegister("DestroyBC", stage,ierr)
+    CALL PetscLogStagePush(Stage,ierr)
+
+    CALL GetVerbose(Verbose,ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[DestroyBC Stage] Inizialited\n",ierr)
+
+    CALL VecDestroy(BCFld%Dirich,ierr)
+    CALL VecDestroy(BCFld%Neumman,ierr)
+    CALL VecDestroy(BCFld%Cauchy,ierr)
+    DO i=1,BCFld%SizeTimeZone
+        DEALLOCATE(BCFld%TimeZone(i)%Time)
+    END DO
+    DEALLOCATE(BCFld%TimeZone)
+
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[DestroyBC Stage] Finalized\n",ierr)
+
+END SUBROUTINE DestroyBC
 
 END MODULE ANISOFLOW_BoundaryConditions

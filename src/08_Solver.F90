@@ -59,8 +59,9 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
                 CALL KSPSolve(Solver,b,x,ierr)
             
                 WRITE(CharCount,*)Count
-                Name="ANISOFLOW_sol_"//TRIM(CharCount)//".h5"
+                Name="ANISOFLOW_sol_"//TRIM(ADJUSTL(CharCount))//".h5"
                 Name=ADJUSTL(Name)
+                print*,Name
                 CALL ViewSolution(x,Name,ierr)
                 Count=Count+1
 

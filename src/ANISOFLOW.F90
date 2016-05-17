@@ -1,5 +1,6 @@
 PROGRAM ANISOFLOW
 
+    USE ANISOFLOW_Interface, ONLY : GetVerbose
     USE ANISOFLOW_Geometry
     USE ANISOFLOW_Properties
     USE ANISOFLOW_BoundaryConditions
@@ -14,6 +15,7 @@ PROGRAM ANISOFLOW
 
 
     PetscErrorCode          :: ierr
+    PetscBool               :: Verbose
     TYPE(Geometry)          :: Gmtry
     TYPE(PropertyField)     :: PptFld
     TYPE(BoundaryConditions):: BCFld
@@ -21,27 +23,25 @@ PROGRAM ANISOFLOW
     Vec                     :: b,x
 
 
-    ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    ! Initialize program
-    ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
     CALL PetscInitialize(PETSC_COMM_WORLD,ierr)
+
+    CALL GetVerbose(Verbose,ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[Main Stage] Inizialited\n",ierr)
 
     CALL GetGeometry(Gmtry,ierr)
     CALL GetProrperties(Gmtry,PptFld,ierr)
     CALL GetBC(Gmtry,BCFld,ierr)
-    CALL GetSystem(Gmtry,PptFld,BCFld,1,1,A,b,x,ierr)
-    CALL SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
+    ! CALL GetSystem(Gmtry,PptFld,BCFld,1,1,A,b,x,ierr)
+    ! CALL SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
-    ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    ! Finalize program
-    ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    
-    CALL SystemDestroy(A,b,x,ierr)
-    CALL BCDestroy(BCFld,ierr)
-    CALL PropertiesDestroy(PptFld,ierr)
-    CALL GeometryDestroy(Gmtry,ierr)
+    ! CALL SystemDestroy(A,b,x,ierr)
+    CALL DestroyBC(BCFld,ierr)
+    CALL DestroyProperties(PptFld,ierr)
+    CALL DestroyGeometry(Gmtry,ierr)
+
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[Main Stage] Finalized\n",ierr)
     CALL PetscFinalize(ierr)
+
 
 END PROGRAM
 

@@ -1,5 +1,6 @@
 MODULE ANISOFLOW_Properties
 
+    USE ANISOFLOW_Interface, ONLY : GetVerbose
     USE ANISOFLOW_Types, ONLY : PropertyField,Geometry,Property
 
     IMPLICIT NONE
@@ -15,7 +16,19 @@ SUBROUTINE GetProrperties(Gmtry,PptFld,ierr)
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertyField),INTENT(OUT)     :: PptFld
 
+    PetscLogStage                       :: Stage
+    PetscBool                           :: Verbose
+
+    CALL PetscLogStageRegister("GetProrperties", stage,ierr)
+    CALL PetscLogStagePush(Stage,ierr)
+
+    CALL GetVerbose(Verbose,ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Inizialited\n",ierr)
+
     CALL GetConductivity(Gmtry,PptFld,ierr)
+
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Finalized\n",ierr)
+    CALL PetscLogStagePop(Stage,ierr)
 
 END SUBROUTINE GetProrperties
 
@@ -46,14 +59,20 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
     CHARACTER(LEN=200)                  :: InputDir,InputFileCvt,InputFileCvtByZones
     CHARACTER(LEN=200)                  :: Route
     CHARACTER(LEN=13)                   :: CvtKind
+    PetscBool                           :: Verbose
 
     PARAMETER(u=01)
+
+    CALL GetVerbose(Verbose,ierr)
 
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputType(InputType,ierr)
     CALL GetInputFileCvt(InputFileCvt,ierr)
 
     IF (InputType%Cvt.EQ.1) THEN
+
+        PptFld%Cvt%DefinedByZones=.TRUE.
+        IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field is stored as Zones by Block\n",ierr)
 
         CALL DMCreateGlobalVector(Gmtry%DataMngr,CvtTypeGlobal,ierr)
         CALL DMCreateLocalVector(Gmtry%DataMngr,PptFld%Cvt%CvtType,ierr)
@@ -69,7 +88,7 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
                 READ(u, '(I10)')ValI
                 IF (ValI.LE.0) THEN
                     CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
-                        & "ERROR: Input_file_cvt_type entry only can contain"  &
+                        & "[ERROR] Input_file_cvt_type entry only can contain"  &
                         & // " natural numbers\n",ierr)
                     STOP
                 END IF
@@ -118,7 +137,7 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
                     PptFld%Cvt%CvtZone(i)%yz=0.0
                 ELSE
                     CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
-                        & "ERROR: File of conductivity properties is invalid\n"&
+                        & "[ERROR] File of conductivity properties is invalid\n"&
                         & ,ierr)
                     STOP            
                 END IF
@@ -146,6 +165,7 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
             CALL TargetFullTensor(PptFld%Cvt%CvtZone(i))
         END DO
 
+        IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field was satisfactorily created\n",ierr)
     END IF
 
 END SUBROUTINE GetConductivity
@@ -250,7 +270,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
         ValI(1)=10
     ELSE 
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,              &
-            & "ERROR: Property topology wasn't well defined\n"      &
+            & "[ERROR] Property topology wasn't well defined\n"      &
             & ,ierr)
         STOP   
     END IF
@@ -343,7 +363,7 @@ PetscReal FUNCTION Armonic(ValR1,ValR2)
     END IF
 END FUNCTION Armonic
 
-SUBROUTINE PropertiesDestroy(PptFld,ierr)
+SUBROUTINE DestroyProperties(PptFld,ierr)
 
     USE ANISOFLOW_Interface
 
@@ -352,18 +372,33 @@ SUBROUTINE PropertiesDestroy(PptFld,ierr)
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
 
-    TYPE(PropertyField),INTENT(INOUT)   :: PptFld
     PetscErrorCode,INTENT(INOUT)        :: ierr
+    TYPE(PropertyField),INTENT(INOUT)   :: PptFld
 
     TYPE(InputTypeVar)                  :: InputType
+    PetscLogStage                       :: Stage
+    PetscBool                           :: Verbose
+
+    CALL PetscLogStageRegister("DestroyProperties", stage,ierr)
+    CALL PetscLogStagePush(Stage,ierr)
+
+    CALL GetVerbose(Verbose,ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[DestroyProperties Stage] Inizialited\n",ierr)
 
     CALL GetInputType(InputType,ierr)
 
-    IF (InputType%Cvt.EQ.1) THEN
+    IF (PptFld%Cvt%DefinedByZones) THEN
         IF (ALLOCATED(PptFld%Cvt%CvtZone)) DEALLOCATE(PptFld%Cvt%CvtZone)
         CALL VecDestroy(PptFld%Cvt%CvtType,ierr)
-    END IF 
+    ELSE
+        CALL VecDestroy(PptFld%Cvt%xxVec,ierr)
+        CALL VecDestroy(PptFld%Cvt%yyVec,ierr)
+        CALL VecDestroy(PptFld%Cvt%zzVec,ierr)
+    END IF
 
-END SUBROUTINE PropertiesDestroy
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[DestroyProperties Stage] Finalized\n",ierr)
+    CALL PetscLogStagePop(Stage,ierr)
+
+END SUBROUTINE DestroyProperties
 
 END MODULE ANISOFLOW_Properties

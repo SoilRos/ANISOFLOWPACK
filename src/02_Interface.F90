@@ -69,7 +69,7 @@ SUBROUTINE GetInputType(InputType,ierr)
             InputType%BC=1
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Input_type used is invalid\n",ierr)
+                & "[ERROR] Input_type used is invalid\n",ierr)
             STOP
         END IF
     ELSE
@@ -119,7 +119,7 @@ SUBROUTINE GetInputTypeGmtry(InputType,ierr)
             InputType%Gmtry=InputTypeGmtryTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Input_type_gmtry used is invalid\n",ierr)
+                & "[ERROR] Input_type_gmtry used is invalid\n",ierr)
             STOP
         END IF
     END IF
@@ -160,7 +160,7 @@ SUBROUTINE GetInputTypeTplgy(InputType,ierr)
             InputType%Tplgy=InputTypeTplgyTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Input_type_tplgy used is invalid\n",ierr)
+                & "[ERROR] Input_type_tplgy used is invalid\n",ierr)
             STOP
         END IF
     END IF
@@ -203,7 +203,7 @@ SUBROUTINE GetInputTypeCvt(InputType,ierr)
             InputType%Cvt=InputTypeCvtTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Input_type_Cvt used is invalid\n",ierr)
+                & "[ERROR] Input_type_Cvt used is invalid\n",ierr)
             STOP
         END IF
     END IF
@@ -245,7 +245,7 @@ SUBROUTINE GetInputTypeBC(InputType,ierr)
             InputType%BC=InputTypeBCTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Input_type_bc used is invalid\n",ierr)
+                & "[ERROR] Input_type_bc used is invalid\n",ierr)
             STOP
         END IF
     END IF
@@ -277,7 +277,7 @@ SUBROUTINE GetInputFileGmtry(InputFileGmtry,ierr)
 
     IF (.NOT.InputFileGmtryFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: Input_file_gmtry command must be used\n",ierr)
+            & "[ERROR] Input_file_gmtry command must be used\n",ierr)
         STOP
     END IF
 
@@ -310,7 +310,7 @@ SUBROUTINE GetInputFileTplgy(InputFileTplgy,ierr)
 
     IF (.NOT.InputFileTplgyFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: Input_file_tplgy command must be used\n",ierr)
+            & "[ERROR] Input_file_tplgy command must be used\n",ierr)
         STOP
     END IF
 
@@ -344,7 +344,7 @@ SUBROUTINE GetInputFileCvt(InputFileCvt,ierr)
 
     IF (.NOT.InputFileCvtFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: Input_file_cvt command must be used\n",ierr)
+            & "[ERROR] Input_file_cvt command must be used\n",ierr)
         STOP
     END IF
 
@@ -377,7 +377,7 @@ SUBROUTINE GetInputFileCvtByZones(InputFileCvtByZones,ierr)
 
     IF (.NOT.InputFileCvtByZonesFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: Input_file_cvt_by_zones command must be used.\n",ierr)
+            & "[ERROR] Input_file_cvt_by_zones command must be used.\n",ierr)
         STOP
     END IF
 
@@ -410,7 +410,7 @@ SUBROUTINE GetInputFileBC(InputFileBC,ierr)
 
     IF (.NOT.InputFileBCFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: Input_file_bc command must be used.\n",ierr)
+            & "[ERROR] Input_file_bc command must be used.\n",ierr)
         STOP
     END IF
 
@@ -460,7 +460,7 @@ SUBROUTINE GetOuputType(OuputType,ierr)
             OuputType%Sol=1
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Ouput_type used is invalid\n",ierr)
+                & "[ERROR] Ouput_type used is invalid\n",ierr)
             STOP
         END IF
     ELSE
@@ -493,7 +493,7 @@ SUBROUTINE GetOuputTypeSol(OuputType,ierr)
             OuputType%Sol=OuputTypeSolTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Ouput_type_sol used is invalid\n",ierr)
+                & "[ERROR] Ouput_type_sol used is invalid\n",ierr)
             STOP
         END IF
     END IF
@@ -529,11 +529,31 @@ SUBROUTINE GetRunOptions(RunOptions,ierr)
     IF (RunOptionsSchemeFlg) THEN
         IF ((RunOptions%Scheme.GE.3).OR.(RunOptions%Scheme.LE.0)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Run_options_scheme command must be an integer between 1 and 2\n",ierr)
+                & "[ERROR] Run_options_scheme command must be an integer between 1 and 2\n",ierr)
             STOP
         END IF
     END IF
 
 END SUBROUTINE GetRunOptions
+
+SUBROUTINE GetVerbose(Verbose,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    PetscBool,INTENT(OUT)           :: Verbose
+
+    PetscBool                       :: VerboseFlg
+
+    CALL PetscOptionsGetBool(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-verbose",         &
+        Verbose,VerboseFlg,ierr)
+
+    IF (.NOT.VerboseFlg) THEN
+        Verbose=.TRUE.
+    END IF
+
+END SUBROUTINE GetVerbose
 
 END MODULE ANISOFLOW_Interface

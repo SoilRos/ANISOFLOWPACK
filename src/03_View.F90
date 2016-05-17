@@ -53,9 +53,9 @@ SUBROUTINE ViewSolution_1(x,Name,ierr)
     CALL GetOuputDir(OuputDir,ierr)
     Route=ADJUSTL(TRIM(OuputDir)//TRIM(Name))
     CALL PetscObjectSetName(x,"PiezometricHead",ierr)
-    CALL PetscViewerHDF5Open(PETSC_COMM_WORLD,Route,FILE_MODE_WRITE,H5viewer,ierr)
-    CALL VecView(x,H5viewer,ierr)
-    CALL PetscViewerDestroy(H5viewer,ierr)
+    ! CALL PetscViewerHDF5Open(PETSC_COMM_WORLD,Route,FILE_MODE_WRITE,H5viewer,ierr)
+    ! CALL VecView(x,H5viewer,ierr)
+    ! CALL PetscViewerDestroy(H5viewer,ierr)
 
 END SUBROUTINE ViewSolution_1
 
