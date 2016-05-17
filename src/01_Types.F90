@@ -30,8 +30,11 @@ MODULE ANISOFLOW_Types
  !                  produced by DataMngr.
  !      + NeummanIS: It's a PETSc index set that has a map between Neumman information and vecs 
  !                   produced by DataMngr.
- !    > NOTES: The variables DirichIS, CauchyIS and NeummanIS have redundant information  that 
- !             contains the Tplgy. In any case is needed to transfer the information.
+ !      + SourceIS: It's a PETSc index set that has a map between Source information and vecs 
+ !                   roduced by DataMngr.
+ !    > NOTES: The variables DirichIS, CauchyIS, NeummanIS and Source have redundant information 
+ !             that are contained on Tplgy. In any case is needed to transfer the information to
+ !             the system.
 
     TYPE Geometry
         DM                              :: DataMngr
@@ -43,8 +46,8 @@ MODULE ANISOFLOW_Types
 
  !  - Tensor: It's a data structure that represents a full tensor, nine components, of any property.
  !    > VARIABLES: xx, yy, zz, xy, xz, yz, yx, zx, zy.
- !      + xx,yy,zz,xy,xz,yz,yx,zx,zy: Conductivity components.
- !    > NOTES: To use this structure is first needed to fill the xx, yy, zz, xy, xz, and yz 
+ !      + xx,yy,zz,xy,xz,yz,yx,zx,zy: Property components.
+ !    > NOTES: To use this structure is first needed filling the xx, yy, zz, xy, xz, and yz 
  !               components and then use TargetFullTensor subroutine to have (xy=yx, xz=zx, and 
  !               yz=zy). This process is required over every tensor created; after that is 
  !               guaranteed the symmetry on the tensor.
@@ -72,14 +75,16 @@ MODULE ANISOFLOW_Types
  !          3: Box stencil. Stencil based on 26 neighbors.
  !      + StencilTplgy: It's an Array of integers that contains an identifier topology in each cell 
  !                      of the stencil. The array is ordered numbering the cells of the stencil from 
- !                      upper to lowest layer, then from the lowest to the highest values on the x 
- !                      and the y axis respectively.
+ !                      the lowest to the highest values on the x and the y axis respectively, then 
+ !                      from upper to lowest layer.
  !          0: Inactive cell.
  !          1: Active cell.
  !          2: Dirichlet boundary condition cell.
- !          3: Neumman on x boundary condition cell (dh/dx=0).
- !          4: Neumman on y boundary condition cell (dh/dy=0).
- !          5: Neumman on z boundary condition cell (dh/dz=0).
+ !          3: Neumman on x boundary condition cell.
+ !          4: Neumman on y boundary condition cell.
+ !          5: Neumman on z boundary condition cell.
+ !          6: Cauchy boundary condition
+ !          6: Source Q.
  !      + dx,dy,dz: A real that describes the size of the central cell in the directions on x, y,
  !                  and z axis.
  !      + dxB,dyB,dzB: A real that describes the size of the backward cell in the directions on x, 
@@ -121,7 +126,7 @@ MODULE ANISOFLOW_Types
  !                           information on the interface or each block. If the boolean is .TRUE.,
  !                           the CvtType or xxVec, yyVec, and zzVec need an additional component
  !                           in each direction in the first processor.
- !      + CvtZones: It's an Array of Tenors that contain many Tensors of conductivity as defined 
+ !      + CvtZones: It's an Array of Tensor that contain as Tensors of conductivity as defined 
  !                  zones. This variable needs to be stored in all processors.
  !      + CvtType: It's a PETSc vector that contains an identifier for each cell, the identifier 
  !                 value correspond to a zone value.
@@ -145,24 +150,36 @@ MODULE ANISOFLOW_Types
         TYPE(ConductivityField)         :: Cvt
     END TYPE PropertyField
 
+ !  - TimeZoneVar: It's a data structure a zone of time to be modeled.
+ !    > VARIABLES: SizeTime,Time
+ !      + SizeTime: It's an Integer that says the amount of time values.
+ !      + Time: It's an Array that contains the time values to be used in this Time Zone.
+
     TYPE TimeZoneVar
         PetscInt                        :: SizeTime
         PetscReal,ALLOCATABLE           :: Time(:)
     END TYPE TimeZoneVar
 
- !  - StepBC: It's a data structure that contains a Boundary Condition set.
- !    > VARIABLES: Diricl, Cauchy.
- !      + Diricl: It's a PETSc vector with the values of the Dirichlet cells. It must have the same 
+ !  - BoundaryConditions: It's a data structure wich contains a series Boundary Conditions to be  
+ !                        used in several zones of time.
+ !    > VARIABLES: SizeTimeZone, SizeDirich, SizeNeumman, SizeCauchy, Dirich, Neumman, Cauchy,
+ !                 TimeZone.
+ !      + SizeTimeZone: It's an Integer that says the amount of time zones.
+ !      + SizeDirich: It's an Integer that says the size of Dirich PETSc vector. It's the same for
+ !                    every time zone.
+ !      + SizeNeumman: It's an Integer that says the size of Neumman PETSc vector. It's the same 
+ !                     for every time zone.
+ !      + SizeCauchy: It's an Integer that says the size of Cauchy PETSc vector. It's the same for
+ !                    every time zone.
+ !      + Dirich: It's a PETSc vector with the values of the Dirichlet cells. It must have the same 
  !                size as Dirichlet identifiers defined in Geometry data structure.
+ !      + Neumman: It's a PETSc vector with the values of the Neumman cells. It must have the same 
+ !                size as Neumman identifiers defined in Geometry data structure.
  !      + Cauchy: It's a PETSc vector with the values of the Cauchy cells. It must have the same 
  !                size as Cauchy identifiers defined in Geometry data structure.
  !    > NOTES: The Index Sets defined in Geometry for each boundary condition point the value of  
- !             Dirich and Cauchy vectors to the real position of every global vector created with
- !             DataMngr defined in Geometry.
-
- !  - BoundaryConditions: It's a data structure wich contains a series Boundary Conditions to be  
- !                        used in several times or zones of time.
- !      + Step: It's a StepBc array with several values of Boundary Conditions.
+ !             Dirich, Neumman, and Cauchy vectors to the real position of every global vector 
+ !             created with DataMngr defined in Geometry.
 
     TYPE BoundaryConditions
         PetscInt                        :: SizeTimeZone,SizeDirich,SizeNeumman,SizeCauchy
@@ -232,7 +249,7 @@ MODULE ANISOFLOW_Types
 
  !  - InputTypeVar: It's a collection of integer that defines the type of input to be used in the
  !                 program.
- !    > VARIABLES: Gmtry,Tplgy,Cvt,BC
+ !    > VARIABLES: Gmtry, Tplgy, Cvt, BC.
  !      + Gmtry: It's an integer that defines a type of file that will provide the domain size and
  !               the cell center coordinates.
  !          1: Defined by Blessent. An example is provided in "../ex/Blessent/in/tsim_USMH.asc"
@@ -253,6 +270,14 @@ MODULE ANISOFLOW_Types
     TYPE InputTypeVar
         PetscInt                        :: Gmtry,Tplgy,Cvt,BC
     END TYPE InputTypeVar
+
+ !  - OuputTypeVar: It's a collection of integer that defines the type of ouput to be used in the
+ !                  program.
+ !    > VARIABLES: Sol.
+ !      + Sol: It's an integer that defines a type of ouput to be used in solution.
+ !          1: Binary
+ !          2: ASCII
+ !          3: HDF5
 
     TYPE OuputTypeVar
         PetscInt                        :: Sol

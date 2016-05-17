@@ -14,9 +14,9 @@ CONTAINS
  !    > OUT: Gmtry, ierr.
  !      + Gmtry: It's a Geometry data structure filled with input files provided by the user.
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
- !    > NOTES: The Geometry is filled in two stages: to create a Data Manager (DataMngr) to control
- !             information related to a regular rectangular grid, and Topology that describes the
- !             geometry with identifiers.
+ !    > NOTES: The Geometry is filled in three stages: to create a Data Manager (DataMngr) to control
+ !             information related to a regular rectangular grid, a grid indformation and, a Topology 
+ !             that describes the geometry with identifiers.
 
 SUBROUTINE GetGeometry(Gmtry,ierr)
 
@@ -55,6 +55,7 @@ END SUBROUTINE GetGeometry
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
  !    > NOTES: The DataMngr takes the size of the domain and assigning a subdomain to each processor.
 
+
 SUBROUTINE GetDataMngr(DataMngr,ierr)
 
     USE ANISOFLOW_Interface
@@ -66,12 +67,41 @@ SUBROUTINE GetDataMngr(DataMngr,ierr)
 #include <petsc/finclude/petscdmda.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
-    DM,INTENT(INOUT)                :: DataMngr
+    DM,INTENT(OUT)                  :: DataMngr
+
+    TYPE(InputTypeVar)              :: InputType
+
+    CALL GetInputType(InputType,ierr)
+
+    ! InputType define the type of file that is provided.
+    !   1: Defined by Blessent. An example is provided in "../ex/Blessent/in/tsim_USMH.asc"
+    !   2: Defined by Perez. An example is provided in "../ex/Perez/in/sanpck.domnRST"
+    IF (InputType%Gmtry.EQ.1) THEN
+        CALL GetDataMngr_1(DataMngr,ierr)
+    ELSE 
+        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+            & "[ERROR] Geometry InputType wrong\n",ierr)
+        STOP
+    END IF
+
+END SUBROUTINE GetDataMngr
+
+SUBROUTINE GetDataMngr_1(DataMngr,ierr)
+
+    USE ANISOFLOW_Interface
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    DM,INTENT(OUT)                  :: DataMngr
 
     PetscMPIInt                     :: process
     PetscInt                        :: u,widthG(3)
     CHARACTER(LEN=200)              :: InputDir,InputFileGmtry,Route
-    TYPE(InputTypeVar)              :: InputType
     TYPE(RunOptionsVar)             :: RunOptions
     DMDAStencilType                 :: Stencil
     PetscBool                       :: Verbose
@@ -82,7 +112,6 @@ SUBROUTINE GetDataMngr(DataMngr,ierr)
 
     ! It obtains the route to open a geometry file.
     CALL GetInputDir(InputDir,ierr)
-    CALL GetInputType(InputType,ierr)
     CALL GetInputFileGmtry(InputFileGmtry,ierr)
 
     ! It obtains run options.
@@ -95,12 +124,8 @@ SUBROUTINE GetDataMngr(DataMngr,ierr)
         Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileGmtry))
         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
 
-        ! It gets the size of the domain depending on the geometry file input.
-        !   1: Defined by Blessent. An example is provided in "../ex/Blessent/in/tsim_USMH.asc"
-        !   2: Defined by Perez. An example is provided in "../ex/Perez/in/sanpck.domnRST"
-        IF (InputType%Gmtry.EQ.1) THEN
-            READ(u, '((I10),(I10),(I10))')widthG(1),widthG(2),widthG(3)
-        END IF
+        ! It gets the size of the domain 
+        READ(u, '((I10),(I10),(I10))')widthG(1),widthG(2),widthG(3)
         CLOSE(u)
     END IF
 
@@ -126,7 +151,7 @@ SUBROUTINE GetDataMngr(DataMngr,ierr)
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] Data Manager was satisfactorily created\n",ierr)
 
-END SUBROUTINE GetDataMngr
+END SUBROUTINE GetDataMngr_1
 
 SUBROUTINE GetGrid(DataMngr,x,y,z,ierr)
 
@@ -141,8 +166,36 @@ SUBROUTINE GetGrid(DataMngr,x,y,z,ierr)
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: x,y,z
 
-    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry!,Route
     TYPE(InputTypeVar)              :: InputType
+
+    CALL GetInputType(InputType,ierr)
+
+    ! InputType define the type of file that is provided.
+    !   1: Defined by default. Default grid used has DX=DY=DZ=1.0
+    IF (InputType%Gmtry.EQ.1) THEN
+        CALL GetGrid_1(DataMngr,x,y,z,ierr)
+    ELSE 
+        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+            & "[ERROR] Geometry InputType wrong\n",ierr)
+        STOP
+    END IF
+
+END SUBROUTINE GetGrid
+
+SUBROUTINE GetGrid_1(DataMngr,x,y,z,ierr)
+
+    USE ANISOFLOW_Interface
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    DM,INTENT(IN)                   :: DataMngr
+    Vec,INTENT(OUT)                 :: x,y,z
+
+    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry
     PetscInt                        :: widthG(3),size,i
     PetscReal                       :: Value
     PetscBool                       :: Verbose
@@ -151,7 +204,6 @@ SUBROUTINE GetGrid(DataMngr,x,y,z,ierr)
 
     ! It obtains the route to open a geometry file.
     CALL GetInputDir(InputDir,ierr)
-    CALL GetInputType(InputType,ierr)
     CALL GetInputFileGmtry(InputFileGmtry,ierr)
 
     ! It gets the global size from the geometry data manager.
@@ -170,22 +222,20 @@ SUBROUTINE GetGrid(DataMngr,x,y,z,ierr)
     size=widthG(3)+1
     CALL VecCreateSeq(PETSC_COMM_SELF,size,z,ierr)
 
-    IF (InputType%Gmtry.EQ.1) THEN
-        ! Default DX=DY=DZ=1.0
-        DO i=0,widthG(1)
-            Value=REAL(i)
-            CALL VecSetValue(x,i,Value,INSERT_VALUES,ierr)
-        END DO
-        DO i=0,widthG(2)
-            Value=REAL(i)
-            CALL VecSetValue(y,i,Value,INSERT_VALUES,ierr)
-        END DO
-        DO i=0,widthG(3)
-            Value=REAL(i)
-            CALL VecSetValue(z,i,Value,INSERT_VALUES,ierr)
-        END DO
-        IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] WARNING: Grid System wasn't provided. Default grid used has DX=DY=DZ=1.0\n",ierr)
-    END IF
+    ! Default DX=DY=DZ=1.0
+    DO i=0,widthG(1)
+        Value=REAL(i)
+        CALL VecSetValue(x,i,Value,INSERT_VALUES,ierr)
+    END DO
+    DO i=0,widthG(2)
+        Value=REAL(i)
+        CALL VecSetValue(y,i,Value,INSERT_VALUES,ierr)
+    END DO
+    DO i=0,widthG(3)
+        Value=REAL(i)
+        CALL VecSetValue(z,i,Value,INSERT_VALUES,ierr)
+    END DO
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] WARNING: Grid System wasn't provided. Default grid used has DX=DY=DZ=1.0\n",ierr)
 
     CALL VecAssemblyBegin(x,ierr)
     CALL VecAssemblyEnd(x,ierr)
@@ -198,7 +248,7 @@ SUBROUTINE GetGrid(DataMngr,x,y,z,ierr)
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] Grid System was satisfactorily created\n",ierr)
 
-END SUBROUTINE GetGrid
+END SUBROUTINE GetGrid_1
 
  !  - GetTopology: It's a routine that creates and fills the information related to topology.
  !                 It creates a vector and index sets to describe the geometry. 
@@ -206,8 +256,40 @@ END SUBROUTINE GetGrid
  !      + Gmtry: It's a Geometry data structure filled with input files provided by the user.
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
-
 SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
+
+    USE ANISOFLOW_Interface
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
+#include <petsc/finclude/petscdmda.h90>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    DM,INTENT(IN)                   :: DataMngr
+    Vec,INTENT(OUT)                 :: Tplgy
+    IS,INTENT(OUT)                  :: DirichIS,NeummanIS,CauchyIS,SourceIS
+
+    TYPE(InputTypeVar)              :: InputType
+
+    CALL GetInputType(InputType,ierr)
+
+    ! InputType define the type of file that is provided.
+    !   1: Default topology, it doesn't need a file. The first border layer is Dirichlet, active in other case    IF (InputType%Tplgy.EQ.1) THEN
+    IF (InputType%Tplgy.EQ.1) THEN
+        CALL GetTopology_1(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
+    ELSE 
+        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+            & "[ERROR] Topology InputType wrong\n",ierr)
+        STOP
+    END IF
+
+END SUBROUTINE GetTopology
+
+SUBROUTINE GetTopology_1(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
 
     USE ANISOFLOW_Interface
 
@@ -227,17 +309,10 @@ SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
     PetscReal,POINTER               :: TmpTplgyArray(:,:,:)
     PetscReal                       :: ValR
     PetscInt                        :: i,j,k,widthL(3),widthG(3),corn(3),BCLenL(4),BCLenG(4)
-    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry!,Route
-    TYPE(InputTypeVar)              :: InputType
     Vec                             :: TmpTplgy
     PetscBool                       :: Verbose
 
     CALL GetVerbose(Verbose,ierr)
-
-    ! It obtains the route to open a geometry file.
-    CALL GetInputDir(InputDir,ierr)
-    CALL GetInputType(InputType,ierr)
-    CALL GetInputFileGmtry(InputFileGmtry,ierr)
 
     ! It obtains a temporal Fortran array where will be filled each topology identifier.
     CALL DMCreateGlobalVector(DataMngr,TmpTplgy,ierr)
@@ -247,43 +322,40 @@ SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
     BCLenL(:)=0
     BCLenG(:)=0
 
-    ! It fills the temporal Fortran array depending on the topology file input.
-    !   1: Default topology, it doesn't need a file. The first border layer is Dirichlet, active in other case
-    IF (InputType%Tplgy.EQ.1) THEN
+    ! It fills the temporal Fortran array.
 
-        ! It gets the global size from the geometry data manager.
-        CALL DMDAGetInfo(DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
-            & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
-            & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
-            & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
-            & PETSC_NULL_INTEGER,ierr)
+    ! It gets the global size from the geometry data manager.
+    CALL DMDAGetInfo(DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,ierr)
 
-        CALL DMDAGetCorners(DataMngr,corn(1),corn(2),corn(3),widthL(1),  &
-            & widthL(2),widthL(3),ierr)
+    CALL DMDAGetCorners(DataMngr,corn(1),corn(2),corn(3),widthL(1),  &
+        & widthL(2),widthL(3),ierr)
 
-        ! It assigns active identifier to every cell.
-        ValR=1.0
-        TmpTplgyArray(:,:,:)=ValR
+    ! It assigns active identifier to every cell.
+    ValR=1.0
+    TmpTplgyArray(:,:,:)=ValR
 
-        ! It changes the identifier depending on the position.
-        DO k=corn(3),corn(3)+widthL(3)-1
-            DO j=corn(2),corn(2)+widthL(2)-1
-                DO i=corn(1),corn(1)+widthL(1)-1
-                    ValR=1.0
-                    ! Dirichlet on the border of the top layer.
-                    ! Active in nother case.
-                    IF ((k.EQ.0).AND.((i.EQ.0).OR.(i.EQ.(widthG(1)-1)).OR.     &
-                    & (j.EQ.0).OR.(j.EQ.(widthG(2)-1)))) THEN
-                        ! Dirichlet
-                        ValR=2.0
-                        BCLenL(1)=BCLenL(1)+1
-                    END IF
-                    TmpTplgyArray(i,j,k)=ValR
-                END DO
+    ! It changes the identifier depending on the position.
+    DO k=corn(3),corn(3)+widthL(3)-1
+        DO j=corn(2),corn(2)+widthL(2)-1
+            DO i=corn(1),corn(1)+widthL(1)-1
+                ValR=1.0
+                ! Dirichlet on the border of the top layer.
+                ! Active in nother case.
+                IF ((k.EQ.0).AND.((i.EQ.0).OR.(i.EQ.(widthG(1)-1)).OR.     &
+                & (j.EQ.0).OR.(j.EQ.(widthG(2)-1)))) THEN
+                    ! Dirichlet
+                    ValR=2.0
+                    BCLenL(1)=BCLenL(1)+1
+                END IF
+                TmpTplgyArray(i,j,k)=ValR
             END DO
         END DO
-        IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] WARNING: Topology File wasn't provided. Default topology used is ...\n",ierr)
-    END IF
+    END DO
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] WARNING: Topology File wasn't provided. Default topology used is ...\n",ierr)
 
     ! It moves the temporal Fortran array to a petsc vector, Tplgy, stored in Gmtry.
     CALL DMDAVecRestoreArrayF90(DataMngr,TmpTplgy,TmpTplgyArray,ierr)
@@ -302,7 +374,7 @@ SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
 
     CALL GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
 
-END SUBROUTINE GetTopology
+END SUBROUTINE GetTopology_1
 
 SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
 

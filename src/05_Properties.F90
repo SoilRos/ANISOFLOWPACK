@@ -35,6 +35,32 @@ END SUBROUTINE GetProrperties
 SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
 
     USE ANISOFLOW_Interface
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    TYPE(Geometry),INTENT(IN)           :: Gmtry
+    TYPE(PropertyField),INTENT(INOUT)   :: PptFld
+
+    TYPE(InputTypeVar)              :: InputType
+
+    CALL GetInputType(InputType,ierr)
+
+    IF (InputType%Tplgy.EQ.1) THEN
+        CALL GetConductivity_1(Gmtry,PptFld,ierr)
+    ELSE 
+        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+            & "[ERROR] Conductivity InputType wrong\n",ierr)
+        STOP
+    END IF
+
+END SUBROUTINE GetConductivity
+
+SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
+
+    USE ANISOFLOW_Interface
     USE ANISOFLOW_Types, ONLY : TargetFullTensor
     
     IMPLICIT NONE
@@ -55,7 +81,6 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
     PetscReal                           :: ValR
     PetscMPIInt                         :: process
     Vec                                 :: CvtTypeGlobal
-    TYPE(InputTypeVar)                  :: InputType
     CHARACTER(LEN=200)                  :: InputDir,InputFileCvt,InputFileCvtByZones
     CHARACTER(LEN=200)                  :: Route
     CHARACTER(LEN=13)                   :: CvtKind
@@ -66,109 +91,105 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
     CALL GetVerbose(Verbose,ierr)
 
     CALL GetInputDir(InputDir,ierr)
-    CALL GetInputType(InputType,ierr)
     CALL GetInputFileCvt(InputFileCvt,ierr)
 
-    IF (InputType%Cvt.EQ.1) THEN
+    PptFld%Cvt%DefinedByZones=.TRUE.
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field is stored as Zones by Block\n",ierr)
 
-        PptFld%Cvt%DefinedByZones=.TRUE.
-        IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field is stored as Zones by Block\n",ierr)
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,CvtTypeGlobal,ierr)
+    CALL DMCreateLocalVector(Gmtry%DataMngr,PptFld%Cvt%CvtType,ierr)
 
-        CALL DMCreateGlobalVector(Gmtry%DataMngr,CvtTypeGlobal,ierr)
-        CALL DMCreateLocalVector(Gmtry%DataMngr,PptFld%Cvt%CvtType,ierr)
+    CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+    IF (process.EQ.0) THEN
+        CALL GetInputFileCvtByZones(InputFileCvtByZones,ierr)
+        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvtByZones))
+        OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
+        READ(u, '((I10),(I10),(I10))')width(1),width(2),width(3)
 
-        CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
-        IF (process.EQ.0) THEN
-            CALL GetInputFileCvtByZones(InputFileCvtByZones,ierr)
-            Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvtByZones))
-            OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
-            READ(u, '((I10),(I10),(I10))')width(1),width(2),width(3)
-
-            DO i=1,width(1)*width(2)*width(3)
-                READ(u, '(I10)')ValI
-                IF (ValI.LE.0) THEN
-                    CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
-                        & "[ERROR] Input_file_cvt_type entry only can contain"  &
-                        & // " natural numbers\n",ierr)
-                    STOP
-                END IF
-                ValR=REAL(ValI)
-                CALL VecSetValue(CvtTypeGlobal,i-1,ValR,INSERT_VALUES,ierr)
-            END DO
-            CLOSE(u)
-        END IF
-
-        CALL VecAssemblyBegin(CvtTypeGlobal,ierr)
-        CALL VecAssemblyEnd(CvtTypeGlobal,ierr)
-
-        CALL VecMax(CvtTypeGlobal,PETSC_NULL_INTEGER,ValR,ierr)
-        CvtLen=INT(ValR)
-
-        CALL DMGlobalToLocalBegin(Gmtry%DataMngr,CvtTypeGlobal,INSERT_VALUES,  &
-            & PptFld%Cvt%CvtType,ierr)
-        CALL DMGlobalToLocalEnd(Gmtry%DataMngr,CvtTypeGlobal,INSERT_VALUES,    &
-            & PptFld%Cvt%CvtType,ierr)
-
-        CALL VecDestroy(CvtTypeGlobal,ierr)
-
-        ALLOCATE(PptFld%Cvt%CvtZone(CvtLen))
-        
-        IF (process.EQ.0) THEN
-            Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvt))
-            OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
-
-            DO i=1,CvtLen
-                READ(u,*)
-                READ(u,*)
-                READ(u,*)
-                READ(u,'(A13)')CvtKind
-                IF (CvtKind.EQ."k anisotropic") THEN 
-                    READ(u,'((F8.0),(F8.0),(F8.0))')PptFld%Cvt%CvtZone(i)%xx, &
-                        & PptFld%Cvt%CvtZone(i)%yy,PptFld%Cvt%CvtZone(i)%zz
-                    PptFld%Cvt%CvtZone(i)%xy=0.0
-                    PptFld%Cvt%CvtZone(i)%xz=0.0
-                    PptFld%Cvt%CvtZone(i)%yz=0.0
-                ELSE IF (CvtKind.EQ."k isotropic  ") THEN
-                    READ(u,'(F15.0)')PptFld%Cvt%CvtZone(i)%xx
-                    PptFld%Cvt%CvtZone(i)%yy=PptFld%Cvt%CvtZone(i)%xx
-                    PptFld%Cvt%CvtZone(i)%zz=PptFld%Cvt%CvtZone(i)%xx
-                    PptFld%Cvt%CvtZone(i)%xy=0.0
-                    PptFld%Cvt%CvtZone(i)%xz=0.0
-                    PptFld%Cvt%CvtZone(i)%yz=0.0
-                ELSE
-                    CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
-                        & "[ERROR] File of conductivity properties is invalid\n"&
-                        & ,ierr)
-                    STOP            
-                END IF
-                DO j=1,24
-                    READ(u,*)
-                END DO
-            END DO
-            CLOSE(u)
-        END IF
-
-        CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%xx,CvtLen,MPI_DOUBLE, 0,         &
-            & PETSC_COMM_WORLD,ierr)
-        CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%yy,CvtLen,MPI_DOUBLE, 0,         &
-            & PETSC_COMM_WORLD,ierr)
-        CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%zz,CvtLen,MPI_DOUBLE, 0,         &
-            &PETSC_COMM_WORLD,ierr)
-        CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%xy,CvtLen,MPI_DOUBLE, 0,         &
-            &PETSC_COMM_WORLD,ierr)
-        CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%xz,CvtLen,MPI_DOUBLE, 0,         &
-            &PETSC_COMM_WORLD,ierr)
-        CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%yz,CvtLen,MPI_DOUBLE, 0,         &
-            &PETSC_COMM_WORLD,ierr)
-
-        DO i=1,CvtLen
-            CALL TargetFullTensor(PptFld%Cvt%CvtZone(i))
+        DO i=1,width(1)*width(2)*width(3)
+            READ(u, '(I10)')ValI
+            IF (ValI.LE.0) THEN
+                CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
+                    & "[ERROR] Input_file_cvt_type entry only can contain"  &
+                    & // " natural numbers\n",ierr)
+                STOP
+            END IF
+            ValR=REAL(ValI)
+            CALL VecSetValue(CvtTypeGlobal,i-1,ValR,INSERT_VALUES,ierr)
         END DO
-
-        IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field was satisfactorily created\n",ierr)
+        CLOSE(u)
     END IF
 
-END SUBROUTINE GetConductivity
+    CALL VecAssemblyBegin(CvtTypeGlobal,ierr)
+    CALL VecAssemblyEnd(CvtTypeGlobal,ierr)
+
+    CALL VecMax(CvtTypeGlobal,PETSC_NULL_INTEGER,ValR,ierr)
+    CvtLen=INT(ValR)
+
+    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,CvtTypeGlobal,INSERT_VALUES,  &
+        & PptFld%Cvt%CvtType,ierr)
+    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,CvtTypeGlobal,INSERT_VALUES,    &
+        & PptFld%Cvt%CvtType,ierr)
+
+    CALL VecDestroy(CvtTypeGlobal,ierr)
+
+    ALLOCATE(PptFld%Cvt%CvtZone(CvtLen))
+    
+    IF (process.EQ.0) THEN
+        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvt))
+        OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
+
+        DO i=1,CvtLen
+            READ(u,*)
+            READ(u,*)
+            READ(u,*)
+            READ(u,'(A13)')CvtKind
+            IF (CvtKind.EQ."k anisotropic") THEN 
+                READ(u,'((F8.0),(F8.0),(F8.0))')PptFld%Cvt%CvtZone(i)%xx, &
+                    & PptFld%Cvt%CvtZone(i)%yy,PptFld%Cvt%CvtZone(i)%zz
+                PptFld%Cvt%CvtZone(i)%xy=0.0
+                PptFld%Cvt%CvtZone(i)%xz=0.0
+                PptFld%Cvt%CvtZone(i)%yz=0.0
+            ELSE IF (CvtKind.EQ."k isotropic  ") THEN
+                READ(u,'(F15.0)')PptFld%Cvt%CvtZone(i)%xx
+                PptFld%Cvt%CvtZone(i)%yy=PptFld%Cvt%CvtZone(i)%xx
+                PptFld%Cvt%CvtZone(i)%zz=PptFld%Cvt%CvtZone(i)%xx
+                PptFld%Cvt%CvtZone(i)%xy=0.0
+                PptFld%Cvt%CvtZone(i)%xz=0.0
+                PptFld%Cvt%CvtZone(i)%yz=0.0
+            ELSE
+                CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
+                    & "[ERROR] File of conductivity properties is invalid\n"&
+                    & ,ierr)
+                STOP            
+            END IF
+            DO j=1,24
+                READ(u,*)
+            END DO
+        END DO
+        CLOSE(u)
+    END IF
+
+    CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%xx,CvtLen,MPI_DOUBLE, 0,         &
+        & PETSC_COMM_WORLD,ierr)
+    CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%yy,CvtLen,MPI_DOUBLE, 0,         &
+        & PETSC_COMM_WORLD,ierr)
+    CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%zz,CvtLen,MPI_DOUBLE, 0,         &
+        &PETSC_COMM_WORLD,ierr)
+    CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%xy,CvtLen,MPI_DOUBLE, 0,         &
+        &PETSC_COMM_WORLD,ierr)
+    CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%xz,CvtLen,MPI_DOUBLE, 0,         &
+        &PETSC_COMM_WORLD,ierr)
+    CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%yz,CvtLen,MPI_DOUBLE, 0,         &
+        &PETSC_COMM_WORLD,ierr)
+
+    DO i=1,CvtLen
+        CALL TargetFullTensor(PptFld%Cvt%CvtZone(i))
+    END DO
+
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field was satisfactorily created\n",ierr)
+
+END SUBROUTINE GetConductivity_1
 
 SUBROUTINE GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
 
