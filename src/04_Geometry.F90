@@ -53,18 +53,16 @@ END SUBROUTINE GetGeometry
  !      + DataMngr: It's a DMDA PETSc structure that stores the information related with a regular 
  !                 rectangular grid.
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
- !    > NOTES: The DataMngr takes the size of the domain and assigning a subdomain to each processor.
+ !    > NOTES: The DataMngr takes the size of the domain and assign a subdomain to each processor.
 
 
 SUBROUTINE GetDataMngr(DataMngr,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Interface, ONLY : GetInputType
 
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     DM,INTENT(OUT)                  :: DataMngr
@@ -85,6 +83,14 @@ SUBROUTINE GetDataMngr(DataMngr,ierr)
     END IF
 
 END SUBROUTINE GetDataMngr
+
+ !  - GetDataMngr_1: It's a routine that creates and fills the information related with a regular 
+ !                   rectangular grid when InputType%Gmtry=1.
+ !    > OUT: DataMngr, ierr.
+ !      + DataMngr: It's a DMDA PETSc structure that stores the information related with a regular 
+ !                 rectangular grid.
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
+ !    > NOTES: The DataMngr takes the size of the domain and assign a subdomain to each processor.
 
 SUBROUTINE GetDataMngr_1(DataMngr,ierr)
 
@@ -153,9 +159,19 @@ SUBROUTINE GetDataMngr_1(DataMngr,ierr)
 
 END SUBROUTINE GetDataMngr_1
 
+ !  - GetGrid: It's a routine that creates and fills the information related with a a coordinates of
+ !             a regular rectangular grid.
+ !    > IN: DataMngr
+ !      + DataMngr: It's a DMDA PETSc structure that has stored the information related with a 
+ !                 regular rectangular grid.
+ !    > OUT: x, y, z, ierr.
+ !      + x,y,z: It's an Array that has de coordinates of the grid on each direction. It's stored on 
+ !               every processor 
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
+
 SUBROUTINE GetGrid(DataMngr,x,y,z,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Interface, ONLY : GetInputType
 
     IMPLICIT NONE
 
@@ -181,6 +197,16 @@ SUBROUTINE GetGrid(DataMngr,x,y,z,ierr)
     END IF
 
 END SUBROUTINE GetGrid
+
+ !  - GetGrid_1: It's a routine that creates and fills the information related with a a coordinates of
+ !               a regular rectangular grid when InputType%Gmtry=1
+ !    > IN: DataMngr
+ !      + DataMngr: It's a DMDA PETSc structure that has stored the information related with a 
+ !                 regular rectangular grid.
+ !    > OUT: x, y, z, ierr.
+ !      + x,y,z: It's an Array that has de coordinates of the grid on each direction. It's stored on 
+ !               every processor 
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
 SUBROUTINE GetGrid_1(DataMngr,x,y,z,ierr)
 
@@ -213,6 +239,7 @@ SUBROUTINE GetGrid_1(DataMngr,x,y,z,ierr)
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
         & PETSC_NULL_INTEGER,ierr)
 
+    ! It create the vectors
     size=widthG(1)+1
     CALL VecCreateSeq(PETSC_COMM_SELF,size,x,ierr)
 
@@ -222,7 +249,7 @@ SUBROUTINE GetGrid_1(DataMngr,x,y,z,ierr)
     size=widthG(3)+1
     CALL VecCreateSeq(PETSC_COMM_SELF,size,z,ierr)
 
-    ! Default DX=DY=DZ=1.0
+    
     DO i=0,widthG(1)
         Value=REAL(i)
         CALL VecSetValue(x,i,Value,INSERT_VALUES,ierr)
@@ -235,6 +262,7 @@ SUBROUTINE GetGrid_1(DataMngr,x,y,z,ierr)
         Value=REAL(i)
         CALL VecSetValue(z,i,Value,INSERT_VALUES,ierr)
     END DO
+    ! Default DX=DY=DZ=1.0
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] WARNING: Grid System wasn't provided. Default grid used has DX=DY=DZ=1.0\n",ierr)
 
     CALL VecAssemblyBegin(x,ierr)
@@ -252,21 +280,37 @@ END SUBROUTINE GetGrid_1
 
  !  - GetTopology: It's a routine that creates and fills the information related to topology.
  !                 It creates a vector and index sets to describe the geometry. 
- !    > OUT: Gmtry, ierr.
- !      + Gmtry: It's a Geometry data structure filled with input files provided by the user.
+ !    > IN: DataMngr.
+ !      + DataMngr: It's a DMDA PETSc structure that has stored the information related with a 
+ !                 regular rectangular grid.
+ !    > OUT: Tplgy, DirichIS, NeummanIS, CauchyIS, SourceIS, ierr.
+ !      + Tplgy: It's a PETSc vector type produced by DataMngr that contains a topology identifier
+ !               in each cell.
+ !          0: Inactive cell.
+ !          1: Active cell.
+ !          2: Dirichlet boundary condition cell.
+ !          3: Neumman on x boundary condition cell.
+ !          4: Neumman on y boundary condition cell.
+ !          5: Neumman on z boundary condition cell.
+ !          6: Cauchy boundary condition
+ !          6: Source Q.
+ !      + DirichIS: It's a PETSc index set that has a map between Dirichlet information and vecs 
+ !                  produced by DataMngr.
+ !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
+ !                  produced by DataMngr.
+ !      + NeummanIS: It's a PETSc index set that has a map between Neumman information and vecs 
+ !                   produced by DataMngr.
+ !      + SourceIS: It's a PETSc index set that has a map between Source information and vecs 
+ !                   roduced by DataMngr.
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
 SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Interface, ONLY : GetInputType
 
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     DM,INTENT(IN)                   :: DataMngr
@@ -278,7 +322,7 @@ SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
     CALL GetInputType(InputType,ierr)
 
     ! InputType define the type of file that is provided.
-    !   1: Default topology, it doesn't need a file. The first border layer is Dirichlet, active in other case    IF (InputType%Tplgy.EQ.1) THEN
+    !   1: Default topology, it doesn't need a file. The first border layer is Dirichlet, active in other case.
     IF (InputType%Tplgy.EQ.1) THEN
         CALL GetTopology_1(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
     ELSE 
@@ -288,6 +332,33 @@ SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
     END IF
 
 END SUBROUTINE GetTopology
+
+ !  - GetTopology_1: It's a routine that creates and fills the information related to topology.
+ !                   when InputType%Tplgy=1. It creates a vector and index sets to describe 
+ !                   the geometry. 
+ !    > IN: DataMngr.
+ !      + DataMngr: It's a DMDA PETSc structure that has stored the information related with a 
+ !                 regular rectangular grid. 
+ !    > OUT: Tplgy, DirichIS, NeummanIS, CauchyIS, SourceIS, ierr.
+ !      + Tplgy: It's a PETSc vector type produced by DataMngr that contains a topology identifier
+ !               in each cell.
+ !          0: Inactive cell.
+ !          1: Active cell.
+ !          2: Dirichlet boundary condition cell.
+ !          3: Neumman on x boundary condition cell.
+ !          4: Neumman on y boundary condition cell.
+ !          5: Neumman on z boundary condition cell.
+ !          6: Cauchy boundary condition
+ !          6: Source Q.
+ !      + DirichIS: It's a PETSc index set that has a map between Dirichlet information and vecs 
+ !                  produced by DataMngr.
+ !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
+ !                  produced by DataMngr.
+ !      + NeummanIS: It's a PETSc index set that has a map between Neumman information and vecs 
+ !                   produced by DataMngr.
+ !      + SourceIS: It's a PETSc index set that has a map between Source information and vecs 
+ !                   roduced by DataMngr.
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
 SUBROUTINE GetTopology_1(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
 
@@ -375,6 +446,33 @@ SUBROUTINE GetTopology_1(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ier
     CALL GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
 
 END SUBROUTINE GetTopology_1
+
+ !  - GetTopologyBC: It's a routine that creates the Boundary Condition Index Sets from Tplgy vector.
+ !    > IN: DataMngr, Tplgy, BCLenG.
+ !      + DataMngr: It's a DMDA PETSc structure that has stored the information related with a 
+ !                 regular rectangular grid.
+ !      + Tplgy: It's a PETSc vector type produced by DataMngr that contains a topology identifier
+ !               in each cell.
+ !          0: Inactive cell.
+ !          1: Active cell.
+ !          2: Dirichlet boundary condition cell.
+ !          3: Neumman on x boundary condition cell.
+ !          4: Neumman on y boundary condition cell.
+ !          5: Neumman on z boundary condition cell.
+ !          6: Cauchy boundary condition
+ !          6: Source Q.
+ !      + BCLenG: It's an Array that contains the global length of each Boundary Condition in the 
+ !                following order: DirichIS, NeummanIS, CauchyIS, SourceIS.
+ !    > OUT: DirichIS, NeummanIS, CauchyIS, SourceIS, ierr.
+ !      + DirichIS: It's a PETSc index set that has a map between Dirichlet information and vecs 
+ !                  produced by DataMngr.
+ !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
+ !                  produced by DataMngr.
+ !      + NeummanIS: It's a PETSc index set that has a map between Neumman information and vecs 
+ !                   produced by DataMngr.
+ !      + SourceIS: It's a PETSc index set that has a map between Source information and vecs 
+ !                   roduced by DataMngr.
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
 SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
 
@@ -565,7 +663,7 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
         Ppt%StnclTplgy(19)=INT(TmpTplgyArray(i  ,j+1,k+1))
     ELSE
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: Run_options_scheme command must be an integer between 1 and 2\n",ierr)
+            & "[ERROR] Run_options_scheme command must be an integer between 1 and 2\n",ierr)
         STOP
     END IF
     CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,Gmtry%Tplgy,TmpTplgyArray,ierr)

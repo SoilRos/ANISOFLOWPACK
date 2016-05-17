@@ -4,18 +4,18 @@
 
 ---------------------------------------------- PETSc Performance Summary: ----------------------------------------------
 
-./../../src/ANISOFLOW.exe                                                                                                                                                                                                                                       ¬§Þ[ÿ on a arch-osx-mpich-1-hdf5-x-PETSC3.7 named Santiagos-MacBook-Air.local with 2 processors, by sospinar Mon May 16 23:22:50 2016
+./../../src/ANISOFLOW.exe                                                                                                                                                                                                                                       ¼Pÿ on a arch-osx-mpich-1-hdf5-x-PETSC3.7 named Santiagos-MacBook-Air.local with 1 processor, by sospinar Tue May 17 00:52:40 2016
 Using Petsc Release Version 3.7.0, unknown 
 
                          Max       Max/Min        Avg      Total 
-Time (sec):           1.061e+00      1.00000   1.061e+00
+Time (sec):           4.398e-01      1.00000   4.398e-01
 Objects:              2.900e+01      1.00000   2.900e+01
 Flops:                0.000e+00      0.00000   0.000e+00  0.000e+00
 Flops/sec:            0.000e+00      0.00000   0.000e+00  0.000e+00
-Memory:               9.135e+06      1.30072              1.616e+07
-MPI Messages:         9.500e+00      1.18750   8.750e+00  1.750e+01
-MPI Message Lengths:  8.920e+05      1.00002   1.019e+05  1.784e+06
-MPI Reductions:       1.180e+02      1.00000
+Memory:               1.035e+07      1.00000              1.035e+07
+MPI Messages:         0.000e+00      0.00000   0.000e+00  0.000e+00
+MPI Message Lengths:  0.000e+00      0.00000   0.000e+00  0.000e+00
+MPI Reductions:       0.000e+00      0.00000
 
 Flop counting convention: 1 flop = 1 real number operation of type (multiply/divide/add/subtract)
                             e.g., VecAXPY() for real vectors of length N --> 2N flops
@@ -23,13 +23,13 @@ Flop counting convention: 1 flop = 1 real number operation of type (multiply/div
 
 Summary of Stages:   ----- Time ------  ----- Flops -----  --- Messages ---  -- Message Lengths --  -- Reductions --
                         Avg     %Total     Avg     %Total   counts   %Total     Avg         %Total   counts   %Total 
- 0:      Main Stage: 3.6869e-04   0.0%  0.0000e+00   0.0%  0.000e+00   0.0%  0.000e+00        0.0%  0.000e+00   0.0% 
- 1:     GetGeometry: 8.0203e-01  75.6%  0.0000e+00   0.0%  8.000e+00  45.7%  7.591e+03        7.4%  7.300e+01  61.9% 
- 2:  GetProrperties: 2.5041e-01  23.6%  0.0000e+00   0.0%  4.500e+00  25.7%  9.413e+04       92.3%  9.000e+00   7.6% 
- 3:           GetBC: 6.2075e-03   0.6%  0.0000e+00   0.0%  5.000e+00  28.6%  2.201e+02        0.2%  3.000e+01  25.4% 
- 4:       DestroyBC: 7.4745e-04   0.1%  0.0000e+00   0.0%  0.000e+00   0.0%  0.000e+00        0.0%  4.000e+00   3.4% 
- 5: DestroyProperties: 3.3801e-04   0.0%  0.0000e+00   0.0%  0.000e+00   0.0%  0.000e+00        0.0%  0.000e+00   0.0% 
- 6: DestroyGeometry: 1.3387e-03   0.1%  0.0000e+00   0.0%  0.000e+00   0.0%  0.000e+00        0.0%  0.000e+00   0.0% 
+ 0:      Main Stage: 6.7746e-03   1.5%  0.0000e+00   0.0%  0.000e+00   0.0%  0.000e+00        0.0%  0.000e+00   0.0% 
+ 1:     GetGeometry: 2.3375e-01  53.1%  0.0000e+00   0.0%  0.000e+00   0.0%  0.000e+00        0.0%  0.000e+00   0.0% 
+ 2:  GetProrperties: 1.7962e-01  40.8%  0.0000e+00   0.0%  0.000e+00   0.0%  0.000e+00        0.0%  0.000e+00   0.0% 
+ 3:           GetBC: 5.9312e-03   1.3%  0.0000e+00   0.0%  0.000e+00   0.0%  0.000e+00        0.0%  0.000e+00   0.0% 
+ 4:       DestroyBC: 5.5343e-03   1.3%  0.0000e+00   0.0%  0.000e+00   0.0%  0.000e+00        0.0%  0.000e+00   0.0% 
+ 5: DestroyProperties: 7.6846e-04   0.2%  0.0000e+00   0.0%  0.000e+00   0.0%  0.000e+00        0.0%  0.000e+00   0.0% 
+ 6: DestroyGeometry: 7.3378e-03   1.7%  0.0000e+00   0.0%  0.000e+00   0.0%  0.000e+00        0.0%  0.000e+00   0.0% 
 
 ------------------------------------------------------------------------------------------------------------------------
 See the 'Profiling' chapter of the users' manual for details on interpreting output.
@@ -70,27 +70,24 @@ Event                Count      Time (sec)     Flops                            
 
 --- Event Stage 1: GetGeometry
 
-VecSet                 4 1.0 9.7735e-04 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
-VecAssemblyBegin       3 1.0 2.7556e-05 1.2 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
-VecAssemblyEnd         3 1.0 2.6814e-05 1.1 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
-VecScatterBegin        3 1.0 7.2027e-03 1.2 0.00e+00 0.0 4.0e+00 2.7e+04 0.0e+00  1  0 23  6  0   1  0 50 80  0     0
-VecScatterEnd          3 1.0 2.1258e-03 3.5 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecSet                 6 1.0 4.8519e-03 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  1  0  0  0  0   2  0  0  0  0     0
+VecAssemblyBegin       3 1.0 2.3235e-05 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecAssemblyEnd         3 1.0 2.3135e-05 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecScatterBegin        3 1.0 5.4881e-03 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  1  0  0  0  0   2  0  0  0  0     0
 
 --- Event Stage 2: GetProrperties
 
-BuildTwoSidedF         1 1.0 3.7302e-02 8.6 0.00e+00 0.0 2.5e+00 6.4e+05 0.0e+00  2  0 14 89  0   8  0 56 97  0     0
-VecMax                 1 1.0 2.7153e-03 1.3 0.00e+00 0.0 0.0e+00 0.0e+00 2.0e+00  0  0  0  0  2   1  0  0  0 22     0
-VecSet                 1 1.0 8.1077e-04 1.1 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
-VecAssemblyBegin       1 1.0 2.4240e-01 8.3 0.00e+00 0.0 2.5e+00 6.4e+05 2.0e+00 13  0 14 89  2  54  0 56 97 22     0
-VecAssemblyEnd         1 1.0 8.9075e-03 7.4 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   2  0  0  0  0     0
-VecScatterBegin        1 1.0 1.0714e-03 1.0 0.00e+00 0.0 2.0e+00 2.7e+04 0.0e+00  0  0 11  3  0   0  0 44  3  0     0
-VecScatterEnd          1 1.0 4.9249e-05 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecMax                 1 1.0 7.3844e-04 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecSet                 2 1.0 1.8672e-03 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   1  0  0  0  0     0
+VecAssemblyBegin       1 1.0 5.1760e-06 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecAssemblyEnd         1 1.0 4.7070e-06 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecScatterBegin        1 1.0 1.1863e-03 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   1  0  0  0  0     0
 
 --- Event Stage 3: GetBC
 
-BuildTwoSidedF         6 1.0 4.2702e-04 1.0 0.00e+00 0.0 5.0e+00 7.7e+02 0.0e+00  0  0 29  0  0   7  0100100  0     0
-VecAssemblyBegin       6 1.0 4.6917e-03 5.8 0.00e+00 0.0 5.0e+00 7.7e+02 1.2e+01  0  0 29  0 10  44  0100100 40     0
-VecAssemblyEnd         6 1.0 1.3666e-04 1.3 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   2  0  0  0  0     0
+BuildTwoSidedF         6 1.0 2.8477e-03 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  1  0  0  0  0  48  0  0  0  0     0
+VecAssemblyBegin       6 1.0 3.2150e-03 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  1  0  0  0  0  54  0  0  0  0     0
+VecAssemblyEnd         6 1.0 1.4436e-04 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   2  0  0  0  0     0
 
 --- Event Stage 4: DestroyBC
 
@@ -112,17 +109,17 @@ Reports information only for process 0.
 
 --- Event Stage 1: GetGeometry
 
-              Vector     8              4      2185048     0.
+              Vector     8              4      4310248     0.
       Vector Scatter     1              0            0     0.
     Distributed Mesh     1              0            0     0.
 Star Forest Bipartite Graph     2              0            0     0.
      Discrete System     1              0            0     0.
-           Index Set     6              2       559480     0.
+           Index Set     6              2      1077556     0.
    IS L to G Mapping     1              0            0     0.
 
 --- Event Stage 2: GetProrperties
 
-              Vector     2              1      1090936     0.
+              Vector     2              1      2153536     0.
 
 --- Event Stage 3: GetBC
 
@@ -130,26 +127,24 @@ Star Forest Bipartite Graph     2              0            0     0.
 
 --- Event Stage 4: DestroyBC
 
-              Vector     0              3         6224     0.
+              Vector     0              3         7504     0.
               Viewer     1              0            0     0.
 
 --- Event Stage 5: DestroyProperties
 
-              Vector     0              1      1229264     0.
+              Vector     0              1      2371344     0.
 
 --- Event Stage 6: DestroyGeometry
 
-              Vector     0              4      1235496     0.
-      Vector Scatter     0              1      1090360     0.
+              Vector     0              4      2377576     0.
+      Vector Scatter     0              1          656     0.
     Distributed Mesh     0              1         5072     0.
 Star Forest Bipartite Graph     0              2         1696     0.
      Discrete System     0              1          864     0.
            Index Set     0              4         4384     0.
-   IS L to G Mapping     0              1       614492     0.
+   IS L to G Mapping     0              1      1185532     0.
 ========================================================================================================================
-Average time to get PetscTime(): 3.95e-08
-Average time for MPI_Barrier(): 2.7056e-06
-Average time for zero size MPI_Send(): 1.8876e-05
+Average time to get PetscTime(): 3.70001e-08
 #PETSc Option Table entries:
 -Input_dir in/
 -Input_file_bc BCtempDT
