@@ -75,6 +75,7 @@ SUBROUTINE GetDataMngr(DataMngr,ierr)
     ! It obtains the global size of the domain on the first processor.
     IF (process.EQ.0) THEN
         Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileGmtry))
+        WRITE(*,*)Route
         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
 
         ! It gets the size of the domain depending on the geometry file input.
