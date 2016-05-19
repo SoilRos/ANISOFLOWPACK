@@ -1,15 +1,18 @@
 PROGRAM ANISOFLOW
-    USE ANISOFLOW_Geometry
-    USE ANISOFLOW_Properties
-    USE ANISOFLOW_BoundaryConditions
-    !USE ANISOFLOW_BuildSystem
-    USE ANISOFLOW_Solver
-    IMPLICIT NONE
+
+     USE ANISOFLOW_Geometry
+     USE ANISOFLOW_Properties
+     USE ANISOFLOW_BoundaryConditions
+     USE ANISOFLOW_BuildSystem
+     USE ANISOFLOW_Solver
+
+     IMPLICIT NONE
+
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
 #include <petsc/finclude/petscmat.h>
 
-#include <petsc/finclude/petscviewer.h>
+! !#include <petsc/finclude/petscviewer.h>
 
 
     PetscErrorCode          :: ierr
@@ -20,31 +23,30 @@ PROGRAM ANISOFLOW
     Vec                     :: b,x
     Vec                     :: Tplgy
 
-    PetscViewer             :: H5viewer
+!     !PetscViewer             :: H5viewer
 
-    ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    ! Initialize program
-    ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+!     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+!     ! Initialize program
+!     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     CALL PetscInitialize(PETSC_COMM_WORLD,ierr)
-    WRITE(*,*)"Estoy corriendo"
-    !CALL GetGeometry(Gmtry,ierr)
-    !CALL GetProrperties(Gmtry,PptFld,ierr)
-    !CALL GetBC(Gmtry,BCFld,ierr)
-    !CALL GetSystem(Gmtry,PptFld,BCFld,1,A,b,x,ierr)
-    !CALL SolveSystem(Gmtry,BCFld,A,b,x,ierr)
+    CALL GetGeometry(Gmtry,ierr)
+    CALL GetProrperties(Gmtry,PptFld,ierr)
+    CALL GetBC(Gmtry,BCFld,ierr)
+    CALL GetSystem(Gmtry,PptFld,BCFld,1,A,b,x,ierr)
+    CALL SolveSystem(Gmtry,BCFld,A,b,x,ierr)
 
-    ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    ! Finalize program
-    ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+!     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+!     ! Finalize program
+!     ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     
-    ! CALL SystemDestroy(A,b,x,ierr)
-    ! CALL BCDestroy(BCFld,ierr)
-    ! CALL PropertiesDestroy(PptFld,ierr)
-    ! CALL GeometryDestroy(Gmtry,ierr)
-    ! CALL PetscFinalize(ierr)
+    CALL SystemDestroy(A,b,x,ierr)
+    CALL BCDestroy(BCFld,ierr)
+    CALL PropertiesDestroy(PptFld,ierr)
+    CALL GeometryDestroy(Gmtry,ierr)
+    CALL PetscFinalize(ierr)
 
 END PROGRAM
 
-! Hay que preguntarle a los del PETSc con cual "derived type" se deben transmitir
-! las variables para que el programa siga siendo portable. (Corregir en Properties y Geometry)
+! ! Hay que preguntarle a los del PETSc con cual "derived type" se deben transmitir
+! ! las variables para que el programa siga siendo portable. (Corregir en Properties y Geometry)

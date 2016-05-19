@@ -3,7 +3,7 @@ MODULE ANISOFLOW_Interface
 ! ANISOFLOW_Interface it's a module that contains routines that serve as a bridge between user and
 ! program.
 
-    USE ANISOFLOW_Types, ONLY : InputTypeVar
+    USE ANISOFLOW_Types, ONLY : InputTypeVar,OuputTypeVar
     USE ANISOFLOW_Types, ONLY : RunOptionsVar
 
     IMPLICIT NONE
@@ -29,7 +29,7 @@ SUBROUTINE GetInputDir(InputDir,ierr)
 
     PetscBool                       :: InputDirFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_CHARACTER,"-Input_dir",InputDir,     &
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_dir",InputDir,     &
         & InputDirFlg,ierr)
     IF (.NOT.InputDirFlg) InputDir="/"
     InputDir=TRIM(InputDir)
@@ -58,7 +58,7 @@ SUBROUTINE GetInputType(InputType,ierr)
     PetscBool                       :: InputTypeFlg
     PetscInt                        :: InputTypeTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_CHARACTER,"-Input_type",InputTypeTmp,   &
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_type",InputTypeTmp,   &
         & InputTypeFlg,ierr)
 
     IF (InputTypeFlg) THEN
@@ -69,7 +69,7 @@ SUBROUTINE GetInputType(InputType,ierr)
             InputType%BC=1
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Input_type used is invalid\n",ierr)
+                & "[ERROR] Input_type used is invalid\n",ierr)
             STOP
         END IF
     ELSE
@@ -111,7 +111,7 @@ SUBROUTINE GetInputTypeGmtry(InputType,ierr)
     PetscBool                       :: InputTypeGmtryFlg
     PetscInt                        :: InputTypeGmtryTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_CHARACTER,"-Input_type_gmtry",          &
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_type_gmtry",          &
         & InputTypeGmtryTmp,InputTypeGmtryFlg,ierr)
 
     IF (InputTypeGmtryFlg) THEN
@@ -119,7 +119,7 @@ SUBROUTINE GetInputTypeGmtry(InputType,ierr)
             InputType%Gmtry=InputTypeGmtryTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Input_type_gmtry used is invalid\n",ierr)
+                & "[ERROR] Input_type_gmtry used is invalid\n",ierr)
             STOP
         END IF
     END IF
@@ -152,7 +152,7 @@ SUBROUTINE GetInputTypeTplgy(InputType,ierr)
     PetscBool                       :: InputTypeTplgyFlg
     PetscInt                        :: InputTypeTplgyTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_CHARACTER,"-Input_type_tplgy",          &
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_type_tplgy",          &
         & InputTypeTplgyTmp,InputTypeTplgyFlg,ierr)
 
     IF (InputTypeTplgyFlg) THEN
@@ -160,7 +160,7 @@ SUBROUTINE GetInputTypeTplgy(InputType,ierr)
             InputType%Tplgy=InputTypeTplgyTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Input_type_tplgy used is invalid\n",ierr)
+                & "[ERROR] Input_type_tplgy used is invalid\n",ierr)
             STOP
         END IF
     END IF
@@ -195,7 +195,7 @@ SUBROUTINE GetInputTypeCvt(InputType,ierr)
     PetscBool                       :: InputTypeCvtFlg
     PetscInt                        :: InputTypeCvtTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_CHARACTER,"-Input_type_cvt",            &
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_type_cvt",            &
         & InputTypeCvtTmp,InputTypeCvtFlg,ierr)
 
     IF (InputTypeCvtFlg) THEN
@@ -203,7 +203,7 @@ SUBROUTINE GetInputTypeCvt(InputType,ierr)
             InputType%Cvt=InputTypeCvtTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Input_type_Cvt used is invalid\n",ierr)
+                & "[ERROR] Input_type_Cvt used is invalid\n",ierr)
             STOP
         END IF
     END IF
@@ -237,7 +237,7 @@ SUBROUTINE GetInputTypeBC(InputType,ierr)
     PetscBool                       :: InputTypeBCFlg
     PetscInt                        :: InputTypeBCTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_CHARACTER,"-Input_type_bc",      &
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_type_bc",      &
         & InputTypeBCTmp,InputTypeBCFlg,ierr)
 
     IF (InputTypeBCFlg) THEN
@@ -245,7 +245,7 @@ SUBROUTINE GetInputTypeBC(InputType,ierr)
             InputType%BC=InputTypeBCTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Input_type_bc used is invalid\n",ierr)
+                & "[ERROR] Input_type_bc used is invalid\n",ierr)
             STOP
         END IF
     END IF
@@ -272,12 +272,12 @@ SUBROUTINE GetInputFileGmtry(InputFileGmtry,ierr)
 
     PetscBool                       :: InputFileGmtryFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_CHARACTER,"-Input_file_gmtry",       &
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_file_gmtry",       &
         InputFileGmtry,InputFileGmtryFlg,ierr)
 
     IF (.NOT.InputFileGmtryFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: Input_file_gmtry command must be used\n",ierr)
+            & "[ERROR] Input_file_gmtry command must be used\n",ierr)
         STOP
     END IF
 
@@ -305,12 +305,12 @@ SUBROUTINE GetInputFileTplgy(InputFileTplgy,ierr)
 
     PetscBool                       :: InputFileTplgyFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_CHARACTER,"-Input_file_tplgy",       &
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_file_tplgy",       &
         InputFileTplgy,InputFileTplgyFlg,ierr)
 
     IF (.NOT.InputFileTplgyFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: Input_file_tplgy command must be used\n",ierr)
+            & "[ERROR] Input_file_tplgy command must be used\n",ierr)
         STOP
     END IF
 
@@ -339,12 +339,12 @@ SUBROUTINE GetInputFileCvt(InputFileCvt,ierr)
 
     PetscBool                       :: InputFileCvtFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_CHARACTER,"-Input_file_cvt",         &
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_file_cvt",         &
         InputFileCvt,InputFileCvtFlg,ierr)
 
     IF (.NOT.InputFileCvtFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: Input_file_cvt command must be used\n",ierr)
+            & "[ERROR] Input_file_cvt command must be used\n",ierr)
         STOP
     END IF
 
@@ -372,12 +372,12 @@ SUBROUTINE GetInputFileCvtByZones(InputFileCvtByZones,ierr)
 
     PetscBool                       :: InputFileCvtByZonesFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_CHARACTER,"-Input_file_cvt_by_zones",    &
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_file_cvt_by_zones",    &
         InputFileCvtByZones,InputFileCvtByZonesFlg,ierr)
 
     IF (.NOT.InputFileCvtByZonesFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: Input_file_cvt_by_zones command must be used.\n",ierr)
+            & "[ERROR] Input_file_cvt_by_zones command must be used.\n",ierr)
         STOP
     END IF
 
@@ -405,18 +405,100 @@ SUBROUTINE GetInputFileBC(InputFileBC,ierr)
 
     PetscBool                       :: InputFileBCFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_CHARACTER,"-Input_file_bc",   &
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_file_bc",   &
         InputFileBC,InputFileBCFlg,ierr)
 
     IF (.NOT.InputFileBCFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: Input_file_bc command must be used.\n",ierr)
+            & "[ERROR] Input_file_bc command must be used.\n",ierr)
         STOP
     END IF
 
     InputFileBC=TRIM(InputFileBC)
 
 END SUBROUTINE GetInputFileBC
+
+ !    
+
+SUBROUTINE GetOuputDir(OuputDir,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    CHARACTER(LEN=200),INTENT(OUT)  :: OuputDir
+
+    PetscBool                       :: OuputDirFlg
+
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Ouput_dir",OuputDir,     &
+        & OuputDirFlg,ierr)
+    IF (.NOT.OuputDirFlg) OuputDir="/"
+    OuputDir=TRIM(OuputDir)
+
+END SUBROUTINE GetOuputDir
+
+ !
+
+SUBROUTINE GetOuputType(OuputType,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    Type(OuputTypeVar),INTENT(OUT)  :: OuputType
+
+    PetscBool                       :: OuputTypeFlg
+    PetscInt                        :: OuputTypeTmp
+
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Ouput_type",OuputTypeTmp,   &
+        & OuputTypeFlg,ierr)
+
+    IF (OuputTypeFlg) THEN
+        IF (OuputTypeTmp.EQ.1) THEN
+            OuputType%Sol=1
+        ELSE
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
+                & "[ERROR] Ouput_type used is invalid\n",ierr)
+            STOP
+        END IF
+    ELSE
+        ! Presseting default OuputType
+        OuputType%Sol=1
+    END IF
+    
+    ! Setting OuputType from interface
+    CALL GetOuputTypeSol(OuputType,ierr)
+
+
+END SUBROUTINE GetOuputType
+
+ !
+
+SUBROUTINE GetOuputTypeSol(OuputType,ierr)
+    IMPLICIT NONE
+#include <petsc/finclude/petscsys.h>
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    Type(OuputTypeVar),INTENT(INOUT)    :: OuputType
+
+    PetscBool                       :: OuputTypeSolFlg
+    PetscInt                        :: OuputTypeSolTmp
+
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Ouput_type_sol",          &
+        & OuputTypeSolTmp,OuputTypeSolFlg,ierr)
+
+    IF (OuputTypeSolFlg) THEN
+        IF (OuputTypeSolTmp.EQ.1) THEN
+            OuputType%Sol=OuputTypeSolTmp
+        ELSE
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
+                & "[ERROR] Ouput_type_sol used is invalid\n",ierr)
+            STOP
+        END IF
+    END IF
+
+END SUBROUTINE GetOuputTypeSol
 
  !  - GetRunOptions: It's a routine that provides RunOptionVar structure that contains all options 
  !                   related with the running.
@@ -439,19 +521,39 @@ SUBROUTINE GetRunOptions(RunOptions,ierr)
 
     PetscBool                       :: RunOptionsTimeFlg,RunOptionsSchemeFlg
 
-    CALL PetscOptionsGetInt(PETSC_NULL_CHARACTER,"-Run_options_scheme",        &
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Run_options_scheme",        &
         RunOptions%Scheme,RunOptionsSchemeFlg,ierr)
-    CALL PetscOptionsGetBool(PETSC_NULL_CHARACTER,"-Run_options_time",         &
+    CALL PetscOptionsGetBool(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Run_options_time",         &
         RunOptions%Time,RunOptionsTimeFlg,ierr)
 
     IF (RunOptionsSchemeFlg) THEN
         IF ((RunOptions%Scheme.GE.3).OR.(RunOptions%Scheme.LE.0)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "ERROR: Run_options_scheme command must be an integer between 1 and 2\n",ierr)
+                & "[ERROR] Run_options_scheme command must be an integer between 1 and 2\n",ierr)
             STOP
         END IF
     END IF
 
 END SUBROUTINE GetRunOptions
+
+SUBROUTINE GetVerbose(Verbose,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    PetscBool,INTENT(OUT)           :: Verbose
+
+    PetscBool                       :: VerboseFlg
+
+    CALL PetscOptionsGetBool(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-verbose",         &
+        Verbose,VerboseFlg,ierr)
+
+    IF (.NOT.VerboseFlg) THEN
+        Verbose=.TRUE.
+    END IF
+
+END SUBROUTINE GetVerbose
 
 END MODULE ANISOFLOW_Interface
