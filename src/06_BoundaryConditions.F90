@@ -1,7 +1,7 @@
 MODULE ANISOFLOW_BoundaryConditions
 
-    USE ANISOFLOW_Interface, ONLY : GetVerbose
-    USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
+    ! USE ANISOFLOW_Interface, ONLY : GetVerbose
+    ! USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
 
     IMPLICIT NONE
 
@@ -9,7 +9,8 @@ CONTAINS
 
 SUBROUTINE GetBC(Gmtry,BCFld,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions,InputTypeVar
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputType
 
     IMPLICIT NONE
 
@@ -47,7 +48,8 @@ END SUBROUTINE GetBC
 
 SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileBC
 
     IMPLICIT NONE
 
@@ -197,6 +199,9 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
 END SUBROUTINE GetBC_1
 
 SUBROUTINE DestroyBC(BCFld,ierr)
+
+    USE ANISOFLOW_Types, ONLY : BoundaryConditions
+    USE ANISOFLOW_Interface, ONLY : GetVerbose
 
     IMPLICIT NONE
 

@@ -2,9 +2,6 @@ MODULE ANISOFLOW_Geometry
 
 ! ANISOFLOW_Geometry it's a module that contains routines to manage geometry variables.
 
-    USE ANISOFLOW_Interface, ONLY : GetVerbose
-    USE ANISOFLOW_Types
-
     IMPLICIT NONE
 
 CONTAINS
@@ -19,6 +16,9 @@ CONTAINS
  !             that describes the geometry with identifiers.
 
 SUBROUTINE GetGeometry(Gmtry,ierr)
+
+    USE ANISOFLOW_Interface, ONLY : GetVerbose
+    USE ANISOFLOW_Types, ONLY : Geometry
 
     IMPLICIT NONE
 
@@ -55,10 +55,10 @@ END SUBROUTINE GetGeometry
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
  !    > NOTES: The DataMngr takes the size of the domain and assign a subdomain to each processor.
 
-
 SUBROUTINE GetDataMngr(DataMngr,ierr)
 
-    USE ANISOFLOW_Interface, ONLY : GetInputType
+    USE ANISOFLOW_Types, ONLY : InputTypeVar
+    USE ANISOFLOW_Interface, ONLY : GetInputType,GetVerbose
 
     IMPLICIT NONE
 
@@ -97,7 +97,8 @@ END SUBROUTINE GetDataMngr
 
 SUBROUTINE GetDataMngr_1(DataMngr,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Types, ONLY : RunOptionsVar
+    USE ANISOFLOW_Interface, ONLY : GetInputDir,GetInputFileGmtry,GetRunOptions,GetVerbose
 
     IMPLICIT NONE
 
@@ -164,7 +165,8 @@ END SUBROUTINE GetDataMngr_1
 
 SUBROUTINE GetDataMngr_2(DataMngr,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Types, ONLY : RunOptionsVar
+    USE ANISOFLOW_Interface, ONLY : GetInputDir,GetInputFileGmtry,GetRunOptions,GetVerbose
 
     IMPLICIT NONE
 
@@ -244,7 +246,8 @@ END SUBROUTINE GetDataMngr_2
 
 SUBROUTINE GetGrid(DataMngr,x,y,z,ierr)
 
-    USE ANISOFLOW_Interface, ONLY : GetInputType
+    USE ANISOFLOW_Types, ONLY : InputTypeVar
+    USE ANISOFLOW_Interface, ONLY : GetInputType,GetVerbose
 
     IMPLICIT NONE
 
@@ -265,7 +268,7 @@ SUBROUTINE GetGrid(DataMngr,x,y,z,ierr)
         CALL GetGrid_1(DataMngr,x,y,z,ierr)
     ELSE IF (InputType%Gmtry.EQ.2) THEN
         CALL GetGrid_2(DataMngr,x,y,z,ierr)
-    ELSE
+    ELSE        
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Geometry InputType wrong\n",ierr)
         STOP
@@ -285,7 +288,7 @@ END SUBROUTINE GetGrid
 
 SUBROUTINE GetGrid_1(DataMngr,x,y,z,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Interface, ONLY : GetInputDir,GetInputFileGmtry,GetVerbose
 
     IMPLICIT NONE
 
@@ -354,8 +357,8 @@ SUBROUTINE GetGrid_1(DataMngr,x,y,z,ierr)
 END SUBROUTINE GetGrid_1
 
 SUBROUTINE GetGrid_2(DataMngr,x,y,z,ierr)
-
-    USE ANISOFLOW_Interface
+    
+    USE ANISOFLOW_Interface, ONLY : GetInputDir,GetInputFileGmtry,GetVerbose
 
     IMPLICIT NONE
 
@@ -480,7 +483,8 @@ END SUBROUTINE GetGrid_2
 
 SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
 
-    USE ANISOFLOW_Interface, ONLY : GetInputType
+    USE ANISOFLOW_Types, ONLY : InputTypeVar
+    USE ANISOFLOW_Interface, ONLY : GetInputType,GetVerbose
 
     IMPLICIT NONE
 
@@ -536,7 +540,7 @@ END SUBROUTINE GetTopology
 
 SUBROUTINE GetTopology_1(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Interface, ONLY : GetVerbose
 
     IMPLICIT NONE
 
@@ -650,7 +654,7 @@ END SUBROUTINE GetTopology_1
 
 SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Interface, ONLY : GetVerbose
 
     IMPLICIT NONE
 
@@ -750,8 +754,8 @@ END SUBROUTINE GetTopologyBC
 
 SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Property
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Types, ONLY : Geometry,Property,RunOptionsVar
+    USE ANISOFLOW_Interface, ONLY : GetRunOptions,GetVerbose
 
     IMPLICIT NONE
 
@@ -845,6 +849,9 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
 END SUBROUTINE GetLocalTopology
 
 SUBROUTINE DestroyGeometry(Gmtry,ierr)
+
+    USE ANISOFLOW_Types, ONLY : Geometry
+    USE ANISOFLOW_Interface, ONLY : GetVerbose
 
     IMPLICIT NONE
 

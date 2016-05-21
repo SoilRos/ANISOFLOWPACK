@@ -3,9 +3,6 @@ MODULE ANISOFLOW_Interface
 ! ANISOFLOW_Interface it's a module that contains routines that serve as a bridge between user and
 ! program.
 
-    USE ANISOFLOW_Types, ONLY : InputTypeVar,OuputTypeVar
-    USE ANISOFLOW_Types, ONLY : RunOptionsVar
-
     IMPLICIT NONE
 
 CONTAINS
@@ -47,6 +44,8 @@ END SUBROUTINE GetInputDir
  !                     and BC=1. See InputType definition for more information.
 
 SUBROUTINE GetInputType(InputType,ierr)
+
+    USE ANISOFLOW_Types, ONLY : InputTypeVar
 
     IMPLICIT NONE
 
@@ -103,7 +102,11 @@ END SUBROUTINE GetInputType
  !                  2: Defined by Perez. An example is provided in "../ex/Perez/in/sanpck.domnRST"
 
 SUBROUTINE GetInputTypeGmtry(InputType,ierr)
+
+    USE ANISOFLOW_Types, ONLY : InputTypeVar
+
     IMPLICIT NONE
+
 #include <petsc/finclude/petscsys.h>
     PetscErrorCode,INTENT(INOUT)        :: ierr
     Type(InputTypeVar),INTENT(INOUT)    :: InputType
@@ -141,6 +144,8 @@ END SUBROUTINE GetInputTypeGmtry
  !                     Neumman condition but on the first layer where the boundary is dirichlet.
 
 SUBROUTINE GetInputTypeTplgy(InputType,ierr)
+
+    USE ANISOFLOW_Types, ONLY : InputTypeVar
 
     IMPLICIT NONE
 
@@ -185,6 +190,8 @@ END SUBROUTINE GetInputTypeTplgy
 
 SUBROUTINE GetInputTypeCvt(InputType,ierr)
 
+    USE ANISOFLOW_Types, ONLY : InputTypeVar
+
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
@@ -226,6 +233,8 @@ END SUBROUTINE GetInputTypeCvt
  !                     "../Blessent/in/grid_400_400.nch_nprop_list.lateral_boundary".
 
 SUBROUTINE GetInputTypeBC(InputType,ierr)
+
+    USE ANISOFLOW_Types, ONLY : InputTypeVar
 
     IMPLICIT NONE
 
@@ -442,6 +451,8 @@ END SUBROUTINE GetOuputDir
 
 SUBROUTINE GetOuputType(OuputType,ierr)
 
+    USE ANISOFLOW_Types, ONLY : OuputTypeVar
+
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
@@ -474,11 +485,14 @@ SUBROUTINE GetOuputType(OuputType,ierr)
 
 END SUBROUTINE GetOuputType
 
- !
-
 SUBROUTINE GetOuputTypeSol(OuputType,ierr)
+
+    USE ANISOFLOW_Types, ONLY : OuputTypeVar
+
     IMPLICIT NONE
+
 #include <petsc/finclude/petscsys.h>
+
     PetscErrorCode,INTENT(INOUT)        :: ierr
     Type(OuputTypeVar),INTENT(INOUT)    :: OuputType
 
@@ -500,7 +514,7 @@ SUBROUTINE GetOuputTypeSol(OuputType,ierr)
 
 END SUBROUTINE GetOuputTypeSol
 
- !  - GetRunOptions: It's a routine that provides RunOptionVar structure that contains all options 
+ !  - GetRunOptions: It's a routine that provides RunOptionsVar structure that contains all options 
  !                   related with the running.
  !    > OUT: RunOptions, ierr.
  !      + RunOptions: It's a collection of integers that that contains all options related with the
@@ -508,9 +522,11 @@ END SUBROUTINE GetOuputTypeSol
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
  !    > NOTES: The user may provide the running options using "-Run_options_scheme" to set a scheme
  !             stencil and "-Run_options_time" to set the time option followed by an integer to be 
- !             used. See RunOptionVar for more information.
+ !             used. See RunOptionsVar for more information.
 
 SUBROUTINE GetRunOptions(RunOptions,ierr)
+
+    USE ANISOFLOW_Types, ONLY : RunOptionsVar
 
     IMPLICIT NONE
 

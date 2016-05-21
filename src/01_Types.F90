@@ -123,7 +123,7 @@ MODULE ANISOFLOW_Types
  !                        CvtZones and CvtYpe, otherwise it's necessary save the information in 
  !                        xxVec,yyVec,zzVec
  !      + DefindeByCell: It's a boolean describing if the ConductivityField stores the
- !                           information on the center of each block. 
+ !                       information on the center of each block. 
  !      + CvtZones: It's an Array of Tensor that contain as Tensors of conductivity as defined 
  !                  zones. This variable needs to be stored in all processors.
  !      + CvtType: It's a PETSc vector that contains an identifier for each cell, the identifier 

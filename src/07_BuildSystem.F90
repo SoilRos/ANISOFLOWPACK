@@ -4,10 +4,10 @@ MODULE ANISOFLOW_BuildSystem
 
 CONTAINS
 
-SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,Step,A,b,x,ierr)
+SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions,PropertyField
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertyField,BoundaryConditions,RunOptionsVar
+    USE ANISOFLOW_Interface, ONLY : GetRunOptions
 
     IMPLICIT NONE
 
@@ -19,33 +19,39 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,Step,A,b,x,ierr)
     TYPE(Geometry),INTENT(IN)               :: Gmtry
     TYPE(PropertyField),INTENT(IN)          :: PptFld
     TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
-    PetscInt,INTENT(IN)                     :: Step
+    PetscInt,INTENT(IN)                     :: TimeZone,TimeStep
     Mat,INTENT(INOUT)                       :: A
     Vec,INTENT(INOUT)                       :: b,x
 
     TYPE(RunOptionsVar)                     :: RunOptions
+    PetscReal :: maxx
 
     CALL GetRunOptions(RunOptions,ierr)
 
-    CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr)
+    IF ((TimeZone.EQ.1).AND.(TimeStep.EQ.1)) THEN
+        CALL BuildSystem(Gmtry,PptFld,A,ierr)
+        CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr)
+        CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
+    END IF
 
-    IF (Step.EQ.1) THEN
 
-        CALL BuildSystem(Gmtry,PptFld,BCFld,Step,A,b,ierr)
 
-    ELSEIF (.FALSE.) THEN ! TO DO: It need check if has differences between current and previus BCField%Step
-        RETURN
-    ELSE ! TO DO: Modify the system with new BCField
-        RETURN
+    CALL ApplyDirichlet(Gmtry,BCFld,TimeZone,b,ierr)
+    ! CALL ApplyCauchy(Gmtry,BCFld,TimeZone,A,b,ierr)
+    ! CALL ApplyNeumman(Gmtry,BCFld,TimeZone,b,ierr)
+    
+    IF ((RunOptions%Time).AND..NOT.((TimeZone.EQ.1).AND.(TimeStep.EQ.1))) THEN
+        CALL VecMax(x,PETSC_NULL_INTEGER,maxx,ierr)
+        PRINT*,"Max value of head (just for test):",maxx
+        CALL ApplyTimeDiff(BCFld,TimeZone,TimeStep,A,b,x,ierr)
     END IF
 
 END SUBROUTINE GetSystem
 
-SUBROUTINE BuildSystem(Gmtry,PptFld,BCFld,Step,A,b,ierr)
+SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions,PropertyField,Property,StencilVar
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertyField,Property,StencilVar
     USE ANISOFLOW_Properties, ONLY : GetLocalProperty
-    USE ANISOFLOW_Interface
 
     IMPLICIT NONE
 
@@ -56,18 +62,13 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,BCFld,Step,A,b,ierr)
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Geometry),INTENT(IN)               :: Gmtry
     TYPE(PropertyField),INTENT(IN)          :: PptFld
-    TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
-    PetscInt,INTENT(IN)                     :: Step
     Mat,INTENT(OUT)                         :: A
-    Vec,INTENT(OUT)                         :: b
 
     PetscInt                                :: i,j,k,corn(3),widthL(3)
     TYPE(Property)                          :: Ppt
     TYPE(StencilVar)                        :: Stencil
-    PetscReal                               :: RH
 
     CALL DMCreateMatrix(Gmtry%DataMngr,A,ierr)
-    CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
 
     CALL DMDAGetCorners(Gmtry%DataMngr,corn(1),corn(2),corn(3),widthL(1),      &
             & widthL(2),widthL(3),ierr)
@@ -87,15 +88,13 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,BCFld,Step,A,b,ierr)
 
     CALL MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY,ierr)
     CALL MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY,ierr)  
-    
-    CALL ApplyDirichlet(Gmtry,BCFld,Step,b,ierr)
 
 END SUBROUTINE BuildSystem
 
 SUBROUTINE GetStencil(Ppt,Stencil,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Property,StencilVar
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Types, ONLY : Property,StencilVar,RunOptionsVar
+    USE ANISOFLOW_Interface, ONLY : GetRunOptions
 
     IMPLICIT NONE
 
@@ -138,7 +137,6 @@ END SUBROUTINE GetStencil
 SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
 
     USE ANISOFLOW_Types, ONLY : Property,StencilVar
-    USE ANISOFLOW_Interface
 
     IMPLICIT NONE
 
@@ -149,6 +147,7 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
     TYPE(StencilVar),INTENT(INOUT)          :: Stencil
 
     PetscInt                                :: i,j,k
+    PetscReal                               :: one=1.d0,zero=0.d0
 
     ALLOCATE(Stencil%idx_clmns(4,7))
     ALLOCATE(Stencil%Values(7))
@@ -172,7 +171,7 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
     Stencil%idx_clmns(MatStencil_k,:) = k
 
     ! Initial stencil vaulues
-    Stencil%Values(:)=0.0
+    Stencil%Values(:)=zero
 
     ! If the current cell is an active cell:
     IF (Ppt%StnclTplgy(4).EQ.1) THEN
@@ -230,7 +229,7 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
     ! If the current cell is an Neumman x cell:
     ELSEIF (Ppt%StnclTplgy(10).EQ.3) THEN ! Neumman x
 
-        Stencil%Values(10)=-1
+        Stencil%Values(10)=-one
 
         ! It is a decision of wich cell is in Neumman x condition to assign the equality.
         IF ((Ppt%StnclTplgy(9).EQ.1).AND.(Ppt%StnclTplgy(11).EQ.1)) THEN
@@ -271,7 +270,7 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
 
     ! If the current cell is an Neumman z cell:
     ELSEIF (Ppt%StnclTplgy(10).EQ.5) THEN ! Neumman z
-        Stencil%Values(10)=-1
+        Stencil%Values(10)=-one
         ! It is a decision of wich cell is in Neumman z condition to assign the equality.
         IF ((Ppt%StnclTplgy(3).EQ.1).AND.(Ppt%StnclTplgy(17).EQ.1)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
@@ -289,7 +288,7 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
             Stencil%idx_clmns(MatStencil_k,17) = k+1
         END IF
     ELSEIF (Ppt%StnclTplgy(10).EQ.2) THEN ! Dirichlet
-        Stencil%Values(10)=-1
+        Stencil%Values(10)=-one
     END IF
 
 
@@ -307,7 +306,6 @@ END SUBROUTINE GetTraditionalStencil
 SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
 
     USE ANISOFLOW_Types, ONLY : Property,StencilVar
-    USE ANISOFLOW_Interface
 
     IMPLICIT NONE
 
@@ -318,7 +316,7 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
     TYPE(StencilVar),INTENT(INOUT)          :: Stencil
 
     PetscInt                                :: i,j,k
-    PetscReal                               :: one=1.0
+    PetscReal                               :: one=1.d0,zero=0.d0
 
     ! The Li stencil is based on 19 cells.
     ALLOCATE(Stencil%idx_clmns(4,19))
@@ -340,7 +338,7 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
     Stencil%idx_clmns(MatStencil_k,:) = k
 
     ! Initial stencil vaulues
-    Stencil%Values(:)=0.0
+    Stencil%Values(:)=zero
 
     ! If the current cell is an active cell:
     IF (Ppt%StnclTplgy(10).EQ.1) THEN
@@ -503,7 +501,7 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
     ! If the current cell is an Neumman x cell:
     ELSEIF (Ppt%StnclTplgy(10).EQ.3) THEN ! Neumman x
 
-        Stencil%Values(10)=-1
+        Stencil%Values(10)=-one
 
         ! It is a decision of wich cell is in Neumman x condition to assign the equality.
         IF ((Ppt%StnclTplgy(9).EQ.1).AND.(Ppt%StnclTplgy(11).EQ.1)) THEN
@@ -562,7 +560,7 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
             Stencil%idx_clmns(MatStencil_k,17) = k+1
         END IF
     ELSEIF (Ppt%StnclTplgy(10).EQ.2) THEN ! Dirichlet
-        Stencil%Values(10)=-1
+        Stencil%Values(10)=-one
     END IF
 
 END SUBROUTINE GetLiStencil
@@ -570,7 +568,6 @@ END SUBROUTINE GetLiStencil
 ! SUBROUTINE AnisoflowStencil(Ppt,Stencil,ierr)
 
 !     USE ANISOFLOW_Types, ONLY : Property,StencilVar
-!     USE ANISOFLOW_Interface
 
 !     IMPLICIT NONE
 
@@ -807,44 +804,114 @@ END SUBROUTINE GetLiStencil
 
 ! END SUBROUTINE AnisoflowStencil
 
-! SUBROUTINE ApplyDirichlet(Gmtry,BCFld,Step,b,ierr)
+SUBROUTINE ApplyDirichlet(Gmtry,BCFld,TimeZone,b,ierr)
 
-!     USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
+    USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
 
-!     IMPLICIT NONE
+    IMPLICIT NONE
 
-! #include <petsc/finclude/petscsys.h>
-! #include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
 
-!     PetscErrorCode,INTENT(INOUT)            :: ierr
-!     TYPE(Geometry),INTENT(IN)               :: Gmtry
-!     TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
-!     PetscInt,INTENT(IN)                     :: Step
-!     Vec,INTENT(INOUT)                       :: b
+    PetscErrorCode,INTENT(INOUT)            :: ierr
+    TYPE(Geometry),INTENT(IN)               :: Gmtry
+    TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
+    PetscInt,INTENT(IN)                     :: TimeZone
+    Vec,INTENT(INOUT)                       :: b
 
-!     Vec                                     :: VecTmp
-!     VecScatter                              :: Scatter
-!     IS                                      :: NaturalOrder
-!     PetscInt                                :: Size1,Size2
-!     PetscReal                               :: one=1.0
+    Vec                                     :: VecTmp
+    VecScatter                              :: Scatter
+    IS                                      :: NaturalOrder
+    PetscInt                                :: DirichSize
+    PetscReal                               :: one=1.0
 
-!     CALL VecGetSize(BCFld%Step(Step)%Dirich,Size1,ierr)
-!     CALL VecDuplicate(BCFld%Step(Step)%Dirich,VecTmp,ierr)
-!     CALL VecCopy(BCFld%Step(Step)%Dirich,VecTmp,ierr)
 
-!     CALL VecScale(VecTmp,-one,ierr)
+    CALL VecGetSize(BCFld%Dirich(TimeZone),DirichSize,ierr)
+    CALL VecDuplicate(BCFld%Dirich(TimeZone),VecTmp,ierr)
+    CALL VecCopy(BCFld%Dirich(TimeZone),VecTmp,ierr)
 
-!     CALL ISCreateStride(PETSC_COMM_WORLD,Size1,0,1,NaturalOrder,ierr)
-!     CALL VecScatterCreate(VecTmp,NaturalOrder,b,Gmtry%DirichIS,Scatter,ierr)
+    CALL VecScale(VecTmp,-one,ierr)
 
-!     CALL VecScatterBegin(Scatter,VecTmp,b,INSERT_VALUES,SCATTER_FORWARD,ierr)
-!     CALL VecScatterEnd(Scatter,VecTmp,b,INSERT_VALUES,SCATTER_FORWARD,ierr)
+    CALL ISCreateStride(PETSC_COMM_WORLD,DirichSize,0,1,NaturalOrder,ierr)
+    CALL VecScatterCreate(VecTmp,NaturalOrder,b,Gmtry%DirichIS,Scatter,ierr)
 
-!     CALL VecScatterDestroy(Scatter,ierr)
-!     CALL ISDestroy(NaturalOrder,ierr)
-!     CALL VecDestroy(VecTmp,ierr)
+    CALL VecScatterBegin(Scatter,VecTmp,b,INSERT_VALUES,SCATTER_FORWARD,ierr)
+    CALL VecScatterEnd(Scatter,VecTmp,b,INSERT_VALUES,SCATTER_FORWARD,ierr)
 
-! END SUBROUTINE ApplyDirichlet
+    CALL VecScatterDestroy(Scatter,ierr)
+    CALL ISDestroy(NaturalOrder,ierr)
+    CALL VecDestroy(VecTmp,ierr)
+
+END SUBROUTINE ApplyDirichlet
+
+SUBROUTINE ApplyTimeDiff(BCFld,TimeZone,TimeStep,A,b,x,ierr)
+
+    USE ANISOFLOW_Types, ONLY : BoundaryConditions
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscmat.h>
+
+    PetscErrorCode,INTENT(INOUT)            :: ierr
+    TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
+    PetscInt,INTENT(IN)                     :: TimeZone,TimeStep
+    Mat,INTENT(INOUT)                       :: A
+    Vec,INTENT(INOUT)                       :: b,x
+
+    Vec                                     :: VecDT
+    PetscReal                               :: DT,one=1.0
+
+
+    CALL GetDT(BCFld,TimeZone,TimeStep,DT,ierr)
+
+    CALL VecDuplicate(x,VecDT,ierr)
+    CALL VecSet(VecDT,-one/DT,ierr)
+    CALL MatDiagonalSet(A,VecDT,ADD_VALUES,ierr)
+    CALL VecDestroy(VecDT,ierr)
+
+    CALL VecAXPY(b,-one/DT,x,ierr)
+
+END SUBROUTINE ApplyTimeDiff
+
+SUBROUTINE GetDT(BCFld,TimeZone,TimeStep,DT,ierr)
+
+    USE ANISOFLOW_Types, ONLY : BoundaryConditions
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscvec.h90>
+#include <petsc/finclude/petscmat.h>
+
+    PetscErrorCode,INTENT(INOUT)            :: ierr
+    TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
+    PetscInt,INTENT(IN)                     :: TimeZone,TimeStep
+    PetscReal,INTENT(OUT)                   :: DT
+
+    !PetscInt                                :: TimeZoneSize
+    !PetscReal                               :: Time1,Time2
+    !PetscReal,POINTER                       :: TimeArray(:)
+
+!     IF ((TimeZone.EQ.1).AND.(TimeStep.EQ.1)) THEN
+!         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+!             & "ERROR: It's not posible get a DT in the fisrt time.\n",ierr)
+!         STOP
+!     END IF
+
+!     Time2=BCFld%TimeZone(TimeZone)%Time(TimeStep)
+!     IF (TimeStep.NE.1) Time1=BCFld%TimeZone(TimeZone)%Time(TimeStep-1)
+!     PRINT*,Time1
+!     IF (TimeStep.EQ.1) THEN
+!         TimeZoneSize=SIZE(BCFld%TimeZone(TimeZone-1)%Time) 
+!         Time1=BCFld%TimeZone(TimeZone-1)%Time(TimeZoneSize)
+!     END IF
+! PRINT*,Time2
+    DT=0.5!Time1-Time2
+
+END SUBROUTINE GetDT
 
 SUBROUTINE SystemDestroy(A,b,x,ierr)
 
@@ -855,9 +922,8 @@ SUBROUTINE SystemDestroy(A,b,x,ierr)
 #include <petsc/finclude/petscmat.h>
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
-    Mat,INTENT(INOUT)                   :: A ! INOUT or IN?
-    Vec,INTENT(INOUT)                   :: b,x ! INOUT or IN?
-
+    Mat,INTENT(INOUT)                   :: A
+    Vec,INTENT(INOUT)                   :: b,x
     CALL VecDestroy(b,ierr)
     CALL VecDestroy(x,ierr)
     CALL MatDestroy(A,ierr)

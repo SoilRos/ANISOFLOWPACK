@@ -1,5 +1,7 @@
-bc
-320       first-type nodes
+Timezones:          2       
+Timezone(1       ): 100
+DT: 0.5
+DirichletBoundaryCondition(1       ): 320
            1   6.704865    
            2   6.711842    
            3   6.718781    
@@ -90,11 +92,11 @@ bc
          325   6.840320    
          405   6.015694    
          406   6.871520    
-         486   10.999403    
+         486   5.999403    
          487   6.901060    
-         567   10.985841    
+         567   5.985841    
          568   6.928541    
-         648   10.997468    
+         648   5.997468    
          649   6.953629    
          729   6.081318    
          730   6.975559    
@@ -320,8 +322,11 @@ bc
         6559   4.539172    
         6560   4.537066    
         6561   4.534512    
-bc
-320       first-type nodes
+NeummanBoundaryCondition(1       ): 0
+CauchyBoundaryCondition(1       ): 0
+Timezone(2       ): 100
+DT: 0.5
+DirichletBoundaryCondition(2       ): 320
            1   12.704865    
            2   12.711842    
            3   12.718781    
@@ -641,4 +646,6 @@ bc
         6558   8.540859    
         6559   8.539172    
         6560   8.537066    
-        6561   8.534512    
+        6561   8.534512   
+NeummanBoundaryCondition(2       ): 0
+CauchyBoundaryCondition(2       ): 0 

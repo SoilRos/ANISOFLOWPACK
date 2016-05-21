@@ -1,13 +1,14 @@
 MODULE ANISOFLOW_Properties
 
-    USE ANISOFLOW_Interface, ONLY : GetVerbose
-    USE ANISOFLOW_Types, ONLY : PropertyField,Geometry,Property
-
     IMPLICIT NONE
 
 CONTAINS
 
 SUBROUTINE GetProrperties(Gmtry,PptFld,ierr)
+
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertyField
+    USE ANISOFLOW_Interface, ONLY : GetVerbose
+
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
@@ -34,7 +35,8 @@ END SUBROUTINE GetProrperties
 
 SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertyField,InputTypeVar
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputType
 
     IMPLICIT NONE
 
@@ -44,7 +46,7 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertyField),INTENT(INOUT)   :: PptFld
 
-    TYPE(InputTypeVar)              :: InputType
+    TYPE(InputTypeVar)                  :: InputType
 
     CALL GetInputType(InputType,ierr)
 
@@ -62,8 +64,8 @@ END SUBROUTINE GetConductivity
 
 SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
 
-    USE ANISOFLOW_Interface
-    USE ANISOFLOW_Types, ONLY : TargetFullTensor
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertyField,TargetFullTensor
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileCvt,GetInputFileCvtByZones
     
     IMPLICIT NONE
 
@@ -193,8 +195,8 @@ END SUBROUTINE GetConductivity_1
 
 SUBROUTINE GetConductivity_2(Gmtry,PptFld,ierr)
 
-    USE ANISOFLOW_Interface
-    USE ANISOFLOW_Types, ONLY : TargetFullTensor
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertyField
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileCvt,GetInputFileCvtByZones
     
     IMPLICIT NONE
 
@@ -208,13 +210,12 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,ierr)
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertyField),INTENT(INOUT)   :: PptFld
 
-    PetscInt                            :: u,i,j,width(3),CvtLen
+    PetscInt                            :: u,i,width(3),CvtLen
     PetscReal                           :: ValR
     PetscMPIInt                         :: process
     Vec                                 :: CvtTypeGlobal
     CHARACTER(LEN=200)                  :: InputDir,InputFileCvt,InputFileCvtByZones
     CHARACTER(LEN=200)                  :: Route
-    CHARACTER(LEN=13)                   :: CvtKind
     PetscBool                           :: Verbose
 
     PARAMETER(u=01)
@@ -231,6 +232,7 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,ierr)
     CALL DMCreateLocalVector(Gmtry%DataMngr,PptFld%Cvt%CvtType,ierr)
 
     CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+
     IF (process.EQ.0) THEN
         CALL GetInputFileCvtByZones(InputFileCvtByZones,ierr)
         Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvtByZones))
@@ -273,6 +275,7 @@ END SUBROUTINE GetConductivity_2
 
 SUBROUTINE GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
 
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertyField,Property
     USE ANISOFLOW_Geometry, ONLY : GetLocalTopology
 
     IMPLICIT NONE
@@ -297,8 +300,8 @@ END SUBROUTINE GetLocalProperty
 
 SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
 
-    USE ANISOFLOW_Interface
-    USE ANISOFLOW_Types, ONLY : TargetFullTensor
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertyField,Property,TargetFullTensor,InputTypeVar
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputType
 
     IMPLICIT NONE
 
@@ -454,19 +457,24 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
 END SUBROUTINE GetLocalConductivity
 
 PetscReal FUNCTION Armonic(ValR1,ValR2)
+
     IMPLICIT NONE
+
 #include <petsc/finclude/petsc.h>
+
     PetscReal, INTENT(IN) :: ValR1,ValR2
     IF ((ValR1==0).OR.(ValR2==0)) THEN
         Armonic=0.0
     ELSE
         Armonic = 2.0/(1.0/ValR1+1.0/ValR2)
     END IF
+
 END FUNCTION Armonic
 
 SUBROUTINE DestroyProperties(PptFld,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Types, ONLY : PropertyField,InputTypeVar
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputType
 
     IMPLICIT NONE
 
