@@ -412,7 +412,7 @@ SUBROUTINE GetGrid_2(DataMngr,x,y,z,ierr)
         READ(u,*)
     END IF
 
-    DO i=0,widthG(1) 
+    DO i=0,widthG(1)
         IF (process.EQ.0) THEN
             READ(u, '(ES17.11)')Value
         END IF
@@ -503,7 +503,9 @@ SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
     !   1: Default topology, it doesn't need a file. The first border layer is Dirichlet, active in other case.
     IF (InputType%Tplgy.EQ.1) THEN
         CALL GetTopology_1(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
-    ELSE 
+    ELSE IF (InputType%Tplgy.EQ.2) THEN
+        CALL GetTopology_2(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
+    ELSE
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Topology InputType wrong\n",ierr)
         STOP
@@ -624,6 +626,92 @@ SUBROUTINE GetTopology_1(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ier
     CALL GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
 
 END SUBROUTINE GetTopology_1
+
+SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
+
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileTplgy
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
+#include <petsc/finclude/petscdmda.h90>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    DM,INTENT(IN)                   :: DataMngr
+    Vec,INTENT(OUT)                 :: Tplgy
+    IS,INTENT(OUT)                  :: DirichIS,NeummanIS,CauchyIS,SourceIS
+
+    PetscMPIInt                     :: process
+    CHARACTER(LEN=200)              :: InputDir,InputFileTplgy,Route
+    PetscReal                       :: ValR
+    PetscInt                        :: u,i,ValI,widthG(3),BCLenL(4),BCLenG(4)
+    Vec                             :: TmpTplgy
+    PetscBool                       :: Verbose
+
+    PARAMETER(u=01)
+
+    CALL GetVerbose(Verbose,ierr)
+
+    ! It obtains the route to open a geometry file.
+    CALL GetInputDir(InputDir,ierr)
+    CALL GetInputFileTplgy(InputFileTplgy,ierr)
+
+    ! It obtains a temporal Fortran array where will be filled each topology identifier.
+    CALL DMCreateGlobalVector(DataMngr,TmpTplgy,ierr)
+
+    ! It quantifies Dirichlet, Neumman, and Cauchy boundary condition on global processors.
+    BCLenL(:)=0
+    BCLenG(:)=0
+
+    ! It gets the global size from the geometry data manager.
+    CALL DMDAGetInfo(DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,ierr)
+
+    ! It tag every processor from 0 to n-1
+    CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+
+    ! It obtains the global size of the domain on the first processor.
+    IF (process.EQ.0) THEN
+        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileTplgy))
+        OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
+        DO i=1,widthG(1)*widthG(2)*widthG(3)
+            ValI=0
+            READ(u,*)ValI
+            IF (ValI.EQ.2) BCLenL(1)=BCLenL(1)+1 ! Dirichlet
+            IF ((ValI.EQ.3).OR.(ValI.EQ.4).OR.(ValI.EQ.5)) BCLenL(2)=BCLenL(2)+1 ! Neumman
+            IF (ValI.EQ.6) BCLenL(3)=BCLenL(3)+1 ! Cauchy
+            IF (ValI.EQ.7) BCLenL(4)=BCLenL(4)+1 ! Source
+            ValR=REAL(ValI)
+            CALL VecSetValue(TmpTplgy,i-1,ValR,INSERT_VALUES,ierr)
+        END DO
+        CLOSE(u)
+    END IF
+
+    CALL VecAssemblyBegin(TmpTplgy,ierr)
+    CALL VecAssemblyEnd(TmpTplgy,ierr)
+
+    CALL DMCreateLocalVector(DataMngr,Tplgy,ierr)
+
+    CALL DMGlobalToLocalBegin(DataMngr,TmpTplgy,INSERT_VALUES,  &
+        & Tplgy,ierr)
+    CALL DMGlobalToLocalEnd(DataMngr,TmpTplgy,INSERT_VALUES,    &
+        & Tplgy,ierr)
+
+    CALL VecDestroy(TmpTplgy,ierr)
+
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] Topology Identifiers were satisfactorily created\n",ierr)
+
+    CALL MPI_ALLREDUCE(BCLenL,BCLenG,4,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
+
+    CALL GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
+
+END SUBROUTINE GetTopology_2
 
  !  - GetTopologyBC: It's a routine that creates the Boundary Condition Index Sets from Tplgy vector.
  !    > IN: DataMngr, Tplgy, BCLenG.

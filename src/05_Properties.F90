@@ -50,9 +50,9 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
 
     CALL GetInputType(InputType,ierr)
 
-    IF (InputType%Tplgy.EQ.1) THEN
+    IF (InputType%Cvt.EQ.1) THEN
         CALL GetConductivity_1(Gmtry,PptFld,ierr)
-    ELSE IF (InputType%Tplgy.EQ.2) THEN
+    ELSE IF (InputType%Cvt.EQ.2) THEN
         CALL GetConductivity_2(Gmtry,PptFld,ierr)
     ELSE
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
@@ -136,7 +136,7 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
     CALL VecDestroy(CvtTypeGlobal,ierr)
 
     ALLOCATE(PptFld%Cvt%CvtZone(CvtLen))
-    
+
     IF (process.EQ.0) THEN
         Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvt))
         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')

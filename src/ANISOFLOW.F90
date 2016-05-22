@@ -5,7 +5,7 @@ PROGRAM ANISOFLOW
     USE ANISOFLOW_Geometry, ONLY : GetGeometry,DestroyGeometry
     USE ANISOFLOW_Properties, ONLY : GetProrperties,DestroyProperties
     USE ANISOFLOW_BoundaryConditions, ONLY : GetBC,DestroyBC
-    USE ANISOFLOW_BuildSystem, ONLY : GetSystem!,DestroySystem
+    USE ANISOFLOW_BuildSystem, ONLY : GetSystem,DestroySystem
     USE ANISOFLOW_Solver, ONLY : SolveSystem
 
     IMPLICIT NONE
@@ -30,10 +30,10 @@ PROGRAM ANISOFLOW
     CALL GetGeometry(Gmtry,ierr)
     CALL GetProrperties(Gmtry,PptFld,ierr)
     CALL GetBC(Gmtry,BCFld,ierr)
-    ! CALL GetSystem(Gmtry,PptFld,BCFld,1,1,A,b,x,ierr)
-    ! CALL SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
+    CALL GetSystem(Gmtry,PptFld,BCFld,1,1,A,b,x,ierr)
+    CALL SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
-    ! CALL DestroySystem(A,b,x,ierr)
+    CALL DestroySystem(A,b,x,ierr)
     CALL DestroyBC(BCFld,ierr)
     CALL DestroyProperties(PptFld,ierr)
     CALL DestroyGeometry(Gmtry,ierr)
