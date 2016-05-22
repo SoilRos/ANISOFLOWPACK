@@ -75,7 +75,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
     ELSE
 
-        Name="ANISOFLOW_b.h5"
+        Name="ANISOFLOW_b"
         CALL ViewSolution(b,Name,ierr)
 
         CALL KSPSetOperators(Solver,A,A,ierr)
