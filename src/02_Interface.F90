@@ -66,17 +66,16 @@ SUBROUTINE GetInputType(InputType,ierr)
             InputType%Tplgy=1
             InputType%Cvt=1
             InputType%BC=1
+        ELSE IF (InputTypeTmp.EQ.2) THEN
+            InputType%Gmtry=2
+            InputType%Tplgy=2
+            InputType%Cvt=2
+            InputType%BC=1
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
                 & "[ERROR] Input_type used is invalid\n",ierr)
             STOP
         END IF
-    ELSE
-        ! Presseting default InputType
-        InputType%Gmtry=1
-        InputType%Tplgy=1
-        InputType%Cvt=1
-        InputType%BC=1
     END IF
     
     ! Setting InputType from interface
@@ -119,6 +118,8 @@ SUBROUTINE GetInputTypeGmtry(InputType,ierr)
 
     IF (InputTypeGmtryFlg) THEN
         IF (InputTypeGmtryTmp.EQ.1) THEN
+            InputType%Gmtry=InputTypeGmtryTmp
+        ELSE IF (InputTypeGmtryTmp.EQ.2) THEN
             InputType%Gmtry=InputTypeGmtryTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
@@ -163,7 +164,9 @@ SUBROUTINE GetInputTypeTplgy(InputType,ierr)
     IF (InputTypeTplgyFlg) THEN
         IF (InputTypeTplgyTmp.EQ.1) THEN
             InputType%Tplgy=InputTypeTplgyTmp
-        ELSE
+        ELSE IF (InputTypeTplgyTmp.EQ.2) THEN
+            InputType%Tplgy=InputTypeTplgyTmp
+        ELSE 
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
                 & "[ERROR] Input_type_tplgy used is invalid\n",ierr)
             STOP
@@ -207,6 +210,8 @@ SUBROUTINE GetInputTypeCvt(InputType,ierr)
 
     IF (InputTypeCvtFlg) THEN
         IF (InputTypeCvtTmp.EQ.1) THEN
+            InputType%Cvt=InputTypeCvtTmp
+        ELSE IF (InputTypeCvtTmp.EQ.2) THEN
             InputType%Cvt=InputTypeCvtTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &

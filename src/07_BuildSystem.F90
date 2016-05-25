@@ -27,15 +27,16 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
     PetscReal :: maxx
 
     CALL GetRunOptions(RunOptions,ierr)
-
+PRINT*,"A"
     IF ((TimeZone.EQ.1).AND.(TimeStep.EQ.1)) THEN
         CALL BuildSystem(Gmtry,PptFld,A,ierr)
+        PRINT*,"B"
         CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr)
         CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
     END IF
+    CALL MatView(A,PETSC_VIEWER_STDOUT_WORLD,ierr)
 
-
-
+    stop
     CALL ApplyDirichlet(Gmtry,BCFld,TimeZone,b,ierr)
     ! CALL ApplyCauchy(Gmtry,BCFld,TimeZone,A,b,ierr)
     ! CALL ApplyNeumman(Gmtry,BCFld,TimeZone,b,ierr)
@@ -152,9 +153,6 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
     ALLOCATE(Stencil%idx_clmns(4,7))
     ALLOCATE(Stencil%Values(7))
     Stencil%Size=7
- !   CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                             &
- !       & "ERROR: Traditional system hasn't implemented yet, please use Li system for now\n",ierr)
- !   STOP
 
     ! It gets the position of the cell.
     i=Ppt%Pstn%i
@@ -176,119 +174,106 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
     ! If the current cell is an active cell:
     IF (Ppt%StnclTplgy(4).EQ.1) THEN
 
-        IF (Ppt%StnclTplgy(1).EQ.1) THEN
-            Stencil%idx_clmns(MatStencil_i,1) = i
-            Stencil%idx_clmns(MatStencil_j,1) = j
-            Stencil%idx_clmns(MatStencil_k,1) = k-1
-            Stencil%Values(1)=2*Ppt%dx*Ppt%dy*Ppt%CvtBz%zz/(Ppt%dzB+Ppt%dz)
-        END IF
+        Stencil%idx_clmns(MatStencil_i,1) = i
+        Stencil%idx_clmns(MatStencil_j,1) = j
+        Stencil%idx_clmns(MatStencil_k,1) = k-1
+        Stencil%Values(1)=2*Ppt%dx*Ppt%dy*Ppt%CvtBz%zz/(Ppt%dzB+Ppt%dz)
 
-        IF (Ppt%StnclTplgy(2).EQ.1) THEN
-            Stencil%idx_clmns(MatStencil_i,2) = i
-            Stencil%idx_clmns(MatStencil_j,2) = j-1
-            Stencil%idx_clmns(MatStencil_k,2) = k
-            Stencil%Values(2)=2*Ppt%dx*Ppt%dz*Ppt%CvtBy%yy/(Ppt%dyB+Ppt%dy) 
-        END IF
+        Stencil%idx_clmns(MatStencil_i,2) = i
+        Stencil%idx_clmns(MatStencil_j,2) = j-1
+        Stencil%idx_clmns(MatStencil_k,2) = k
+        Stencil%Values(2)=2*Ppt%dx*Ppt%dz*Ppt%CvtBy%yy/(Ppt%dyB+Ppt%dy) 
 
-        IF (Ppt%StnclTplgy(3).EQ.1) THEN
-            Stencil%idx_clmns(MatStencil_i,3) = i-1
-            Stencil%idx_clmns(MatStencil_j,3) = j
-            Stencil%idx_clmns(MatStencil_k,3) = k
-            Stencil%Values(3)=2*Ppt%dy*Ppt%dz*Ppt%CvtBx%xx/(Ppt%dxB+Ppt%dx) 
-        END IF
+        Stencil%idx_clmns(MatStencil_i,3) = i-1
+        Stencil%idx_clmns(MatStencil_j,3) = j
+        Stencil%idx_clmns(MatStencil_k,3) = k
+        Stencil%Values(3)=2*Ppt%dy*Ppt%dz*Ppt%CvtBx%xx/(Ppt%dxB+Ppt%dx) 
 
-        IF (Ppt%StnclTplgy(4).EQ.1) THEN
-            Stencil%idx_clmns(MatStencil_i,4) = i
-            Stencil%idx_clmns(MatStencil_j,4) = j
-            Stencil%idx_clmns(MatStencil_k,4) = k
-            Stencil%Values(4)=-2*(Ppt%dy*Ppt%dz*Ppt%CvtFx%xx/(Ppt%dxF+Ppt%dx)+Ppt%dy*Ppt%dz*Ppt%CvtBx%xx/(Ppt%dxB+Ppt%dx)  &
-                & +Ppt%dx*Ppt%dz*Ppt%CvtFy%yy/(Ppt%dyF+Ppt%dy)+Ppt%dx*Ppt%dz*Ppt%CvtBy%yy/(Ppt%dyB+Ppt%dy)              &
-                & +Ppt%dx*Ppt%dy*Ppt%CvtFz%zz/(Ppt%dzF+Ppt%dz)+Ppt%dx*Ppt%dy*Ppt%CvtBz%zz/(Ppt%dzB+Ppt%dz))
-        END IF
+        Stencil%idx_clmns(MatStencil_i,4) = i
+        Stencil%idx_clmns(MatStencil_j,4) = j
+        Stencil%idx_clmns(MatStencil_k,4) = k
+        Stencil%Values(4)=-2*(Ppt%dy*Ppt%dz*Ppt%CvtFx%xx/(Ppt%dxF+Ppt%dx)+Ppt%dy*Ppt%dz*Ppt%CvtBx%xx/(Ppt%dxB+Ppt%dx)  &
+            & +Ppt%dx*Ppt%dz*Ppt%CvtFy%yy/(Ppt%dyF+Ppt%dy)+Ppt%dx*Ppt%dz*Ppt%CvtBy%yy/(Ppt%dyB+Ppt%dy)              &
+            & +Ppt%dx*Ppt%dy*Ppt%CvtFz%zz/(Ppt%dzF+Ppt%dz)+Ppt%dx*Ppt%dy*Ppt%CvtBz%zz/(Ppt%dzB+Ppt%dz))
 
-        IF (Ppt%StnclTplgy(5).EQ.1) THEN
-            Stencil%idx_clmns(MatStencil_i,5) = i+1
-            Stencil%idx_clmns(MatStencil_j,5) = j
-            Stencil%idx_clmns(MatStencil_k,5) = k
-            Stencil%Values(5)=2*Ppt%dy*Ppt%dz*Ppt%CvtFx%xx/(Ppt%dxF+Ppt%dx)
-        END IF
+        Stencil%idx_clmns(MatStencil_i,5) = i+1
+        Stencil%idx_clmns(MatStencil_j,5) = j
+        Stencil%idx_clmns(MatStencil_k,5) = k
+        Stencil%Values(5)=2*Ppt%dy*Ppt%dz*Ppt%CvtFx%xx/(Ppt%dxF+Ppt%dx)
 
-        IF (Ppt%StnclTplgy(6).EQ.1) THEN
-            Stencil%idx_clmns(MatStencil_i,6) = i
-            Stencil%idx_clmns(MatStencil_j,6) = j+1
-            Stencil%idx_clmns(MatStencil_k,6) = k
-            Stencil%Values(6)=2*Ppt%dx*Ppt%dz*Ppt%CvtFy%yy/(Ppt%dyF+Ppt%dy)
-        END IF
+        Stencil%idx_clmns(MatStencil_i,6) = i
+        Stencil%idx_clmns(MatStencil_j,6) = j+1
+        Stencil%idx_clmns(MatStencil_k,6) = k
+        Stencil%Values(6)=2*Ppt%dx*Ppt%dz*Ppt%CvtFy%yy/(Ppt%dyF+Ppt%dy)
 
-        IF (Ppt%StnclTplgy(7).EQ.1) THEN
-            Stencil%idx_clmns(MatStencil_i,7) = i
-            Stencil%idx_clmns(MatStencil_j,7) = j
-            Stencil%idx_clmns(MatStencil_k,7) = k+1
-            Stencil%Values(7)=2*Ppt%dx*Ppt%dy*Ppt%CvtFz%zz/(Ppt%dzF+Ppt%dz)
-        END IF
+        Stencil%idx_clmns(MatStencil_i,7) = i
+        Stencil%idx_clmns(MatStencil_j,7) = j
+        Stencil%idx_clmns(MatStencil_k,7) = k+1
+        Stencil%Values(7)=2*Ppt%dx*Ppt%dy*Ppt%CvtFz%zz/(Ppt%dzF+Ppt%dz)
+
     ! If the current cell is an Neumman x cell:
-    ELSEIF (Ppt%StnclTplgy(10).EQ.3) THEN ! Neumman x
+    ELSEIF (Ppt%StnclTplgy(4).EQ.3) THEN ! Neumman x
 
-        Stencil%Values(10)=-one
+        Stencil%Values(4)=-one
 
         ! It is a decision of wich cell is in Neumman x condition to assign the equality.
-        IF ((Ppt%StnclTplgy(9).EQ.1).AND.(Ppt%StnclTplgy(11).EQ.1)) THEN
+        IF ((Ppt%StnclTplgy(3).EQ.1).AND.(Ppt%StnclTplgy(5).EQ.1)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
                 & "ERROR: Neumman on x axis was bad defined\n",ierr)
             STOP
-        ELSEIF (Ppt%StnclTplgy(9).EQ.1) THEN
-            Stencil%Values(9)=1
-            Stencil%idx_clmns(MatStencil_i,9) = i-1
-            Stencil%idx_clmns(MatStencil_j,9) = j
-            Stencil%idx_clmns(MatStencil_k,9) = k
-        ELSEIF (Ppt%StnclTplgy(11).EQ.1) THEN
-            Stencil%Values(11)=1
-            Stencil%idx_clmns(MatStencil_i,11) = i+1
-            Stencil%idx_clmns(MatStencil_j,11) = j
-            Stencil%idx_clmns(MatStencil_k,11) = k
+        ELSEIF (Ppt%StnclTplgy(3).EQ.1) THEN
+            Stencil%Values(3)=one
+            Stencil%idx_clmns(MatStencil_i,3) = i-1
+            Stencil%idx_clmns(MatStencil_j,3) = j
+            Stencil%idx_clmns(MatStencil_k,3) = k
+        ELSEIF (Ppt%StnclTplgy(5).EQ.1) THEN
+            Stencil%Values(5)=one
+            Stencil%idx_clmns(MatStencil_i,5) = i+1
+            Stencil%idx_clmns(MatStencil_j,5) = j
+            Stencil%idx_clmns(MatStencil_k,5) = k
         END IF
 
     ! If the current cell is an Neumman y cell:
-    ELSEIF (Ppt%StnclTplgy(10).EQ.4) THEN ! Neumman y
-        Stencil%Values(10)=-1
+    ELSEIF (Ppt%StnclTplgy(4).EQ.4) THEN ! Neumman y
+        Stencil%Values(2)=-one
         ! It is a decision of wich cell is in Neumman y condition to assign the equality.
-        IF ((Ppt%StnclTplgy(7).EQ.1).AND.(Ppt%StnclTplgy(13).EQ.1)) THEN
+        IF ((Ppt%StnclTplgy(2).EQ.1).AND.(Ppt%StnclTplgy(6).EQ.1)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
                 & "ERROR: Neumman on y axis was bad defined\n",ierr)
             STOP
-        ELSEIF (Ppt%StnclTplgy(7).EQ.1) THEN
-            Stencil%Values(7)=1
-            Stencil%idx_clmns(MatStencil_i,7) = i
-            Stencil%idx_clmns(MatStencil_j,7) = j-1
-            Stencil%idx_clmns(MatStencil_k,7) = k
-        ELSEIF (Ppt%StnclTplgy(13).EQ.1) THEN
-            Stencil%Values(13)=1
-            Stencil%idx_clmns(MatStencil_i,13) = i
-            Stencil%idx_clmns(MatStencil_j,13) = j+1
-            Stencil%idx_clmns(MatStencil_k,13) = k
+        ELSEIF (Ppt%StnclTplgy(2).EQ.1) THEN
+            Stencil%Values(2)=one
+            Stencil%idx_clmns(MatStencil_i,2) = i
+            Stencil%idx_clmns(MatStencil_j,2) = j-1
+            Stencil%idx_clmns(MatStencil_k,2) = k
+        ELSEIF (Ppt%StnclTplgy(6).EQ.1) THEN
+            Stencil%Values(6)=one
+            Stencil%idx_clmns(MatStencil_i,6) = i
+            Stencil%idx_clmns(MatStencil_j,6) = j+1
+            Stencil%idx_clmns(MatStencil_k,6) = k
         END IF
 
     ! If the current cell is an Neumman z cell:
-    ELSEIF (Ppt%StnclTplgy(10).EQ.5) THEN ! Neumman z
-        Stencil%Values(10)=-one
+    ELSEIF (Ppt%StnclTplgy(4).EQ.5) THEN ! Neumman z
+        Stencil%Values(4)=-one
         ! It is a decision of wich cell is in Neumman z condition to assign the equality.
-        IF ((Ppt%StnclTplgy(3).EQ.1).AND.(Ppt%StnclTplgy(17).EQ.1)) THEN
+        IF ((Ppt%StnclTplgy(1).EQ.1).AND.(Ppt%StnclTplgy(7).EQ.1)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
                 & "ERROR: Neumman on z axis was bad defined\n",ierr)
             STOP
-        ELSEIF (Ppt%StnclTplgy(3).EQ.1) THEN
-            Stencil%Values(3)=1
-            Stencil%idx_clmns(MatStencil_i,3) = i
-            Stencil%idx_clmns(MatStencil_j,3) = j
-            Stencil%idx_clmns(MatStencil_k,3) = k-1
-        ELSEIF (Ppt%StnclTplgy(17).EQ.1) THEN
-            Stencil%Values(17)=1
-            Stencil%idx_clmns(MatStencil_i,17) = i
-            Stencil%idx_clmns(MatStencil_j,17) = j
-            Stencil%idx_clmns(MatStencil_k,17) = k+1
+        ELSEIF (Ppt%StnclTplgy(1).EQ.1) THEN
+            Stencil%Values(1)=one
+            Stencil%idx_clmns(MatStencil_i,1) = i
+            Stencil%idx_clmns(MatStencil_j,1) = j
+            Stencil%idx_clmns(MatStencil_k,1) = k-1
+        ELSEIF (Ppt%StnclTplgy(7).EQ.1) THEN
+            Stencil%Values(7)=one
+            Stencil%idx_clmns(MatStencil_i,7) = i
+            Stencil%idx_clmns(MatStencil_j,7) = j
+            Stencil%idx_clmns(MatStencil_k,7) = k+1
         END IF
-    ELSEIF (Ppt%StnclTplgy(10).EQ.2) THEN ! Dirichlet
-        Stencil%Values(10)=-one
+    ELSEIF (Ppt%StnclTplgy(4).EQ.2) THEN ! Dirichlet
+        Stencil%Values(4)=-one
     END IF
 
 

@@ -30,13 +30,13 @@ PROGRAM ANISOFLOW
     CALL GetGeometry(Gmtry,ierr)
     CALL GetProrperties(Gmtry,PptFld,ierr)
     CALL GetBC(Gmtry,BCFld,ierr)
-    ! CALL GetSystem(Gmtry,PptFld,BCFld,1,1,A,b,x,ierr)
-    ! CALL SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
+    CALL GetSystem(Gmtry,PptFld,BCFld,1,1,A,b,x,ierr)
+    !CALL SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
     ! CALL DestroySystem(A,b,x,ierr)
-    CALL DestroyBC(BCFld,ierr)
-    CALL DestroyProperties(PptFld,ierr)
-    CALL DestroyGeometry(Gmtry,ierr)
+    !CALL DestroyBC(BCFld,ierr)
+    !CALL DestroyProperties(PptFld,ierr)
+    !CALL DestroyGeometry(Gmtry,ierr)
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[Main Stage] Finalized\n",ierr)
 
