@@ -3,7 +3,7 @@
 ProgramDir=../../src/
 ProgramName=ANISOFLOW.exe
 
-np=1														# Number of processors to be used
+np=2														# Number of processors to be used
 
 
 InputType=2												# Input files type
@@ -12,7 +12,7 @@ InputFileGmtry=sanpck.domRST								# Geometry file
 InputFileCvt=sanpck.cvte										# Conductivity file
 InputFileTplgy=sanpck.acte 									# Topology file
 InputFileCvtByZones=									# Conductivity by zones file
-InputFileBC=BCtempDT 												# Boundary Condition file
+InputFileBC= 												# Boundary Condition file
 
 Scheme=1
 
