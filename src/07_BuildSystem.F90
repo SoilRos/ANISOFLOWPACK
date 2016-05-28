@@ -32,9 +32,7 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
         CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr)
         CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
     END IF
-    CALL MatView(A,PETSC_VIEWER_STDOUT_WORLD,ierr)
 
-    stop
     CALL ApplyDirichlet(Gmtry,BCFld,TimeZone,b,ierr)
     ! CALL ApplyCauchy(Gmtry,BCFld,TimeZone,A,b,ierr)
     ! CALL ApplyNeumman(Gmtry,BCFld,TimeZone,b,ierr)
@@ -491,12 +489,12 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
                 & "ERROR: Neumman on x axis was bad defined\n",ierr)
             STOP
         ELSEIF (Ppt%StnclTplgy(9).EQ.1) THEN
-            Stencil%Values(9)=1
+            Stencil%Values(9)=one
             Stencil%idx_clmns(MatStencil_i,9) = i-1
             Stencil%idx_clmns(MatStencil_j,9) = j
             Stencil%idx_clmns(MatStencil_k,9) = k
         ELSEIF (Ppt%StnclTplgy(11).EQ.1) THEN
-            Stencil%Values(11)=1
+            Stencil%Values(11)=one
             Stencil%idx_clmns(MatStencil_i,11) = i+1
             Stencil%idx_clmns(MatStencil_j,11) = j
             Stencil%idx_clmns(MatStencil_k,11) = k
@@ -504,19 +502,19 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
 
     ! If the current cell is an Neumman y cell:
     ELSEIF (Ppt%StnclTplgy(10).EQ.4) THEN ! Neumman y
-        Stencil%Values(10)=-1
+        Stencil%Values(10)=-one
         ! It is a decision of wich cell is in Neumman y condition to assign the equality.
         IF ((Ppt%StnclTplgy(7).EQ.1).AND.(Ppt%StnclTplgy(13).EQ.1)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
                 & "ERROR: Neumman on y axis was bad defined\n",ierr)
             STOP
         ELSEIF (Ppt%StnclTplgy(7).EQ.1) THEN
-            Stencil%Values(7)=1
+            Stencil%Values(7)=one
             Stencil%idx_clmns(MatStencil_i,7) = i
             Stencil%idx_clmns(MatStencil_j,7) = j-1
             Stencil%idx_clmns(MatStencil_k,7) = k
         ELSEIF (Ppt%StnclTplgy(13).EQ.1) THEN
-            Stencil%Values(13)=1
+            Stencil%Values(13)=one
             Stencil%idx_clmns(MatStencil_i,13) = i
             Stencil%idx_clmns(MatStencil_j,13) = j+1
             Stencil%idx_clmns(MatStencil_k,13) = k
@@ -524,19 +522,19 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
 
     ! If the current cell is an Neumman z cell:
     ELSEIF (Ppt%StnclTplgy(10).EQ.5) THEN ! Neumman z
-        Stencil%Values(10)=-1
+        Stencil%Values(10)=-one
         ! It is a decision of wich cell is in Neumman z condition to assign the equality.
         IF ((Ppt%StnclTplgy(3).EQ.1).AND.(Ppt%StnclTplgy(17).EQ.1)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
                 & "ERROR: Neumman on z axis was bad defined\n",ierr)
             STOP
         ELSEIF (Ppt%StnclTplgy(3).EQ.1) THEN
-            Stencil%Values(3)=1
+            Stencil%Values(3)=one
             Stencil%idx_clmns(MatStencil_i,3) = i
             Stencil%idx_clmns(MatStencil_j,3) = j
             Stencil%idx_clmns(MatStencil_k,3) = k-1
         ELSEIF (Ppt%StnclTplgy(17).EQ.1) THEN
-            Stencil%Values(17)=1
+            Stencil%Values(17)=one
             Stencil%idx_clmns(MatStencil_i,17) = i
             Stencil%idx_clmns(MatStencil_j,17) = j
             Stencil%idx_clmns(MatStencil_k,17) = k+1
@@ -560,7 +558,7 @@ END SUBROUTINE GetLiStencil
 !     TYPE(StencilVar),INTENT(INOUT)          :: Stencil
 
 !     PetscInt                                :: i,j,k
-!     PetscReal                               :: one=1.0
+!     PetscReal                               :: one=1.d0
 
 !     ! The Li stencil is based on 19 cells.
 !     ALLOCATE(Stencil%idx_clmns(4,19))
@@ -722,7 +720,7 @@ END SUBROUTINE GetLiStencil
 !     ! If the current cell is an Neumman x cell:
 !     ELSEIF (Ppt%StnclTplgy(10).EQ.3) THEN ! Neumman x
 
-!         Stencil%Values(10)=-1
+!         Stencil%Values(10)=-one
 
 !         ! It is a decision of wich cell is in Neumman x condition to assign the equality.
 !         IF ((Ppt%StnclTplgy(9).EQ.1).AND.(Ppt%StnclTplgy(11).EQ.1)) THEN
@@ -730,12 +728,12 @@ END SUBROUTINE GetLiStencil
 !                 & "ERROR: Neumman on x axis was bad defined\n",ierr)
 !             STOP
 !         ELSEIF (Ppt%StnclTplgy(9).EQ.1) THEN
-!             Stencil%Values(9)=1
+!             Stencil%Values(9)=one
 !             Stencil%idx_clmns(MatStencil_i,9) = i-1
 !             Stencil%idx_clmns(MatStencil_j,9) = j
 !             Stencil%idx_clmns(MatStencil_k,9) = k
 !         ELSEIF (Ppt%StnclTplgy(11).EQ.1) THEN
-!             Stencil%Values(11)=1
+!             Stencil%Values(11)=one
 !             Stencil%idx_clmns(MatStencil_i,11) = i+1
 !             Stencil%idx_clmns(MatStencil_j,11) = j
 !             Stencil%idx_clmns(MatStencil_k,11) = k
@@ -743,19 +741,19 @@ END SUBROUTINE GetLiStencil
 
 !     ! If the current cell is an Neumman y cell:
 !     ELSEIF (Ppt%StnclTplgy(10).EQ.4) THEN ! Neumman y
-!         Stencil%Values(10)=-1
+!         Stencil%Values(10)=-one
 !         ! It is a decision of wich cell is in Neumman y condition to assign the equality.
 !         IF ((Ppt%StnclTplgy(7).EQ.1).AND.(Ppt%StnclTplgy(13).EQ.1)) THEN
 !             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
 !                 & "ERROR: Neumman on y axis was bad defined\n",ierr)
 !             STOP
 !         ELSEIF (Ppt%StnclTplgy(7).EQ.1) THEN
-!             Stencil%Values(7)=1
+!             Stencil%Values(7)=one
 !             Stencil%idx_clmns(MatStencil_i,7) = i
 !             Stencil%idx_clmns(MatStencil_j,7) = j-1
 !             Stencil%idx_clmns(MatStencil_k,7) = k
 !         ELSEIF (Ppt%StnclTplgy(13).EQ.1) THEN
-!             Stencil%Values(13)=1
+!             Stencil%Values(13)=one
 !             Stencil%idx_clmns(MatStencil_i,13) = i
 !             Stencil%idx_clmns(MatStencil_j,13) = j+1
 !             Stencil%idx_clmns(MatStencil_k,13) = k
@@ -763,25 +761,25 @@ END SUBROUTINE GetLiStencil
 
 !     ! If the current cell is an Neumman z cell:
 !     ELSEIF (Ppt%StnclTplgy(10).EQ.5) THEN ! Neumman z
-!         Stencil%Values(10)=-1
+!         Stencil%Values(10)=-one
 !         ! It is a decision of wich cell is in Neumman z condition to assign the equality.
 !         IF ((Ppt%StnclTplgy(3).EQ.1).AND.(Ppt%StnclTplgy(17).EQ.1)) THEN
 !             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
 !                 & "ERROR: Neumman on z axis was bad defined\n",ierr)
 !             STOP
 !         ELSEIF (Ppt%StnclTplgy(3).EQ.1) THEN
-!             Stencil%Values(3)=1
+!             Stencil%Values(3)=one
 !             Stencil%idx_clmns(MatStencil_i,3) = i
 !             Stencil%idx_clmns(MatStencil_j,3) = j
 !             Stencil%idx_clmns(MatStencil_k,3) = k-1
 !         ELSEIF (Ppt%StnclTplgy(17).EQ.1) THEN
-!             Stencil%Values(17)=1
+!             Stencil%Values(17)=one
 !             Stencil%idx_clmns(MatStencil_i,17) = i
 !             Stencil%idx_clmns(MatStencil_j,17) = j
 !             Stencil%idx_clmns(MatStencil_k,17) = k+1
 !         END IF
 !     ELSEIF (Ppt%StnclTplgy(10).EQ.2) THEN ! Dirichlet
-!         Stencil%Values(10)=-1
+!         Stencil%Values(10)=-one
 !     END IF
 
 ! END SUBROUTINE AnisoflowStencil
@@ -805,7 +803,7 @@ SUBROUTINE ApplyDirichlet(Gmtry,BCFld,TimeZone,b,ierr)
     VecScatter                              :: Scatter
     IS                                      :: NaturalOrder
     PetscInt                                :: DirichSize
-    PetscReal                               :: one=1.0
+    PetscReal                               :: one=1.d0
 
 
     CALL VecGetSize(BCFld%Dirich(TimeZone),DirichSize,ierr)
@@ -843,7 +841,7 @@ SUBROUTINE ApplyTimeDiff(BCFld,TimeZone,TimeStep,A,b,x,ierr)
     Vec,INTENT(INOUT)                       :: b,x
 
     Vec                                     :: VecDT
-    PetscReal                               :: DT,one=1.0
+    PetscReal                               :: DT,one=1.d0
 
 
     CALL GetDT(BCFld,TimeZone,TimeStep,DT,ierr)
@@ -895,7 +893,7 @@ SUBROUTINE GetDT(BCFld,TimeZone,TimeStep,DT,ierr)
 
 END SUBROUTINE GetDT
 
-SUBROUTINE SystemDestroy(A,b,x,ierr)
+SUBROUTINE DestroySystem(A,b,x,ierr)
 
     IMPLICIT NONE
 
@@ -910,6 +908,6 @@ SUBROUTINE SystemDestroy(A,b,x,ierr)
     CALL VecDestroy(x,ierr)
     CALL MatDestroy(A,ierr)
 
-END SUBROUTINE SystemDestroy
+END SUBROUTINE DestroySystem
 
 END MODULE ANISOFLOW_BuildSystem

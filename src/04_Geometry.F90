@@ -19,6 +19,7 @@ SUBROUTINE GetGeometry(Gmtry,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetVerbose
     USE ANISOFLOW_Types, ONLY : Geometry
+    USE ANISOFLOW_View, ONLY : ViewTopology
 
     IMPLICIT NONE
 
@@ -29,8 +30,9 @@ SUBROUTINE GetGeometry(Gmtry,ierr)
 
     PetscLogStage                   :: Stage
     PetscBool                       :: Verbose
+    CHARACTER(LEN=200)              :: Name
 
-    CALL PetscLogStageRegister("GetGeometry", stage,ierr)
+    CALL PetscLogStageRegister("GetGeometry",Stage,ierr)
     CALL PetscLogStagePush(Stage,ierr)
 
     CALL GetVerbose(Verbose,ierr)
@@ -40,7 +42,8 @@ SUBROUTINE GetGeometry(Gmtry,ierr)
     CALL GetGrid(Gmtry%DataMngr,Gmtry%x,Gmtry%y,Gmtry%z,ierr)
     CALL GetTopology(Gmtry%DataMngr,Gmtry%Tplgy,Gmtry%DirichIS,Gmtry%NeummanIS,Gmtry%CauchyIS,Gmtry%SourceIS,ierr)
 
-    ! CALL ViewTopology(Gmtry,ierr)
+    Name="ANISOFLOW_Tplgy"
+    CALL ViewTopology(Gmtry%Tplgy,Name,ierr)
     
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] Finalized\n",ierr)
     CALL PetscLogStagePop(Stage,ierr)
@@ -75,6 +78,7 @@ SUBROUTINE GetDataMngr(DataMngr,ierr)
     ! InputType define the type of file that is provided.
     !   1: Defined by Blessent. An example is provided in "../ex/Blessent/in/tsim_USMH.asc"
     !   2: Defined by Perez. An example is provided in "../ex/Perez/in/sanpck.domnRST"
+
     IF (InputType%Gmtry.EQ.1) THEN
         CALL GetDataMngr_1(DataMngr,ierr)
     ELSE IF (InputType%Gmtry.EQ.2) THEN
@@ -140,7 +144,7 @@ SUBROUTINE GetDataMngr_1(DataMngr,ierr)
     END IF
 
     ! It broadcasts the global size to other processors.
-    CALL MPI_Bcast(widthG,3,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
+    CALL MPI_Bcast(widthG,3,MPI_INT,0, PETSC_COMM_WORLD,ierr)
 
     ! It decides the stencil shape depending on the scheme used.
     IF (RunOptions%Scheme.EQ.1) THEN
@@ -441,6 +445,10 @@ SUBROUTINE GetGrid_2(DataMngr,x,y,z,ierr)
 
         CALL VecSetValue(z,i,Value,INSERT_VALUES,ierr)
     END DO
+
+    IF (process.EQ.0) THEN
+        CLOSE(u)
+    END IF
 
     CALL VecAssemblyBegin(x,ierr)
     CALL VecAssemblyEnd(x,ierr)

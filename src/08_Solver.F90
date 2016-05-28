@@ -59,7 +59,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
                 CALL KSPSolve(Solver,b,x,ierr)
             
                 WRITE(CharCount,*)Count
-                Name="ANISOFLOW_sol_"//TRIM(ADJUSTL(CharCount))//".h5"
+                Name="ANISOFLOW_sol_"//TRIM(ADJUSTL(CharCount))
                 Name=ADJUSTL(Name)
                 print*,Name
                 CALL ViewSolution(x,Name,ierr)
@@ -75,12 +75,16 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
     ELSE
 
+        Name="ANISOFLOW_b"
+        CALL ViewSolution(b,Name,ierr)
+
         CALL KSPSetOperators(Solver,A,A,ierr)
         CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,    &
             & PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)
         CALL KSPSetFromOptions(Solver,ierr)
         CALL KSPSolve(Solver,b,x,ierr)
-        Name="ANISOFLOW_sol.h5"
+        
+        Name="ANISOFLOW_sol"
         CALL ViewSolution(x,Name,ierr)
 
     END IF
