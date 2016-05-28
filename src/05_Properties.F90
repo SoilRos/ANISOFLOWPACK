@@ -225,7 +225,7 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,ierr)
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputFileCvt(InputFileCvt,ierr)
 
-    PptFld%Cvt%DefinedByZones=.TRUE.
+    PptFld%Cvt%DefinedByCell=.TRUE.
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field is stored by Block\n",ierr)
 
     CALL DMCreateGlobalVector(Gmtry%DataMngr,CvtCellGlobal,ierr)
@@ -281,10 +281,8 @@ SUBROUTINE GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
     Ppt%Pstn%i=i
     Ppt%Pstn%j=j
     Ppt%Pstn%k=k
-
     CALL GetLocalTopology(Gmtry,Ppt,ierr)
     CALL GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
-
 
 END SUBROUTINE GetLocalProperty
 

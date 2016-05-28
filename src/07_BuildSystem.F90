@@ -27,10 +27,8 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
     PetscReal :: maxx
 
     CALL GetRunOptions(RunOptions,ierr)
-PRINT*,"A"
     IF ((TimeZone.EQ.1).AND.(TimeStep.EQ.1)) THEN
         CALL BuildSystem(Gmtry,PptFld,A,ierr)
-        PRINT*,"B"
         CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr)
         CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
     END IF
@@ -77,7 +75,6 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
     DO k=corn(3),corn(3)+widthL(3)-1
         DO j=corn(2),corn(2)+widthL(2)-1
             DO i=corn(1),corn(1)+widthL(1)-1
-
                 CALL GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
                 CALL GetStencil(Ppt,Stencil,ierr)
                 
@@ -172,7 +169,7 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
     Stencil%Values(:)=zero
 
     ! If the current cell is an active cell:
-    IF (Ppt%StnclTplgy(4).EQ.1) THEN
+    IF ((Ppt%StnclTplgy(4).EQ.1).OR.(Ppt%StnclTplgy(4).EQ.7)) THEN
 
         Stencil%idx_clmns(MatStencil_i,1) = i
         Stencil%idx_clmns(MatStencil_j,1) = j
@@ -272,7 +269,7 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
             Stencil%idx_clmns(MatStencil_j,7) = j
             Stencil%idx_clmns(MatStencil_k,7) = k+1
         END IF
-    ELSEIF (Ppt%StnclTplgy(4).EQ.2) THEN ! Dirichlet
+    ELSEIF ((Ppt%StnclTplgy(4).EQ.2).OR.(Ppt%StnclTplgy(4).EQ.0)) THEN ! Dirichlet
         Stencil%Values(4)=-one
     END IF
 
