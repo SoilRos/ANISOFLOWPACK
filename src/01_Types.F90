@@ -278,7 +278,7 @@ MODULE ANISOFLOW_Types
  !          3: HDF5
 
     TYPE OuputTypeVar
-        PetscInt                        :: Sol
+        PetscInt                        :: Sol=1,Tplgy=0,Cvt=0
     END TYPE OuputTypeVar
 
 CONTAINS

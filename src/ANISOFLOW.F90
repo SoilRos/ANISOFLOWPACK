@@ -1,12 +1,12 @@
 PROGRAM ANISOFLOW
 
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertyField,BoundaryConditions
-    USE ANISOFLOW_Interface, ONLY : GetVerbose
-    USE ANISOFLOW_Geometry, ONLY : GetGeometry,DestroyGeometry
-    USE ANISOFLOW_Properties, ONLY : GetProrperties,DestroyProperties
-    USE ANISOFLOW_BoundaryConditions, ONLY : GetBC,DestroyBC
-    USE ANISOFLOW_BuildSystem, ONLY : GetSystem,DestroySystem
-    USE ANISOFLOW_Solver, ONLY : SolveSystem
+    USE ANISOFLOW_Types,                ONLY : Geometry,PropertyField,BoundaryConditions
+    USE ANISOFLOW_Interface,            ONLY : GetVerbose
+    USE ANISOFLOW_Geometry,             ONLY : GetGeometry,DestroyGeometry
+    USE ANISOFLOW_Properties,           ONLY : GetProrperties,DestroyProperties
+    USE ANISOFLOW_BoundaryConditions,   ONLY : GetBC,DestroyBC
+    USE ANISOFLOW_BuildSystem,          ONLY : GetSystem,DestroySystem
+    USE ANISOFLOW_Solver,               ONLY : SolveSystem
 
     IMPLICIT NONE
     
@@ -42,8 +42,7 @@ PROGRAM ANISOFLOW
 
     CALL PetscFinalize(ierr)
 
-
 END PROGRAM
 
-! ! Hay que preguntarle a los del PETSc con cual "derived type" se deben transmitir
-! ! las variables para que el programa siga siendo portable. (Corregir en Properties y Geometry)
+! Use PetscDataTypeToMPIDataType subroutine to Send/Recive MPI values when PETSc team add 
+! a Fortran wrapper function for it.

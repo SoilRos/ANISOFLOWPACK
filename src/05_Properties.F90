@@ -37,6 +37,7 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,PropertyField,InputTypeVar
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputType
+    USE ANISOFLOW_View, ONLY : ViewConductivity
 
     IMPLICIT NONE
 
@@ -47,13 +48,18 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
     TYPE(PropertyField),INTENT(INOUT)   :: PptFld
 
     TYPE(InputTypeVar)                  :: InputType
+    CHARACTER(LEN=200)                  :: Name
 
     CALL GetInputType(InputType,ierr)
 
+    Name="ANISOFLOW_Cvt"
+
     IF (InputType%Cvt.EQ.1) THEN
         CALL GetConductivity_1(Gmtry,PptFld,ierr)
+        CALL ViewConductivity(PptFld%Cvt%CvtType,Name,ierr)
     ELSE IF (InputType%Cvt.EQ.2) THEN
         CALL GetConductivity_2(Gmtry,PptFld,ierr)
+        CALL ViewConductivity(PptFld%Cvt%CvtCell,Name,ierr)
     ELSE
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Conductivity InputType wrong\n",ierr)
@@ -379,7 +385,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
         STOP   
     END IF
 
-    IF (.NOT.Pptfld%Cvt%DefinedByCell) THEN
+    IF (.NOT.PptFld%Cvt%DefinedByCell) THEN
         IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4).OR.(Ppt%StnclTplgy(ValI(1)).EQ.5)) THEN ! Only get properties for active blocks
             CALL DMDAVecGetArrayreadF90(Gmtry%DataMngr,PptFld%Cvt%CvtType,     &
                 & TmpCvtTypeZone,ierr)
