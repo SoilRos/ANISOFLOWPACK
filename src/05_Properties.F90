@@ -216,7 +216,7 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,ierr)
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertyField),INTENT(INOUT)   :: PptFld
 
-    PetscInt                            :: u,i,width(3),CvtLen
+    PetscInt                            :: u,i,width(3)
     PetscReal                           :: ValR
     PetscMPIInt                         :: process
     Vec                                 :: CvtCellGlobal
