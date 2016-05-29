@@ -7,3 +7,5 @@ src-v0.1/
 *.h5
 *.log
 *.txt
+*.bin
+*.info
