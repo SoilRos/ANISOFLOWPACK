@@ -212,6 +212,8 @@ SUBROUTINE GetInputTypeCvt(InputType,ierr)
     IF (InputTypeCvtFlg) THEN
         IF (InputTypeCvtTmp.EQ.1) THEN
             InputType%Cvt=InputTypeCvtTmp
+        ELSE IF (InputTypeCvtTmp.EQ.2) THEN
+            InputType%Cvt=InputTypeCvtTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
                 & "[ERROR] Input_type_Cvt used is invalid\n",ierr)
@@ -433,173 +435,173 @@ END SUBROUTINE GetInputFileBC
 
  !    
 
-SUBROUTINE GetOuputDir(OuputDir,ierr)
+SUBROUTINE GetOutputDir(OutputDir,ierr)
 
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
-    CHARACTER(LEN=200),INTENT(OUT)  :: OuputDir
+    CHARACTER(LEN=200),INTENT(OUT)  :: OutputDir
 
-    PetscBool                       :: OuputDirFlg
+    PetscBool                       :: OutputDirFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Ouput_dir",OuputDir,     &
-        & OuputDirFlg,ierr)
-    IF (.NOT.OuputDirFlg) OuputDir="/"
-    OuputDir=TRIM(OuputDir)
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Output_dir",OutputDir,     &
+        & OutputDirFlg,ierr)
+    IF (.NOT.OutputDirFlg) OutputDir="/"
+    OutputDir=TRIM(OutputDir)
 
-END SUBROUTINE GetOuputDir
+END SUBROUTINE GetOutputDir
 
  !
 
-SUBROUTINE GetOuputType(OuputType,ierr)
+SUBROUTINE GetOutputType(OutputType,ierr)
 
-    USE ANISOFLOW_Types, ONLY : OuputTypeVar
+    USE ANISOFLOW_Types, ONLY : OutputTypeVar
 
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
-    Type(OuputTypeVar),INTENT(OUT)  :: OuputType
+    Type(OutputTypeVar),INTENT(OUT)  :: OutputType
 
-    PetscBool                       :: OuputTypeFlg
-    PetscInt                        :: OuputTypeTmp
+    PetscBool                       :: OutputTypeFlg
+    PetscInt                        :: OutputTypeTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Ouput_type",OuputTypeTmp,   &
-        & OuputTypeFlg,ierr)
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Output_type",OutputTypeTmp,   &
+        & OutputTypeFlg,ierr)
 
-    IF (OuputTypeFlg) THEN
-        IF (OuputTypeTmp.EQ.1) THEN
-            OuputType%Tplgy=1
-            OuputType%Cvt=1
-            OuputType%Sol=1
-        ELSE IF (OuputTypeTmp.EQ.2) THEN
-            OuputType%Tplgy=2
-            OuputType%Cvt=2
-            OuputType%Sol=2
-        ELSE IF (OuputTypeTmp.EQ.3) THEN
-            OuputType%Tplgy=3
-            OuputType%Cvt=3
-            OuputType%Sol=3
+    IF (OutputTypeFlg) THEN
+        IF (OutputTypeTmp.EQ.1) THEN
+            OutputType%Tplgy=1
+            OutputType%Cvt=1
+            OutputType%Sol=1
+        ELSE IF (OutputTypeTmp.EQ.2) THEN
+            OutputType%Tplgy=2
+            OutputType%Cvt=2
+            OutputType%Sol=2
+        ELSE IF (OutputTypeTmp.EQ.3) THEN
+            OutputType%Tplgy=3
+            OutputType%Cvt=3
+            OutputType%Sol=3
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "[ERROR] Ouput_type used is invalid\n",ierr)
+                & "[ERROR] Output_type used is invalid\n",ierr)
             STOP
         END IF
     ELSE
-        ! Presseting default OuputType
-        OuputType%Tplgy=0
-        OuputType%Cvt=0
-        OuputType%Sol=1
+        ! Presseting default OutputType
+        OutputType%Tplgy=0
+        OutputType%Cvt=0
+        OutputType%Sol=1
     END IF
     
-    ! Setting OuputType from interface
-    CALL GetOuputTypeTplgy(OuputType,ierr)
-    CALL GetOuputTypeCvt(OuputType,ierr)
-    CALL GetOuputTypeSol(OuputType,ierr)
+    ! Setting OutputType from interface
+    CALL GetOutputTypeTplgy(OutputType,ierr)
+    CALL GetOutputTypeCvt(OutputType,ierr)
+    CALL GetOutputTypeSol(OutputType,ierr)
 
-END SUBROUTINE GetOuputType
+END SUBROUTINE GetOutputType
 
-SUBROUTINE GetOuputTypeTplgy(OuputType,ierr)
+SUBROUTINE GetOutputTypeTplgy(OutputType,ierr)
 
-    USE ANISOFLOW_Types, ONLY : OuputTypeVar
-
-    IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-
-    PetscErrorCode,INTENT(INOUT)        :: ierr
-    Type(OuputTypeVar),INTENT(INOUT)    :: OuputType
-
-    PetscBool                       :: OuputTypeTplgyFlg
-    PetscInt                        :: OuputTypeTplgyTmp
-
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Ouput_type_tplgy",          &
-        & OuputTypeTplgyTmp,OuputTypeTplgyFlg,ierr)
-
-    IF (OuputTypeTplgyFlg) THEN
-        IF (OuputTypeTplgyTmp.EQ.1) THEN
-            OuputType%Tplgy=OuputTypeTplgyTmp
-        ELSE IF (OuputTypeTplgyTmp.EQ.2) THEN
-            OuputType%Tplgy=OuputTypeTplgyTmp
-        ELSE IF (OuputTypeTplgyTmp.EQ.3) THEN
-            OuputType%Tplgy=OuputTypeTplgyTmp
-        ELSE
-            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "[ERROR] Ouput_type_tplgy used is invalid\n",ierr)
-            STOP
-        END IF
-    END IF
-
-END SUBROUTINE GetOuputTypeTplgy
-
-SUBROUTINE GetOuputTypeCvt(OuputType,ierr)
-
-    USE ANISOFLOW_Types, ONLY : OuputTypeVar
+    USE ANISOFLOW_Types, ONLY : OutputTypeVar
 
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
-    Type(OuputTypeVar),INTENT(INOUT)    :: OuputType
+    Type(OutputTypeVar),INTENT(INOUT)    :: OutputType
 
-    PetscBool                       :: OuputTypeCvtFlg
-    PetscInt                        :: OuputTypeCvtTmp
+    PetscBool                       :: OutputTypeTplgyFlg
+    PetscInt                        :: OutputTypeTplgyTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Ouput_type_cvt",          &
-        & OuputTypeCvtTmp,OuputTypeCvtFlg,ierr)
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Output_type_tplgy",          &
+        & OutputTypeTplgyTmp,OutputTypeTplgyFlg,ierr)
 
-    IF (OuputTypeCvtFlg) THEN
-        IF (OuputTypeCvtTmp.EQ.1) THEN
-            OuputType%Cvt=OuputTypeCvtTmp
-        ELSE IF (OuputTypeCvtTmp.EQ.2) THEN
-            OuputType%Cvt=OuputTypeCvtTmp
-        ELSE IF (OuputTypeCvtTmp.EQ.3) THEN
-            OuputType%Cvt=OuputTypeCvtTmp
+    IF (OutputTypeTplgyFlg) THEN
+        IF (OutputTypeTplgyTmp.EQ.1) THEN
+            OutputType%Tplgy=OutputTypeTplgyTmp
+        ELSE IF (OutputTypeTplgyTmp.EQ.2) THEN
+            OutputType%Tplgy=OutputTypeTplgyTmp
+        ELSE IF (OutputTypeTplgyTmp.EQ.3) THEN
+            OutputType%Tplgy=OutputTypeTplgyTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "[ERROR] Ouput_type_cvt used is invalid\n",ierr)
+                & "[ERROR] Output_type_tplgy used is invalid\n",ierr)
             STOP
         END IF
     END IF
 
-END SUBROUTINE GetOuputTypeCvt
+END SUBROUTINE GetOutputTypeTplgy
 
-SUBROUTINE GetOuputTypeSol(OuputType,ierr)
+SUBROUTINE GetOutputTypeCvt(OutputType,ierr)
 
-    USE ANISOFLOW_Types, ONLY : OuputTypeVar
+    USE ANISOFLOW_Types, ONLY : OutputTypeVar
 
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
-    Type(OuputTypeVar),INTENT(INOUT)    :: OuputType
+    Type(OutputTypeVar),INTENT(INOUT)    :: OutputType
 
-    PetscBool                       :: OuputTypeSolFlg
-    PetscInt                        :: OuputTypeSolTmp
+    PetscBool                       :: OutputTypeCvtFlg
+    PetscInt                        :: OutputTypeCvtTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Ouput_type_sol",          &
-        & OuputTypeSolTmp,OuputTypeSolFlg,ierr)
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Output_type_cvt",          &
+        & OutputTypeCvtTmp,OutputTypeCvtFlg,ierr)
 
-    IF (OuputTypeSolFlg) THEN
-        IF (OuputTypeSolTmp.EQ.1) THEN
-            OuputType%Sol=OuputTypeSolTmp
-        ELSE IF (OuputTypeSolTmp.EQ.2) THEN
-            OuputType%Sol=OuputTypeSolTmp
-        ELSE IF (OuputTypeSolTmp.EQ.3) THEN
-            OuputType%Sol=OuputTypeSolTmp
+    IF (OutputTypeCvtFlg) THEN
+        IF (OutputTypeCvtTmp.EQ.1) THEN
+            OutputType%Cvt=OutputTypeCvtTmp
+        ELSE IF (OutputTypeCvtTmp.EQ.2) THEN
+            OutputType%Cvt=OutputTypeCvtTmp
+        ELSE IF (OutputTypeCvtTmp.EQ.3) THEN
+            OutputType%Cvt=OutputTypeCvtTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "[ERROR] Ouput_type_sol used is invalid\n",ierr)
+                & "[ERROR] Output_type_cvt used is invalid\n",ierr)
             STOP
         END IF
     END IF
 
-END SUBROUTINE GetOuputTypeSol
+END SUBROUTINE GetOutputTypeCvt
+
+SUBROUTINE GetOutputTypeSol(OutputType,ierr)
+
+    USE ANISOFLOW_Types, ONLY : OutputTypeVar
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    Type(OutputTypeVar),INTENT(INOUT)    :: OutputType
+
+    PetscBool                       :: OutputTypeSolFlg
+    PetscInt                        :: OutputTypeSolTmp
+
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Output_type_sol",          &
+        & OutputTypeSolTmp,OutputTypeSolFlg,ierr)
+
+    IF (OutputTypeSolFlg) THEN
+        IF (OutputTypeSolTmp.EQ.1) THEN
+            OutputType%Sol=OutputTypeSolTmp
+        ELSE IF (OutputTypeSolTmp.EQ.2) THEN
+            OutputType%Sol=OutputTypeSolTmp
+        ELSE IF (OutputTypeSolTmp.EQ.3) THEN
+            OutputType%Sol=OutputTypeSolTmp
+        ELSE
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
+                & "[ERROR] Output_type_sol used is invalid\n",ierr)
+            STOP
+        END IF
+    END IF
+
+END SUBROUTINE GetOutputTypeSol
 
  !  - GetRunOptions: It's a routine that provides RunOptionsVar structure that contains all options 
  !                   related with the running.

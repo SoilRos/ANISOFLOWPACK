@@ -19,7 +19,6 @@ SUBROUTINE GetGeometry(Gmtry,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetVerbose
     USE ANISOFLOW_Types, ONLY : Geometry
-    USE ANISOFLOW_View, ONLY : ViewTopology
 
     IMPLICIT NONE
 
@@ -28,25 +27,29 @@ SUBROUTINE GetGeometry(Gmtry,ierr)
     PetscErrorCode,INTENT(INOUT)    :: ierr
     TYPE(Geometry),INTENT(OUT)      :: Gmtry
 
-    PetscLogStage                   :: Stage
     PetscBool                       :: Verbose
-    CHARACTER(LEN=200)              :: Name
+    CHARACTER(LEN=200)              :: EventName,ClassName
+    PetscLogEvent                   :: Event
+    PetscClassId                    :: ClassID
+    PetscLogDouble                  :: EventFlops
 
-    CALL PetscLogStageRegister("GetGeometry",Stage,ierr)
-    CALL PetscLogStagePush(Stage,ierr)
+    ClassName="Geometry"
+    CALL PetscClassIdRegister(ClassName,ClassID,ierr)
+    EventName="GetGeometry"
+    CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
+    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
     CALL GetVerbose(Verbose,ierr)
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] Inizialited\n",ierr)
-
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
+    
     CALL GetDataMngr(Gmtry%DataMngr,ierr)
     CALL GetGrid(Gmtry%DataMngr,Gmtry%x,Gmtry%y,Gmtry%z,ierr)
-    CALL GetTopology(Gmtry%DataMngr,Gmtry%Tplgy,Gmtry%DirichIS,Gmtry%NeummanIS,Gmtry%CauchyIS,Gmtry%SourceIS,ierr)
-
-    Name="ANISOFLOW_Tplgy"
-    CALL ViewTopology(Gmtry%Tplgy,Name,ierr)
+    CALL GetTopology(Gmtry%DataMngr,Gmtry%Tplgy,Gmtry%DirichIS,Gmtry%SourceIS,Gmtry%CauchyIS,ierr)
     
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] Finalized\n",ierr)
-    CALL PetscLogStagePop(Stage,ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
+    
+    CALL PetscLogFlops(EventFlops,ierr)
+    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
 END SUBROUTINE GetGeometry
 
@@ -163,7 +166,7 @@ SUBROUTINE GetDataMngr_1(DataMngr,ierr)
         & PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,1,1,PETSC_NULL_INTEGER,       &
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,DataMngr,ierr)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] Data Manager was satisfactorily created\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Data Manager was satisfactorily created\n",ierr)
 
 END SUBROUTINE GetDataMngr_1
 
@@ -234,7 +237,7 @@ SUBROUTINE GetDataMngr_2(DataMngr,ierr)
         & PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,1,1,PETSC_NULL_INTEGER,       &
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,DataMngr,ierr)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] Data Manager was satisfactorily created\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Data Manager was satisfactorily created\n",ierr)
 
 END SUBROUTINE GetDataMngr_2
 
@@ -345,7 +348,7 @@ SUBROUTINE GetGrid_1(DataMngr,x,y,z,ierr)
         CALL VecSetValue(z,i,Value,INSERT_VALUES,ierr)
     END DO
     ! Default DX=DY=DZ=1.0
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] WARNING: Grid System wasn't provided. Default grid used has DX=DY=DZ=1.0\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] WARNING: Grid System wasn't provided. Default grid used has DX=DY=DZ=1.0\n",ierr)
 
     CALL VecAssemblyBegin(x,ierr)
     CALL VecAssemblyEnd(x,ierr)
@@ -356,7 +359,7 @@ SUBROUTINE GetGrid_1(DataMngr,x,y,z,ierr)
     CALL VecAssemblyBegin(z,ierr)
     CALL VecAssemblyEnd(z,ierr)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] Grid System was satisfactorily created\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Grid System was satisfactorily created\n",ierr)
 
 END SUBROUTINE GetGrid_1
 
@@ -459,7 +462,7 @@ SUBROUTINE GetGrid_2(DataMngr,x,y,z,ierr)
     CALL VecAssemblyBegin(z,ierr)
     CALL VecAssemblyEnd(z,ierr)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] Grid System was satisfactorily created\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Grid System was satisfactorily created\n",ierr)
 
 END SUBROUTINE GetGrid_2
 
@@ -474,22 +477,17 @@ END SUBROUTINE GetGrid_2
  !          0: Inactive cell.
  !          1: Active cell.
  !          2: Dirichlet boundary condition cell.
- !          3: Neumman on x boundary condition cell.
- !          4: Neumman on y boundary condition cell.
- !          5: Neumman on z boundary condition cell.
- !          6: Cauchy boundary condition
- !          6: Source Q.
+ !          3: Source Q.
+ !          4: Cauchy boundary condition
  !      + DirichIS: It's a PETSc index set that has a map between Dirichlet information and vecs 
  !                  produced by DataMngr.
- !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
- !                  produced by DataMngr.
- !      + NeummanIS: It's a PETSc index set that has a map between Neumman information and vecs 
- !                   produced by DataMngr.
  !      + SourceIS: It's a PETSc index set that has a map between Source information and vecs 
  !                   roduced by DataMngr.
+ !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
+ !                  produced by DataMngr.
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
-SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
+SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
 
     USE ANISOFLOW_Types, ONLY : InputTypeVar
     USE ANISOFLOW_Interface, ONLY : GetInputType,GetVerbose
@@ -501,21 +499,32 @@ SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
     PetscErrorCode,INTENT(INOUT)    :: ierr
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
-    IS,INTENT(OUT)                  :: DirichIS,NeummanIS,CauchyIS,SourceIS
+    IS,INTENT(OUT)                  :: DirichIS,CauchyIS,SourceIS
 
     TYPE(InputTypeVar)              :: InputType
+    PetscInt                        :: SizeDirichIS,SizeSourceIS,SizeCauchyIS
 
     CALL GetInputType(InputType,ierr)
 
     ! InputType define the type of file that is provided.
     !   1: Default topology, it doesn't need a file. The first border layer is Dirichlet, active in other case.
     IF (InputType%Tplgy.EQ.1) THEN
-        CALL GetTopology_1(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
+        CALL GetTopology_1(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
     ELSE IF (InputType%Tplgy.EQ.2) THEN
-        CALL GetTopology_2(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
+        CALL GetTopology_2(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
     ELSE
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Topology InputType wrong\n",ierr)
+        STOP
+    END IF
+
+    CALL ISGetLocalSize(DirichIS,SizeDirichIS,ierr)
+    CALL ISGetLocalSize(SourceIS,SizeSourceIS,ierr)
+    CALL ISGetLocalSize(CauchyIS,SizeCauchyIS,ierr)
+
+    IF ((SizeDirichIS+SizeSourceIS+SizeCauchyIS).EQ.0) THEN
+        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+            & "[ERROR] It has to have at least one boundary condition.\n",ierr)
         STOP
     END IF
 
@@ -533,24 +542,20 @@ END SUBROUTINE GetTopology
  !          0: Inactive cell.
  !          1: Active cell.
  !          2: Dirichlet boundary condition cell.
- !          3: Neumman on x boundary condition cell.
- !          4: Neumman on y boundary condition cell.
- !          5: Neumman on z boundary condition cell.
- !          6: Cauchy boundary condition
- !          6: Source Q.
+ !          3: Source Q.
+ !          4: Cauchy boundary condition
  !      + DirichIS: It's a PETSc index set that has a map between Dirichlet information and vecs 
  !                  produced by DataMngr.
- !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
- !                  produced by DataMngr.
- !      + NeummanIS: It's a PETSc index set that has a map between Neumman information and vecs 
- !                   produced by DataMngr.
  !      + SourceIS: It's a PETSc index set that has a map between Source information and vecs 
  !                   roduced by DataMngr.
+ !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
+ !                  produced by DataMngr.
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
-SUBROUTINE GetTopology_1(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
+SUBROUTINE GetTopology_1(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetVerbose
+    USE ANISOFLOW_View, ONLY : ViewTopology
 
     IMPLICIT NONE
 
@@ -563,13 +568,14 @@ SUBROUTINE GetTopology_1(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ier
     PetscErrorCode,INTENT(INOUT)    :: ierr
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
-    IS,INTENT(OUT)                  :: DirichIS,NeummanIS,CauchyIS,SourceIS
+    IS,INTENT(OUT)                  :: DirichIS,SourceIS,CauchyIS
 
     PetscReal,POINTER               :: TmpTplgyArray(:,:,:)
     PetscReal                       :: ValR
-    PetscInt                        :: i,j,k,widthL(3),widthG(3),corn(3),BCLenL(4),BCLenG(4)
+    PetscInt                        :: i,j,k,widthL(3),widthG(3),corn(3),BCLenL(3),BCLenG(3)
     Vec                             :: TmpTplgy
     PetscBool                       :: Verbose
+    CHARACTER(LEN=200)              :: ViewName,EventName
 
     CALL GetVerbose(Verbose,ierr)
 
@@ -614,7 +620,11 @@ SUBROUTINE GetTopology_1(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ier
             END DO
         END DO
     END DO
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] WARNING: Topology File wasn't provided. Default topology used is ...\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] WARNING: Topology File wasn't provided. Default topology used is ...\n",ierr)
+
+    ViewName="ANISOFLOW_Tplgy"
+    EventName="GetTopology"
+    CALL ViewTopology(TmpTplgy,ViewName,EventName,ierr)
 
     ! It moves the temporal Fortran array to a petsc vector, Tplgy, stored in Gmtry.
     CALL DMDAVecRestoreArrayF90(DataMngr,TmpTplgy,TmpTplgyArray,ierr)
@@ -627,17 +637,18 @@ SUBROUTINE GetTopology_1(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ier
 
     CALL VecDestroy(TmpTplgy,ierr)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] Topology Identifiers were satisfactorily created\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Topology Identifiers were satisfactorily created\n",ierr)
 
-    CALL MPI_ALLREDUCE(BCLenL,BCLenG,4,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
+    CALL MPI_ALLREDUCE(BCLenL,BCLenG,3,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
 
-    CALL GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
+    CALL GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
 
 END SUBROUTINE GetTopology_1
 
-SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
+SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileTplgy
+    USE ANISOFLOW_View, ONLY : ViewTopology
 
     IMPLICIT NONE
 
@@ -650,12 +661,12 @@ SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ier
     PetscErrorCode,INTENT(INOUT)    :: ierr
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
-    IS,INTENT(OUT)                  :: DirichIS,NeummanIS,CauchyIS,SourceIS
+    IS,INTENT(OUT)                  :: DirichIS,SourceIS,CauchyIS
 
     PetscMPIInt                     :: process
-    CHARACTER(LEN=200)              :: InputDir,InputFileTplgy,Route
+    CHARACTER(LEN=200)              :: InputDir,InputFileTplgy,Route,ViewName,EventName
     PetscReal                       :: ValR
-    PetscInt                        :: u,i,ValI,widthG(3),BCLenL(4),BCLenG(4)
+    PetscInt                        :: u,i,ValI,widthG(3),BCLenL(3),BCLenG(3)
     Vec                             :: TmpTplgy
     PetscBool                       :: Verbose
 
@@ -670,7 +681,7 @@ SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ier
     ! It obtains a temporal Fortran array where will be filled each topology identifier.
     CALL DMCreateGlobalVector(DataMngr,TmpTplgy,ierr)
 
-    ! It quantifies Dirichlet, Neumman, and Cauchy boundary condition on global processors.
+    ! It quantifies Dirichlet, and Cauchy boundary condition on global processors.
     BCLenL(:)=0
     BCLenG(:)=0
 
@@ -692,9 +703,9 @@ SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ier
             ValI=0
             READ(u,*)ValI
             IF (ValI.EQ.2) BCLenL(1)=BCLenL(1)+1 ! Dirichlet
-            IF ((ValI.EQ.3).OR.(ValI.EQ.4).OR.(ValI.EQ.5)) BCLenL(2)=BCLenL(2)+1 ! Neumman
-            IF (ValI.EQ.6) BCLenL(3)=BCLenL(3)+1 ! Cauchy
-            IF (ValI.EQ.7) BCLenL(4)=BCLenL(4)+1 ! Source
+            IF (ValI.EQ.3) BCLenL(2)=BCLenL(2)+1 ! Source
+            IF (ValI.EQ.4) BCLenL(3)=BCLenL(3)+1 ! Cauchy
+            
             ValR=REAL(ValI)
             CALL VecSetValue(TmpTplgy,i-1,ValR,INSERT_VALUES,ierr)
         END DO
@@ -703,6 +714,10 @@ SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ier
 
     CALL VecAssemblyBegin(TmpTplgy,ierr)
     CALL VecAssemblyEnd(TmpTplgy,ierr)
+
+    ViewName="ANISOFLOW_Tplgy"
+    EventName="GetTopology"
+    CALL ViewTopology(TmpTplgy,ViewName,EventName,ierr)
 
     CALL DMCreateLocalVector(DataMngr,Tplgy,ierr)
 
@@ -713,11 +728,11 @@ SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,NeummanIS,CauchyIS,SourceIS,ier
 
     CALL VecDestroy(TmpTplgy,ierr)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] Topology Identifiers were satisfactorily created\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Topology Identifiers were satisfactorily created\n",ierr)
 
-    CALL MPI_ALLREDUCE(BCLenL,BCLenG,4,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
+    CALL MPI_ALLREDUCE(BCLenL,BCLenG,3,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
 
-    CALL GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
+    CALL GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
 
 END SUBROUTINE GetTopology_2
 
@@ -730,25 +745,20 @@ END SUBROUTINE GetTopology_2
  !          0: Inactive cell.
  !          1: Active cell.
  !          2: Dirichlet boundary condition cell.
- !          3: Neumman on x boundary condition cell.
- !          4: Neumman on y boundary condition cell.
- !          5: Neumman on z boundary condition cell.
- !          6: Cauchy boundary condition
- !          6: Source Q.
+ !          3: Source Q.
+ !          4: Cauchy boundary condition
  !      + BCLenG: It's an Array that contains the global length of each Boundary Condition in the 
  !                following order: DirichIS, NeummanIS, CauchyIS, SourceIS.
  !    > OUT: DirichIS, NeummanIS, CauchyIS, SourceIS, ierr.
  !      + DirichIS: It's a PETSc index set that has a map between Dirichlet information and vecs 
  !                  produced by DataMngr.
- !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
- !                  produced by DataMngr.
- !      + NeummanIS: It's a PETSc index set that has a map between Neumman information and vecs 
- !                   produced by DataMngr.
  !      + SourceIS: It's a PETSc index set that has a map between Source information and vecs 
  !                   roduced by DataMngr.
+ !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
+ !                  produced by DataMngr.
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
-SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,SourceIS,ierr)
+SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetVerbose
 
@@ -762,12 +772,11 @@ SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,Sourc
     PetscErrorCode,INTENT(INOUT)    :: ierr
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(IN)                  :: Tplgy
-    PetscInt,INTENT(IN)             :: BCLenG(4)
-    IS,INTENT(OUT)                  :: DirichIS,NeummanIS,CauchyIS,SourceIS
+    PetscInt,INTENT(IN)             :: BCLenG(3)
+    IS,INTENT(OUT)                  :: DirichIS,SourceIS,CauchyIS
 
-    PetscInt,ALLOCATABLE            :: IndexDirich(:),IndexNeumman(:)
-    PetscInt,ALLOCATABLE            :: IndexCauchy(:),IndexSource(:)
-    PetscInt                        :: i,Low,High,Size,ValI,Count(4),SumaL(4),SumaG(4)
+    PetscInt,ALLOCATABLE            :: IndexDirich(:),IndexSource(:),IndexCauchy(:)
+    PetscInt                        :: i,Low,High,Size,ValI,Count(3),SumaL(3),SumaG(3)
     PetscReal,POINTER               :: TmpTplgyArray(:)
     Vec                             :: TmpTplgy
     PetscBool                       :: Verbose
@@ -775,14 +784,12 @@ SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,Sourc
     CALL GetVerbose(Verbose,ierr)
 
     ALLOCATE(IndexDirich(BCLenG(1)))
-    ALLOCATE(IndexNeumman(BCLenG(2)))
+    ALLOCATE(IndexSource(BCLenG(2)))
     ALLOCATE(IndexCauchy(BCLenG(3)))
-    ALLOCATE(IndexSource(BCLenG(4)))
 
     IndexDirich(:)=0
-    IndexNeumman(:)=0
-    IndexCauchy(:)=0
     IndexSource(:)=0
+    IndexCauchy(:)=0
 
     CALL DMCreateGlobalVector(DataMngr,TmpTplgy,ierr)
 
@@ -806,18 +813,15 @@ SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,Sourc
             IF (ValI.EQ.2) THEN
                 IndexDirich(Count(1))=i
                 SumaL(1)=1
-            ELSEIF ((ValI.EQ.3).OR.(ValI.EQ.4).OR.(ValI.EQ.5)) THEN
-                IndexNeumman(Count(2))=i
+            ELSEIF (ValI.EQ.3) THEN
+                IndexSource(Count(2))=i
                 SumaL(2)=1
-            ELSEIF (ValI.EQ.6) THEN
+            ELSEIF (ValI.EQ.4) THEN
                 IndexCauchy(Count(3))=i
                 SumaL(3)=1
-            ELSEIF (ValI.EQ.7) THEN
-                IndexSource(Count(4))=i
-                SumaL(4)=1
             END IF
         END IF
-        CALL MPI_ALLREDUCE(SumaL,SumaG,4,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
+        CALL MPI_ALLREDUCE(SumaL,SumaG,3,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
         Count(:)=Count(:)+SumaG(:)
     END DO
 
@@ -832,19 +836,17 @@ SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,NeummanIS,CauchyIS,Sourc
 
     CALL ISCreateGeneral(MPI_COMM_WORLD,BCLenG(1),IndexDirich,                 &
         & PETSC_COPY_VALUES,DirichIS,ierr)
-    CALL ISCreateGeneral(PETSC_COMM_WORLD,BCLenG(2),IndexNeumman,              &
-        & PETSC_COPY_VALUES,NeummanIS,ierr)
+    CALL ISCreateGeneral(PETSC_COMM_WORLD,BCLenG(2),IndexSource,               &
+        & PETSC_COPY_VALUES,SourceIS,ierr)
     CALL ISCreateGeneral(PETSC_COMM_WORLD,BCLenG(3),IndexCauchy,               &
         & PETSC_COPY_VALUES,CauchyIS,ierr)
-    CALL ISCreateGeneral(PETSC_COMM_WORLD,BCLenG(4),IndexSource,               &
-        & PETSC_COPY_VALUES,SourceIS,ierr)
+
 
     DEALLOCATE(IndexDirich)
-    DEALLOCATE(IndexNeumman)
-    DEALLOCATE(IndexCauchy)
     DEALLOCATE(IndexSource)
+    DEALLOCATE(IndexCauchy)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Stage] Boundary condition index sets of topology identifiers were satisfactorily created\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Boundary condition index sets of topology identifiers were satisfactorily created\n",ierr)
 
 END SUBROUTINE GetTopologyBC
 
@@ -960,14 +962,20 @@ SUBROUTINE DestroyGeometry(Gmtry,ierr)
     PetscErrorCode,INTENT(INOUT)    :: ierr
     TYPE(Geometry),INTENT(INOUT)    :: Gmtry
 
-    PetscLogStage                   :: Stage
     PetscBool                       :: Verbose
+    CHARACTER(LEN=200)              :: EventName,ClassName
+    PetscLogEvent                   :: Event
+    PetscClassId                    :: ClassID
+    PetscLogDouble                  :: EventFlops
 
-    CALL PetscLogStageRegister("DestroyGeometry",Stage,ierr)
-    CALL PetscLogStagePush(stage,ierr)
+    ClassName="Geometry"
+    CALL PetscClassIdRegister(ClassName,ClassID,ierr)
+    EventName="DestroyGeometry"
+    CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
+    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
     CALL GetVerbose(Verbose,ierr)
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[DestroyGeometry Stage] Inizialited\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
 
     CALL DMDestroy(Gmtry%DataMngr,ierr)
     CALL VecDestroy(Gmtry%Tplgy,ierr)
@@ -975,12 +983,14 @@ SUBROUTINE DestroyGeometry(Gmtry,ierr)
     CALL VecDestroy(Gmtry%y,ierr)
     CALL VecDestroy(Gmtry%z,ierr)
     CALL ISDestroy(Gmtry%DirichIS,ierr)
-    CALL ISDestroy(Gmtry%NeummanIS,ierr)
-    CALL ISDestroy(Gmtry%CauchyIS,ierr)
     CALL ISDestroy(Gmtry%SourceIS,ierr)
+    CALL ISDestroy(Gmtry%CauchyIS,ierr)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[DestroyGeometry Stage] Finalized\n",ierr)
-    CALL PetscLogStagePop(Stage,ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
+    
+    CALL PetscLogFlops(EventFlops,ierr)
+    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+
 
 END SUBROUTINE DestroyGeometry
 
