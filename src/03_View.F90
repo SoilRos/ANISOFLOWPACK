@@ -27,8 +27,8 @@ SUBROUTINE ViewSolution(x,Name,ierr)
         CALL ViewVecProperty_1(x,Name,ierr)
     ELSE IF (OuputType%Sol.EQ.2) THEN
         CALL ViewVecProperty_2(x,Name,ierr)
-    ! ELSE IF (OuputType%Sol.EQ.3) THEN
-    !     CALL ViewVecProperty_3(x,Name,ierr)
+    ELSE IF (OuputType%Sol.EQ.3) THEN
+         CALL ViewVecProperty_3(x,Name,ierr)
     END IF
 
 END SUBROUTINE ViewSolution
@@ -54,8 +54,8 @@ SUBROUTINE ViewTopology(x,Name,ierr)
         CALL ViewVecProperty_1(x,Name,ierr)
     ELSE IF (OuputType%Tplgy.EQ.2) THEN
         CALL ViewVecProperty_2(x,Name,ierr)
-    ! ELSE IF (OuputType%Tplgy.EQ.3) THEN
-    !     CALL ViewVecProperty_3(x,Name,ierr)
+    ELSE IF (OuputType%Tplgy.EQ.3) THEN
+         CALL ViewVecProperty_3(x,Name,ierr)
     END IF
 
 END SUBROUTINE ViewTopology
@@ -81,8 +81,8 @@ SUBROUTINE ViewConductivity(x,Name,ierr)
         CALL ViewVecProperty_1(x,Name,ierr)
     ELSE IF (OuputType%Cvt.EQ.2) THEN
         CALL ViewVecProperty_2(x,Name,ierr)
-    ! ELSE IF (OuputType%Cvt.EQ.3) THEN
-    !     CALL ViewVecProperty_3(x,Name,ierr)
+    ELSE IF (OuputType%Cvt.EQ.3) THEN
+         CALL ViewVecProperty_3(x,Name,ierr)
     END IF
 
 END SUBROUTINE ViewConductivity
