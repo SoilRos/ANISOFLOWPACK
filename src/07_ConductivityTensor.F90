@@ -1,27 +1,42 @@
-! MODULE ANISOFLOW_SetUpSystem
+MODULE ANISOFLOW_SetUpSystem
 
-!     IMPLICIT NONE
+    IMPLICIT NONE
 
-! CONTAINS
+CONTAINS
 
-! !Subrutina ppal modulo
+!Subrutina ppal modulo
 
-! SUBROUTINE GetSetUpSystem(Gmtry,PptFld,BCFld,ierr)
+SUBROUTINE GetSetUpSystem(Gmtry,PptFld,BCFld,ierr)
+    USE ANISOFLOW_Types
+    USE ANISOFLOW_Geometry
 
-! #include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscsys.h>
 
-!     PetscErrorCode,INTENT(INOUT)            :: ierr
-!     TYPE(Geometry),INTENT(INOUT)               :: Gmtry
-!     TYPE(PropertyField),INTENT(INOUT)          :: PptFld
-!     TYPE(BoundaryConditions),INTENT(INOUT)     :: BCFld
-!     TYPE(RunOptionsVar)
+    PetscErrorCode,INTENT(INOUT)               :: ierr
+    TYPE(Geometry),INTENT(INOUT)               :: Gmtry
 
-!     IF 
+    TYPE(PropertyField),INTENT(INOUT)          :: PptFld
+    TYPE(BoundaryConditions),INTENT(INOUT)     :: BCFld
 
-! END SUBROUTINE GetSetUpSystem
+    TYPE(RunOptionsVar)                        :: RunOptions
+    TYPE(Geometry)                             :: UpsclGmtry
+
+    ! It obtains run options.
+    CALL GetRunOptions(RunOptions,ierr)
+
+    IF (RunOptions%Scheme.EQ.3) THEN
+        CALL GetGeometry(UpsclGmtry,ierr)
+        ! Operaciones con el UpsclGmtry
+
+        Gmtry=UpsclGmtry
+
+    END IF
+
+
+END SUBROUTINE GetSetUpSystem
 
 
 
 
-! END MODULE ANISOFLOW_SetUpSystem
+END MODULE ANISOFLOW_SetUpSystem
 
