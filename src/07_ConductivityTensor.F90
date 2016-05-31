@@ -1,27 +1,27 @@
-MODULE ANISOFLOW_SetUpSystem
+! MODULE ANISOFLOW_SetUpSystem
 
-    IMPLICIT NONE
+!     IMPLICIT NONE
 
-CONTAINS
+! CONTAINS
 
-!Subrutina ppal modulo
+! !Subrutina ppal modulo
 
-SUBROUTINE GetSetUpSystem(Gmtry,PptFld,BCFld,ierr)
+! SUBROUTINE GetSetUpSystem(Gmtry,PptFld,BCFld,ierr)
 
-#include <petsc/finclude/petscsys.h>
+! #include <petsc/finclude/petscsys.h>
 
-    PetscErrorCode,INTENT(INOUT)            :: ierr
-    TYPE(Geometry),INTENT(INOUT)               :: Gmtry
-    TYPE(PropertyField),INTENT(INOUT)          :: PptFld
-    TYPE(BoundaryConditions),INTENT(INOUT)     :: BCFld
-    TYPE(RunOptionsVar)
+!     PetscErrorCode,INTENT(INOUT)            :: ierr
+!     TYPE(Geometry),INTENT(INOUT)               :: Gmtry
+!     TYPE(PropertyField),INTENT(INOUT)          :: PptFld
+!     TYPE(BoundaryConditions),INTENT(INOUT)     :: BCFld
+!     TYPE(RunOptionsVar)
 
-    IF 
+!     IF 
 
-END SUBROUTINE GetSetUpSystem
-
-
+! END SUBROUTINE GetSetUpSystem
 
 
-END MODULE ANISOFLOW_SetUpSystem
+
+
+! END MODULE ANISOFLOW_SetUpSystem
 

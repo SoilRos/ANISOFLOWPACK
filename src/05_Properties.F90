@@ -6,7 +6,7 @@ CONTAINS
 
 SUBROUTINE GetProrperties(Gmtry,PptFld,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertyField
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField
     USE ANISOFLOW_Interface, ONLY : GetVerbose
 
     IMPLICIT NONE
@@ -15,29 +15,37 @@ SUBROUTINE GetProrperties(Gmtry,PptFld,ierr)
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
-    TYPE(PropertyField),INTENT(OUT)     :: PptFld
+    TYPE(PropertiesField),INTENT(OUT)     :: PptFld
 
-    PetscLogStage                       :: Stage
+    CHARACTER(LEN=200)                  :: EventName,ClassName
     PetscBool                           :: Verbose
+    PetscLogEvent                       :: Event
+    PetscClassId                        :: ClassID
+    PetscLogDouble                      :: EventFlops
 
-    CALL PetscLogStageRegister("GetProrperties", stage,ierr)
-    CALL PetscLogStagePush(Stage,ierr)
+    ClassName="Property"
+    CALL PetscClassIdRegister(ClassName,ClassID,ierr)
+    EventName="GetProrperties"
+    CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
+    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
     CALL GetVerbose(Verbose,ierr)
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Inizialited\n",ierr)
-
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
+    
     CALL GetConductivity(Gmtry,PptFld,ierr)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Finalized\n",ierr)
-    CALL PetscLogStagePop(Stage,ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
+    
+    CALL PetscLogFlops(EventFlops,ierr)
+    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+
 
 END SUBROUTINE GetProrperties
 
 SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertyField,InputTypeVar
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,InputTypeVar
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputType
-    USE ANISOFLOW_View, ONLY : ViewConductivity
 
     IMPLICIT NONE
 
@@ -45,33 +53,49 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
-    TYPE(PropertyField),INTENT(INOUT)   :: PptFld
+    TYPE(PropertiesField),INTENT(INOUT)   :: PptFld
 
     TYPE(InputTypeVar)                  :: InputType
-    CHARACTER(LEN=200)                  :: Name
+    PetscBool                           :: Verbose
+    CHARACTER(LEN=200)                  :: EventName,ClassName
+    PetscLogEvent                       :: Event
+    PetscClassId                        :: ClassID
+    PetscLogDouble                      :: EventFlops
 
+    ClassName="Property"
+    CALL PetscClassIdRegister(ClassName,ClassID,ierr)
+    EventName="GetConductivity"
+    CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
+    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+
+    CALL GetVerbose(Verbose,ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
+    
     CALL GetInputType(InputType,ierr)
-
-    Name="ANISOFLOW_Cvt"
 
     IF (InputType%Cvt.EQ.1) THEN
         CALL GetConductivity_1(Gmtry,PptFld,ierr)
-        CALL ViewConductivity(PptFld%Cvt%CvtType,Name,ierr)
     ELSE IF (InputType%Cvt.EQ.2) THEN
         CALL GetConductivity_2(Gmtry,PptFld,ierr)
-        CALL ViewConductivity(PptFld%Cvt%CvtCell,Name,ierr)
     ELSE
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Conductivity InputType wrong\n",ierr)
         STOP
     END IF
 
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
+    
+    CALL PetscLogFlops(EventFlops,ierr)
+    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+
+
 END SUBROUTINE GetConductivity
 
 SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertyField,TargetFullTensor
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,TargetFullTensor
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileCvt,GetInputFileCvtByZones
+    USE ANISOFLOW_View, ONLY : ViewConductivity
     
     IMPLICIT NONE
 
@@ -83,13 +107,13 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
-    TYPE(PropertyField),INTENT(INOUT)   :: PptFld
+    TYPE(PropertiesField),INTENT(INOUT)   :: PptFld
 
     PetscInt                            :: u,i,j,width(3),ValI,CvtLen
     PetscReal                           :: ValR
     PetscMPIInt                         :: process
     Vec                                 :: CvtTypeGlobal
-    CHARACTER(LEN=200)                  :: InputDir,InputFileCvt,InputFileCvtByZones
+    CHARACTER(LEN=200)                  :: InputDir,InputFileCvt,InputFileCvtByZones,ViewName,EventName
     CHARACTER(LEN=200)                  :: Route
     CHARACTER(LEN=13)                   :: CvtKind
     PetscBool                           :: Verbose
@@ -102,10 +126,10 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
     CALL GetInputFileCvt(InputFileCvt,ierr)
 
     PptFld%Cvt%DefinedByZones=.TRUE.
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field is stored as Zones by Block\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetConductivity Event] Conductivity Field is stored as Zones by Block\n",ierr)
 
     CALL DMCreateGlobalVector(Gmtry%DataMngr,CvtTypeGlobal,ierr)
-    CALL DMCreateLocalVector(Gmtry%DataMngr,PptFld%Cvt%CvtType,ierr)
+    CALL DMCreateLocalVector(Gmtry%DataMngr,PptFld%PptType,ierr)
 
     CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
     IF (process.EQ.0) THEN
@@ -134,10 +158,14 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
     CALL VecMax(CvtTypeGlobal,PETSC_NULL_INTEGER,ValR,ierr)
     CvtLen=INT(ValR)
 
+    ViewName="ANISOFLOW_PptType"
+    EventName="GetConductivity"
+    CALL ViewConductivity(CvtTypeGlobal,ViewName,EventName,ierr)
+
     CALL DMGlobalToLocalBegin(Gmtry%DataMngr,CvtTypeGlobal,INSERT_VALUES,  &
-        & PptFld%Cvt%CvtType,ierr)
+        & PptFld%PptType,ierr)
     CALL DMGlobalToLocalEnd(Gmtry%DataMngr,CvtTypeGlobal,INSERT_VALUES,    &
-        & PptFld%Cvt%CvtType,ierr)
+        & PptFld%PptType,ierr)
 
     CALL VecDestroy(CvtTypeGlobal,ierr)
 
@@ -195,14 +223,15 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
         CALL TargetFullTensor(PptFld%Cvt%CvtZone(i))
     END DO
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field was satisfactorily created\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetConductivity Event] Conductivity Field was satisfactorily created\n",ierr)
 
 END SUBROUTINE GetConductivity_1
 
 SUBROUTINE GetConductivity_2(Gmtry,PptFld,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertyField
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileCvt,GetInputFileCvtByZones
+    USE ANISOFLOW_View, ONLY : ViewConductivity
     
     IMPLICIT NONE
 
@@ -214,14 +243,14 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,ierr)
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
-    TYPE(PropertyField),INTENT(INOUT)   :: PptFld
+    TYPE(PropertiesField),INTENT(INOUT)   :: PptFld
 
     PetscInt                            :: u,i,width(3)
     PetscReal                           :: ValR
     PetscMPIInt                         :: process
     Vec                                 :: CvtCellGlobal
     CHARACTER(LEN=200)                  :: InputDir,InputFileCvt
-    CHARACTER(LEN=200)                  :: Route
+    CHARACTER(LEN=200)                  :: Route,ViewName,EventName
     PetscBool                           :: Verbose
 
     PARAMETER(u=01)
@@ -232,7 +261,7 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,ierr)
     CALL GetInputFileCvt(InputFileCvt,ierr)
 
     PptFld%Cvt%DefinedByCell=.TRUE.
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field is stored by Block\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Event] Conductivity Field is stored by Block\n",ierr)
 
     CALL DMCreateGlobalVector(Gmtry%DataMngr,CvtCellGlobal,ierr)
     CALL DMCreateLocalVector(Gmtry%DataMngr,PptFld%Cvt%CvtCell,ierr)
@@ -260,6 +289,10 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,ierr)
     CALL VecAssemblyBegin(CvtCellGlobal,ierr)
     CALL VecAssemblyEnd(CvtCellGlobal,ierr)
 
+    ViewName="ANISOFLOW_Cvt"
+    EventName="GetConductivity"
+    CALL ViewConductivity(CvtCellGlobal,ViewName,EventName,ierr)
+
     CALL DMGlobalToLocalBegin(Gmtry%DataMngr,CvtCellGlobal,INSERT_VALUES,  &
         & PptFld%Cvt%CvtCell,ierr)
     CALL DMGlobalToLocalEnd(Gmtry%DataMngr,CvtCellGlobal,INSERT_VALUES,    &
@@ -271,7 +304,7 @@ END SUBROUTINE GetConductivity_2
 
 SUBROUTINE GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertyField,Property
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,Property
     USE ANISOFLOW_Geometry, ONLY : GetLocalTopology
 
     IMPLICIT NONE
@@ -279,7 +312,7 @@ SUBROUTINE GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
 #include <petsc/finclude/petscsys.h>
 
     TYPE(Geometry),INTENT(IN)           :: Gmtry
-    TYPE(PropertyField),INTENT(IN)      :: PptFld
+    TYPE(PropertiesField),INTENT(IN)      :: PptFld
     TYPE(Property),INTENT(OUT)          :: Ppt
     PetscInt,INTENT(IN)                 :: i,j,k
     PetscErrorCode,INTENT(INOUT)        :: ierr
@@ -294,7 +327,7 @@ END SUBROUTINE GetLocalProperty
 
 SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertyField,Property,TargetFullTensor,InputTypeVar
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,Property,TargetFullTensor,InputTypeVar
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputType
 
     IMPLICIT NONE
@@ -306,7 +339,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
 #include <petsc/finclude/petscdmda.h90>
 
     TYPE(Geometry),INTENT(IN)           :: Gmtry
-    TYPE(PropertyField),INTENT(IN)      :: PptFld
+    TYPE(PropertiesField),INTENT(IN)      :: PptFld
     TYPE(Property),INTENT(INOUT)        :: Ppt
     PetscErrorCode,INTENT(INOUT)        :: ierr
 
@@ -373,9 +406,10 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
         STOP   
     END IF
 
-    IF (.NOT.PptFld%Cvt%DefinedByCell) THEN
+    IF (PptFld%Cvt%DefinedByZones) THEN
         IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4).OR.(Ppt%StnclTplgy(ValI(1)).EQ.5)) THEN ! Only get properties for active blocks
-            CALL DMDAVecGetArrayreadF90(Gmtry%DataMngr,PptFld%Cvt%CvtType,     &
+
+            CALL DMDAVecGetArrayreadF90(Gmtry%DataMngr,PptFld%PptType,     &
                 & TmpCvt,ierr)
 
             ValI(1)=INT(TmpCvt(i,j,k))
@@ -440,7 +474,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
             Ppt%CvtFz%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
             CALL TargetFullTensor(Ppt%CvtFz)
 
-            CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%CvtType, &
+            CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%PptType, &
                 & TmpCvt,ierr)
 
         END IF
@@ -519,7 +553,7 @@ END FUNCTION Armonic
 
 SUBROUTINE DestroyProperties(PptFld,ierr)
 
-    USE ANISOFLOW_Types, ONLY : PropertyField,InputTypeVar
+    USE ANISOFLOW_Types, ONLY : PropertiesField,InputTypeVar
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputType
 
     IMPLICIT NONE
@@ -528,29 +562,37 @@ SUBROUTINE DestroyProperties(PptFld,ierr)
 #include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
-    TYPE(PropertyField),INTENT(INOUT)   :: PptFld
+    TYPE(PropertiesField),INTENT(INOUT)   :: PptFld
 
     TYPE(InputTypeVar)                  :: InputType
-    PetscLogStage                       :: Stage
     PetscBool                           :: Verbose
+    CHARACTER(LEN=200)                  :: EventName,ClassName
+    PetscLogEvent                       :: Event
+    PetscClassId                        :: ClassID
+    PetscLogDouble                      :: EventFlops
 
-    CALL PetscLogStageRegister("DestroyProperties", stage,ierr)
-    CALL PetscLogStagePush(Stage,ierr)
+    ClassName="Property"
+    CALL PetscClassIdRegister(ClassName,ClassID,ierr)
+    EventName="DestroyProperties"
+    CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
+    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
     CALL GetVerbose(Verbose,ierr)
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[DestroyProperties Stage] Inizialited\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
 
     CALL GetInputType(InputType,ierr)
 
     IF (PptFld%Cvt%DefinedByZones) THEN
         IF (ALLOCATED(PptFld%Cvt%CvtZone)) DEALLOCATE(PptFld%Cvt%CvtZone)
-        CALL VecDestroy(PptFld%Cvt%CvtType,ierr)
+        CALL VecDestroy(PptFld%PptType,ierr)
     ELSE
         CALL VecDestroy(PptFld%Cvt%CvtCell,ierr)
     END IF
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[DestroyProperties Stage] Finalized\n",ierr)
-    CALL PetscLogStagePop(Stage,ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
+    
+    CALL PetscLogFlops(EventFlops,ierr)
+    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
 END SUBROUTINE DestroyProperties
 

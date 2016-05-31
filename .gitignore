@@ -1,9 +1,8 @@
-
-src-v0.1/
-
 *.o
 *.mod
 *.exe
 *.h5
 *.log
 *.txt
+*.bin
+*.info

@@ -18,20 +18,15 @@ MODULE ANISOFLOW_Types
  !          0: Inactive cell.
  !          1: Active cell.
  !          2: Dirichlet boundary condition cell.
- !          3: Neumman on x boundary condition cell.
- !          4: Neumman on y boundary condition cell.
- !          5: Neumman on z boundary condition cell.
- !          6: Cauchy boundary condition
- !          6: Source Q.
+ !          3: Source in cell Q (It's treated as active cell).
+ !          4: Cauchy boundary condition
  !      + x,y,z: It's a PETSc vector that contains the grid coordinates on each direction.
  !      + DirichIS: It's a PETSc index set that has a map between Dirichlet information and vecs 
  !                  produced by DataMngr.
- !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
- !                  produced by DataMngr.
- !      + NeummanIS: It's a PETSc index set that has a map between Neumman information and vecs 
- !                   produced by DataMngr.
  !      + SourceIS: It's a PETSc index set that has a map between Source information and vecs 
  !                   roduced by DataMngr.
+ !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
+ !                  produced by DataMngr.
  !    > NOTES: The variables DirichIS, CauchyIS, NeummanIS and Source have redundant information 
  !             that are contained on Tplgy. In any case is needed to transfer the information to
  !             the system.
@@ -40,7 +35,7 @@ MODULE ANISOFLOW_Types
         DM                              :: DataMngr
         Vec                             :: Tplgy
         Vec                             :: x,y,z
-        IS                              :: DirichIS,NeummanIS,CauchyIS,SourceIS
+        IS                              :: DirichIS,SourceIS,CauchyIS
     END TYPE Geometry
 
 
@@ -124,29 +119,40 @@ MODULE ANISOFLOW_Types
  !                        xxVec,yyVec,zzVec
  !      + DefindeByCell: It's a boolean describing if the ConductivityField stores the
  !                       information on the center of each block. 
- !      + CvtZones: It's an Array of Tensor that contain as Tensors of conductivity as defined 
- !                  zones. This variable needs to be stored in all processors.
+ !      + CvtZone: It's an Array of Tensor that contain as Tensors of conductivity as defined 
+ !                 zones. This variable needs to be stored in all processors. It's saved as local vector
  !      + CvtType: It's a PETSc vector that contains an identifier for each cell, the identifier 
  !                 value correspond to a zone value.
- !      + CvtCell: Contain a tensor conductivity component by each cell. 
+ !      + CvtCell: Contain a tensor conductivity component by each cell. It's saved as local vector
 
     TYPE ConductivityField
         PetscBool                               :: DefinedByZones=.FALSE.
         PetscBool                               :: DefinedByCell=.FALSE.
         ! Conductivity defined by zones:
         TYPE(Tensor),ALLOCATABLE                :: CvtZone(:)
-        Vec                                     :: CvtType
         ! Conductivity defined on every cell:
         Vec                                     :: CvtCell
     END TYPE ConductivityField
+
+    TYPE SpecificStorageField
+        PetscBool                               :: DefinedByZones=.FALSE.
+        PetscBool                               :: DefinedByCell=.FALSE.
+        ! Specific Storage defined by zones:
+        ! Vec or PetscInt(:)                :: StoZone
+        ! ! Specific Storage defined on every cell:
+        ! Vec                                     :: StoCell
+    END TYPE SpecificStorageField
 
  !  - ProperyField: It's a data structure wich contains fields of differents properties.
  !    > VARIABLES: Cvt.
  !      + Cvt: It's a ConductivityField data structure wich contain a field of conductivity.
 
-    TYPE PropertyField
+    TYPE PropertiesField
         TYPE(ConductivityField)         :: Cvt
-    END TYPE PropertyField
+        TYPE(SpecificStorageField)      :: Sto
+        ! Property defined by zones:
+        Vec                             :: PptType
+    END TYPE PropertiesField
 
  !  - TimeZoneVar: It's a data structure a zone of time to be modeled.
  !    > VARIABLES: SizeTime,Time
@@ -160,12 +166,12 @@ MODULE ANISOFLOW_Types
 
  !  - BoundaryConditions: It's a data structure wich contains a series Boundary Conditions to be  
  !                        used in several zones of time.
- !    > VARIABLES: SizeTimeZone, SizeDirich, SizeNeumman, SizeCauchy, Dirich, Neumman, Cauchy,
+ !    > VARIABLES: SizeTimeZone, SizeDirich, SizeSource, SizeCauchy, Dirich, Source, Cauchy,
  !                 TimeZone.
  !      + SizeTimeZone: It's an Integer that says the amount of time zones.
  !      + SizeDirich: It's an Integer that says the size of Dirich PETSc vector. It's the same for
  !                    every time zone.
- !      + SizeNeumman: It's an Integer that says the size of Neumman PETSc vector. It's the same 
+ !      + SizeSource: It's an Integer that says the size of Neumman PETSc vector. It's the same 
  !                     for every time zone.
  !      + SizeCauchy: It's an Integer that says the size of Cauchy PETSc vector. It's the same for
  !                    every time zone.
@@ -180,8 +186,8 @@ MODULE ANISOFLOW_Types
  !             created with DataMngr defined in Geometry.
 
     TYPE BoundaryConditions
-        PetscInt                        :: SizeTimeZone,SizeDirich,SizeNeumman,SizeCauchy
-        Vec,ALLOCATABLE                 :: Dirich(:),Neumman(:),Cauchy(:)
+        PetscInt                        :: SizeTimeZone,SizeDirich,SizeSource,SizeCauchy
+        Vec,ALLOCATABLE                 :: Dirich(:),Source(:),Cauchy(:)
         TYPE(TimeZoneVar),ALLOCATABLE   :: TimeZone(:)
     END TYPE BoundaryConditions
 
@@ -269,7 +275,7 @@ MODULE ANISOFLOW_Types
         PetscInt                        :: Gmtry,Tplgy,Cvt,BC
     END TYPE InputTypeVar
 
- !  - OuputTypeVar: It's a collection of integer that defines the type of ouput to be used in the
+ !  - OutputTypeVar: It's a collection of integer that defines the type of ouput to be used in the
  !                  program.
  !    > VARIABLES: Sol.
  !      + Sol: It's an integer that defines a type of ouput to be used in solution.
@@ -277,9 +283,9 @@ MODULE ANISOFLOW_Types
  !          2: ASCII
  !          3: HDF5
 
-    TYPE OuputTypeVar
+    TYPE OutputTypeVar
         PetscInt                        :: Sol=1,Tplgy=0,Cvt=0
-    END TYPE OuputTypeVar
+    END TYPE OutputTypeVar
 
 CONTAINS
 
