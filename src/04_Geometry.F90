@@ -118,7 +118,7 @@ SUBROUTINE GetDataMngr_1(DataMngr,ierr)
 
     PetscMPIInt                     :: process
     PetscInt                        :: u,widthG(3)
-    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry,Route
+    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry,Route,InputFileUpsclGmtry,name
     TYPE(RunOptionsVar)             :: RunOptions
     DMDAStencilType                 :: Stencil
     PetscBool                       :: Verbose
@@ -128,8 +128,15 @@ SUBROUTINE GetDataMngr_1(DataMngr,ierr)
     CALL GetVerbose(Verbose,ierr)
 
     ! It obtains the route to open a geometry file.
+    name=""
     CALL GetInputDir(InputDir,ierr)
-    CALL GetInputFileGmtry(InputFileGmtry,ierr)
+    IF (InputTypeVar%UpsclInput.EQ..FALSE.) THEN
+        CALL GetInputFileGmtry(InputFileGmtry,ierr)
+        name=InputFileGmtry
+    ELSE
+        CALL GetInputFileGmtry(InputFileUpsclGmtry,ierr)
+        name=InputFileUpsclGmtry
+    END IF
 
     ! It obtains run options.
     CALL GetRunOptions(RunOptions,ierr)
@@ -138,7 +145,7 @@ SUBROUTINE GetDataMngr_1(DataMngr,ierr)
 
     ! It obtains the global size of the domain on the first processor.
     IF (process.EQ.0) THEN
-        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileGmtry))
+        Route=ADJUSTL(TRIM(InputDir)//TRIM(name))
         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
 
         ! It gets the size of the domain 
@@ -172,8 +179,8 @@ END SUBROUTINE GetDataMngr_1
 
 SUBROUTINE GetDataMngr_2(DataMngr,ierr)
 
-    USE ANISOFLOW_Types, ONLY : RunOptionsVar
-    USE ANISOFLOW_Interface, ONLY : GetInputDir,GetInputFileGmtry,GetRunOptions,GetVerbose
+    USE ANISOFLOW_Types
+    USE ANISOFLOW_Interface
 
     IMPLICIT NONE
 
@@ -184,9 +191,10 @@ SUBROUTINE GetDataMngr_2(DataMngr,ierr)
     PetscErrorCode,INTENT(INOUT)    :: ierr
     DM,INTENT(OUT)                  :: DataMngr
 
+    Type(InputTypeVar)              :: InputType
     PetscMPIInt                     :: process
     PetscInt                        :: u,widthG(3)
-    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry,Route,aux
+    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry,Route,aux,InputFileUpsclGmtry,name
     TYPE(RunOptionsVar)             :: RunOptions
     DMDAStencilType                 :: Stencil
     PetscBool                       :: Verbose
@@ -196,8 +204,15 @@ SUBROUTINE GetDataMngr_2(DataMngr,ierr)
     CALL GetVerbose(Verbose,ierr)
 
     ! It obtains the route to open a geometry file.
+    name=""
     CALL GetInputDir(InputDir,ierr)
-    CALL GetInputFileGmtry(InputFileGmtry,ierr)
+    IF (InputTypeVar%UpsclInput.EQ..FALSE.) THEN
+        CALL GetInputFileGmtry(InputFileGmtry,ierr)
+        name=InputFileGmtry
+    ELSE
+        CALL GetInputFileGmtry(InputFileUpsclGmtry,ierr)
+        name=InputFileUpsclGmtry
+    END IF
 
     ! It obtains run options.
     CALL GetRunOptions(RunOptions,ierr)
@@ -207,7 +222,7 @@ SUBROUTINE GetDataMngr_2(DataMngr,ierr)
 
     ! It obtains the global size of the domain on the first processor.
     IF (process.EQ.0) THEN
-        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileGmtry))
+        Route=ADJUSTL(TRIM(InputDir)//TRIM(name))
         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
 
         ! It gets the size of the domain 
@@ -306,7 +321,7 @@ SUBROUTINE GetGrid_1(DataMngr,x,y,z,ierr)
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: x,y,z
 
-    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry
+    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry,InputFileUpsclGmtry,name
     PetscInt                        :: widthG(3),size,i
     PetscReal                       :: Value
     PetscBool                       :: Verbose
@@ -314,8 +329,17 @@ SUBROUTINE GetGrid_1(DataMngr,x,y,z,ierr)
     CALL GetVerbose(Verbose,ierr)
 
     ! It obtains the route to open a geometry file.
+    name=""
     CALL GetInputDir(InputDir,ierr)
-    CALL GetInputFileGmtry(InputFileGmtry,ierr)
+    IF (InputTypeVar%UpsclInput.EQ..FALSE.) THEN
+        CALL GetInputFileGmtry(InputFileGmtry,ierr)
+        name=InputFileGmtry
+    ELSE
+        CALL GetInputFileGmtry(InputFileUpsclGmtry,ierr)
+        name=InputFileUpsclGmtry
+    END IF
+    !Change boolean to construct upscaled geometry
+    InputTypeVar%UpsclInput.EQ..TRUE.
 
     ! It gets the global size from the geometry data manager.
     CALL DMDAGetInfo(DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
@@ -377,7 +401,7 @@ SUBROUTINE GetGrid_2(DataMngr,x,y,z,ierr)
     Vec,INTENT(OUT)                 :: x,y,z
 
     PetscMPIInt                     :: process
-    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry,Route,aux
+    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry,Route,aux,InputFileUpsclGmtry,name
     PetscInt                        :: widthG(3),size,i,u
     PetscReal                       :: Value
     PetscBool                       :: Verbose
@@ -387,8 +411,18 @@ SUBROUTINE GetGrid_2(DataMngr,x,y,z,ierr)
     CALL GetVerbose(Verbose,ierr)
 
     ! It obtains the route to open a geometry file.
+    name=""
     CALL GetInputDir(InputDir,ierr)
-    CALL GetInputFileGmtry(InputFileGmtry,ierr)
+    IF (InputTypeVar%UpsclInput.EQ..FALSE.) THEN
+        CALL GetInputFileGmtry(InputFileGmtry,ierr)
+        name=InputFileGmtry
+    ELSE
+        CALL GetInputFileGmtry(InputFileUpsclGmtry,ierr)
+        name=InputFileUpsclGmtry
+    END IF
+    !Change boolean to construct upscaled geometry
+    InputTypeVar%UpsclInput.EQ..TRUE.
+
 
     ! It gets the global size from the geometry data manager.
     CALL DMDAGetInfo(DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
@@ -412,7 +446,7 @@ SUBROUTINE GetGrid_2(DataMngr,x,y,z,ierr)
 
     ! It obtains the global size of the domain on the first processor.
     IF (process.EQ.0) THEN
-        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileGmtry))
+        Route=ADJUSTL(TRIM(InputDir)//TRIM(name))
         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
         READ(u, '((A10),(I10))')aux,widthG(1)
         READ(u, '((A10),(I10))')aux,widthG(2)

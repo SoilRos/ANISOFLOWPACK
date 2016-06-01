@@ -284,12 +284,12 @@ SUBROUTINE GetInputFileGmtry(InputFileGmtry,ierr)
     PetscErrorCode,INTENT(INOUT)    :: ierr
     CHARACTER(LEN=200),INTENT(OUT)  :: InputFileGmtry
 
-    PetscBool                       :: InputFileGmtryFlg
+    PetscBool                       :: InputFileUpsclGmtryFlg
 
     CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_file_gmtry",       &
-        InputFileGmtry,InputFileGmtryFlg,ierr)
+        InputFileGmtry,InputFileUpsclGmtryFlg,ierr)
 
-    IF (.NOT.InputFileGmtryFlg) THEN
+    IF (.NOT.InputFileUpsclGmtryFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Input_file_gmtry command must be used\n",ierr)
         STOP
@@ -298,6 +298,39 @@ SUBROUTINE GetInputFileGmtry(InputFileGmtry,ierr)
     InputFileGmtry=TRIM(InputFileGmtry)
 
 END SUBROUTINE GetInputFileGmtry
+
+ !  - GetInputFileUpsclGmtry: It's a routine that provides a file name to open the upscaled geometry file in 
+ !                       InputDir.
+ !    > OUT: InputFileGmtry, ierr.
+ !      + InputFileGmtry: It's a string that specifies file name to open the geometry file in InputDir.
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
+ !    > NOTES: The user must provide a file name using "-Input_file_gmtry" followed by geometry file 
+ !             name.
+
+
+SUBROUTINE GetInputFileUpsclGmtry(InputFileUpsclGmtry,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    CHARACTER(LEN=200),INTENT(OUT)  :: InputFileUpsclGmtry
+
+    PetscBool                       :: InputFileUpsclGmtryFlg
+
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_file_upscl_gmtry",       &
+        InputFileUpsclGmtry,InputFileUpsclGmtryFlg,ierr)
+
+    IF (.NOT.InputFileUpsclGmtryFlg) THEN
+        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+            & "[ERROR] Input_file_upscl_gmtry command must be used\n",ierr)
+        STOP
+    END IF
+
+    InputFileUpsclGmtry=TRIM(InputFileUpsclGmtry)
+
+END SUBROUTINE GetInputFileUpsclGmtry
 
  !  - GetInputFileTplgy: It's a routine that provides a file name to open the topology file in 
  !                       InputDir.

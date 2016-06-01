@@ -251,7 +251,7 @@ MODULE ANISOFLOW_Types
         PetscInt                        :: Scheme=1
     END TYPE RunOptionsVar
 
- !  - InputTypeVar: It's a collection of integer that defines the type of input to be used in the
+ !  - InputTypeVar: It's a collection of variables that defines the type of input to be used in the
  !                 program.
  !    > VARIABLES: Gmtry, Tplgy, Cvt, BC.
  !      + Gmtry: It's an integer that defines a type of file that will provide the domain size and
@@ -273,6 +273,7 @@ MODULE ANISOFLOW_Types
 
     TYPE InputTypeVar
         PetscInt                        :: Gmtry,Tplgy,Cvt,BC
+        PetscBool                       :: UpsclInput=.FALSE.
     END TYPE InputTypeVar
 
  !  - OutputTypeVar: It's a collection of integer that defines the type of ouput to be used in the

@@ -70,8 +70,6 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
                 CALL VecSet(b,zero,ierr)
             END DO
 
-
-
         END DO
 
     ELSE

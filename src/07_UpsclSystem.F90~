@@ -12,14 +12,15 @@ SUBROUTINE GetSetUpSystem(Gmtry,PptFld,BCFld,ierr)
 
 #include <petsc/finclude/petscsys.h>
 
+
     PetscErrorCode,INTENT(INOUT)               :: ierr
     TYPE(Geometry),INTENT(INOUT)               :: Gmtry
-
     TYPE(PropertyField),INTENT(INOUT)          :: PptFld
     TYPE(BoundaryConditions),INTENT(INOUT)     :: BCFld
 
     TYPE(RunOptionsVar)                        :: RunOptions
     TYPE(Geometry)                             :: UpsclGmtry
+    PetscInt                                   :: u,i,width(3)
 
     ! It obtains run options.
     CALL GetRunOptions(RunOptions,ierr)
@@ -27,6 +28,16 @@ SUBROUTINE GetSetUpSystem(Gmtry,PptFld,BCFld,ierr)
     IF (RunOptions%Scheme.EQ.3) THEN
         CALL GetGeometry(UpsclGmtry,ierr)
         ! Operaciones con el UpsclGmtry
+        CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,width(1),width(2),&
+        & width(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,ierr)
+
+        DO i=1,width(1)*width(2)*width(3)
+            READ(u, '(ES14.8)')ValR
+            CALL VecSetValue(CvtCellGlobal,i-1,ValR,INSERT_VALUES,ierr)
+        END DO
 
         Gmtry=UpsclGmtry
 
