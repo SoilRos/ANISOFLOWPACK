@@ -96,6 +96,7 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,TargetFullTensor
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileCvt,GetInputFileCvtByZones
     USE ANISOFLOW_View, ONLY : ViewConductivity
+    USE ANISOFLOW_Geometry, ONLY : VecApplicationToPetsc
     
     IMPLICIT NONE
 
@@ -105,9 +106,11 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
 #include <petsc/finclude/petscdmda.h>
 #include <petsc/finclude/petscdmda.h90>
 
+#include <petsc/finclude/petscao.h>
+
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
-    TYPE(PropertiesField),INTENT(INOUT)   :: PptFld
+    TYPE(PropertiesField),INTENT(INOUT) :: PptFld
 
     PetscInt                            :: u,i,j,width(3),ValI,CvtLen
     PetscReal                           :: ValR
@@ -157,6 +160,8 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
 
     CALL VecMax(CvtTypeGlobal,PETSC_NULL_INTEGER,ValR,ierr)
     CvtLen=INT(ValR)
+
+    CALL VecApplicationToPetsc(Gmtry%DataMngr,CvtTypeGlobal,ierr)
 
     ViewName="ANISOFLOW_PptType"
     EventName="GetConductivity"

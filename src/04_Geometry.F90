@@ -17,8 +17,8 @@ CONTAINS
 
 SUBROUTINE GetGeometry(Gmtry,ierr)
 
-    USE ANISOFLOW_Interface, ONLY : GetVerbose
-    USE ANISOFLOW_Types, ONLY : Geometry
+    USE ANISOFLOW_Interface,    ONLY : GetVerbose
+    USE ANISOFLOW_Types,        ONLY : Geometry
 
     IMPLICIT NONE
 
@@ -63,8 +63,8 @@ END SUBROUTINE GetGeometry
 
 SUBROUTINE GetDataMngr(DataMngr,ierr)
 
-    USE ANISOFLOW_Types, ONLY : InputTypeVar
-    USE ANISOFLOW_Interface, ONLY : GetInputType,GetVerbose
+    USE ANISOFLOW_Types,        ONLY : InputTypeVar
+    USE ANISOFLOW_Interface,    ONLY : GetInputType,GetVerbose
 
     IMPLICIT NONE
 
@@ -104,8 +104,8 @@ END SUBROUTINE GetDataMngr
 
 SUBROUTINE GetDataMngr_1(DataMngr,ierr)
 
-    USE ANISOFLOW_Types, ONLY : RunOptionsVar
-    USE ANISOFLOW_Interface, ONLY : GetInputDir,GetInputFileGmtry,GetRunOptions,GetVerbose
+    USE ANISOFLOW_Types,        ONLY : RunOptionsVar
+    USE ANISOFLOW_Interface,    ONLY : GetInputDir,GetInputFileGmtry,GetRunOptions,GetVerbose
 
     IMPLICIT NONE
 
@@ -161,10 +161,16 @@ SUBROUTINE GetDataMngr_1(DataMngr,ierr)
     END IF
 
     ! It creates the Data Manager to Distributed Arrays by the information provided.
-    CALL DMDACreate3d(PETSC_COMM_WORLD,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
-        & DM_BOUNDARY_GHOSTED,Stencil,widthG(1),widthG(2),widthG(3),     &
-        & PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,1,1,PETSC_NULL_INTEGER,       &
-        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,DataMngr,ierr)
+    IF (widthG(3).NE.1) THEN
+        CALL DMDACreate3d(PETSC_COMM_WORLD,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
+            & DM_BOUNDARY_GHOSTED,Stencil,widthG(1),widthG(2),widthG(3),     &
+            & PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,1,1,PETSC_NULL_INTEGER,       &
+            & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,DataMngr,ierr)
+    ELSE
+        CALL DMDACreate2d(PETSC_COMM_WORLD,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
+            & Stencil,widthG(1),widthG(2),PETSC_DECIDE,PETSC_DECIDE,1,1,PETSC_NULL_INTEGER,       &
+            & PETSC_NULL_INTEGER,DataMngr,ierr)
+    END IF
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Data Manager was satisfactorily created\n",ierr)
 
@@ -172,8 +178,8 @@ END SUBROUTINE GetDataMngr_1
 
 SUBROUTINE GetDataMngr_2(DataMngr,ierr)
 
-    USE ANISOFLOW_Types, ONLY : RunOptionsVar
-    USE ANISOFLOW_Interface, ONLY : GetInputDir,GetInputFileGmtry,GetRunOptions,GetVerbose
+    USE ANISOFLOW_Types,        ONLY : RunOptionsVar
+    USE ANISOFLOW_Interface,    ONLY : GetInputDir,GetInputFileGmtry,GetRunOptions,GetVerbose
 
     IMPLICIT NONE
 
@@ -232,10 +238,16 @@ SUBROUTINE GetDataMngr_2(DataMngr,ierr)
     END IF
 
     ! It creates the Data Manager to Distributed Arrays by the information provided.
-    CALL DMDACreate3d(PETSC_COMM_WORLD,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
-        & DM_BOUNDARY_GHOSTED,Stencil,widthG(1),widthG(2),widthG(3),     &
-        & PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,1,1,PETSC_NULL_INTEGER,       &
-        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,DataMngr,ierr)
+    IF (widthG(3).NE.1) THEN
+        CALL DMDACreate3d(PETSC_COMM_WORLD,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
+            & DM_BOUNDARY_GHOSTED,Stencil,widthG(1),widthG(2),widthG(3),     &
+            & PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,1,1,PETSC_NULL_INTEGER,       &
+            & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,DataMngr,ierr)
+    ELSE
+        CALL DMDACreate2d(PETSC_COMM_WORLD,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
+            & Stencil,widthG(1),widthG(2),PETSC_DECIDE,PETSC_DECIDE,1,1,PETSC_NULL_INTEGER,       &
+            & PETSC_NULL_INTEGER,DataMngr,ierr)
+    END IF
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Data Manager was satisfactorily created\n",ierr)
 
@@ -253,8 +265,8 @@ END SUBROUTINE GetDataMngr_2
 
 SUBROUTINE GetGrid(DataMngr,x,y,z,ierr)
 
-    USE ANISOFLOW_Types, ONLY : InputTypeVar
-    USE ANISOFLOW_Interface, ONLY : GetInputType,GetVerbose
+    USE ANISOFLOW_Types,        ONLY : InputTypeVar
+    USE ANISOFLOW_Interface,    ONLY : GetInputType,GetVerbose
 
     IMPLICIT NONE
 
@@ -658,6 +670,8 @@ SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
 #include <petsc/finclude/petscdmda.h>
 #include <petsc/finclude/petscdmda.h90>
 
+#include <petsc/finclude/petscao.h>
+
     PetscErrorCode,INTENT(INOUT)    :: ierr
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
@@ -678,7 +692,7 @@ SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputFileTplgy(InputFileTplgy,ierr)
 
-    ! It obtains a temporal Fortran array where will be filled each topology identifier.
+    ! It obtains a temporal vector to store topology identificatiors in application ordering
     CALL DMCreateGlobalVector(DataMngr,TmpTplgy,ierr)
 
     ! It quantifies Dirichlet, and Cauchy boundary condition on global processors.
@@ -705,7 +719,6 @@ SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
             IF (ValI.EQ.2) BCLenL(1)=BCLenL(1)+1 ! Dirichlet
             IF (ValI.EQ.3) BCLenL(2)=BCLenL(2)+1 ! Source
             IF (ValI.EQ.4) BCLenL(3)=BCLenL(3)+1 ! Cauchy
-            
             ValR=REAL(ValI)
             CALL VecSetValue(TmpTplgy,i-1,ValR,INSERT_VALUES,ierr)
         END DO
@@ -715,10 +728,13 @@ SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
     CALL VecAssemblyBegin(TmpTplgy,ierr)
     CALL VecAssemblyEnd(TmpTplgy,ierr)
 
+    ! Changing temporal topology identificators from application ordering to PETSc ordering
+    CALL VecApplicationToPetsc(DataMngr,TmpTplgy,ierr)
     ViewName="ANISOFLOW_Tplgy"
     EventName="GetTopology"
     CALL ViewTopology(TmpTplgy,ViewName,EventName,ierr)
 
+    ! Saving topology identificators as local vector in PETSc ordering
     CALL DMCreateLocalVector(DataMngr,Tplgy,ierr)
 
     CALL DMGlobalToLocalBegin(DataMngr,TmpTplgy,INSERT_VALUES,  &
@@ -993,5 +1009,47 @@ SUBROUTINE DestroyGeometry(Gmtry,ierr)
 
 
 END SUBROUTINE DestroyGeometry
+
+SUBROUTINE VecApplicationToPetsc(DataMngr,AppVec,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscis.h>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
+#include <petsc/finclude/petscao.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    DM,INTENT(IN)                   :: DataMngr
+    Vec,INTENT(INOUT)               :: AppVec ! it outs as PetscVec
+
+    AO                              :: AppOrd
+    PetscInt                        :: RangeLow,RangeHigh,i
+    IS                              :: PetscIS,AppIS
+    VecScatter                      :: Scatter
+    Vec                             :: PetscVec
+
+    ! It obtains a temporal vector to store in PETSc ordering
+    CALL DMCreateGlobalVector(DataMngr,PetscVec,ierr)
+    ! Changing temporal vector from application ordering to PETSc ordering
+    CALL DMDAGetAO(DataMngr,AppOrd,ierr)
+    CALL VecGetOwnershipRange(PetscVec,RangeLow,RangeHigh,ierr)
+    CALL ISCreateGeneral(PETSC_COMM_WORLD,RangeHigh-RangeLow,(/(i,i=RangeLow,RangeHigh)/),PETSC_COPY_VALUES,PetscIS,ierr)
+    CALL ISDuplicate(PetscIS,AppIS,ierr)
+    CALL ISCopy(PetscIS,AppIS,ierr)
+    CALL AOPetscToApplicationIS(AppOrd,AppIS,ierr)
+    CALL VecScatterCreate(AppVec,AppIS,PetscVec,PetscIS,Scatter,ierr)
+    CALL VecScatterBegin(Scatter,AppVec,PetscVec,INSERT_VALUES,SCATTER_FORWARD,ierr)
+    CALL VecScatterEnd(Scatter,AppVec,PetscVec,INSERT_VALUES,SCATTER_FORWARD,ierr)
+
+    CALL VecScatterDestroy(Scatter,ierr)
+    CALL ISDestroy(AppIS,ierr)
+    CALL ISDestroy(PetscIS,ierr)
+    CALL VecCopy(PetscVec,AppVec,ierr)
+    CALL VecDestroy(PetscVec,ierr)
+
+END SUBROUTINE VecApplicationToPetsc
 
 END MODULE ANISOFLOW_Geometry

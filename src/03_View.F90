@@ -166,6 +166,7 @@ SUBROUTINE ViewVecProperty_3(x,Name,StageName,ierr)
 
     PetscViewer                             :: Viewer
 
+#if defined(PETSC_HAVE_HDF5)
     CALL GetOutputDir(OutputDir,ierr)
     Route=ADJUSTL(TRIM(OutputDir)//TRIM(Name)//TRIM(Ext))
     CALL PetscViewerHDF5Open(PETSC_COMM_WORLD,Route,FILE_MODE_WRITE,Viewer,ierr)
@@ -174,7 +175,10 @@ SUBROUTINE ViewVecProperty_3(x,Name,StageName,ierr)
 
     CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
         & "["//ADJUSTL(TRIM(StageName))//" Event] "//ADJUSTL(TRIM(Name)//TRIM(Ext))//" was satisfactorily saved\n",ierr)
-
+#else
+    CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+        & "["//ADJUSTL(TRIM(StageName))//" Event] "//ADJUSTL(TRIM(Name)//TRIM(Ext))//" was not able to save. please install hdf5 with PETSc\n",ierr)
+#endif
 END SUBROUTINE ViewVecProperty_3
 
 END MODULE ANISOFLOW_View

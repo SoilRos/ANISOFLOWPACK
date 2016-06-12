@@ -295,17 +295,17 @@ CONTAINS
  !    > OUT: Tensor
  !      + Tensor: A tensor with yx, zx, and zy values pointed to xy, xz, and yz values respectively.
 
-SUBROUTINE TargetFullTensor(Tens)
+    SUBROUTINE TargetFullTensor(Tens)
 
-    IMPLICIT NONE
+        IMPLICIT NONE
 
-    TYPE(Tensor),INTENT(INOUT)  :: Tens
+        TYPE(Tensor),INTENT(INOUT)  :: Tens
 
-    Tens%yx => TargMirrorValue(Tens%xy)
-    Tens%zx => TargMirrorValue(Tens%xz)
-    Tens%zy => TargMirrorValue(Tens%yz)
+        Tens%yx => TargMirrorValue(Tens%xy)
+        Tens%zx => TargMirrorValue(Tens%xz)
+        Tens%zy => TargMirrorValue(Tens%yz)
 
-END SUBROUTINE TargetFullTensor
+    END SUBROUTINE TargetFullTensor
 
  !  - TargMirrorValue: It's a auxilar function to target a real that will be pointed later.
  !    > IN: Value
@@ -313,14 +313,14 @@ END SUBROUTINE TargetFullTensor
  !    > OUT: Value
  !      + Values: It's the same input real but now as a target.
 
-FUNCTION TargMirrorValue(Value)
+    FUNCTION TargMirrorValue(Value)
 
-    IMPLICIT NONE
+        IMPLICIT NONE
 
-    PetscReal,INTENT(IN),TARGET     :: Value
-    PetscReal,POINTER               :: TargMirrorValue
-    TargMirrorValue => Value
+        PetscReal,INTENT(IN),TARGET     :: Value
+        PetscReal,POINTER               :: TargMirrorValue
+        TargMirrorValue => Value
 
-end FUNCTION TargMirrorValue
+    END FUNCTION TargMirrorValue
 
 END MODULE ANISOFLOW_Types

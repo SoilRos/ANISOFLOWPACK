@@ -14,16 +14,17 @@ PROGRAM ANISOFLOW
 #include <petsc/finclude/petscvec.h>
 #include <petsc/finclude/petscmat.h>
 
-    PetscErrorCode          :: ierr
-    PetscBool               :: Verbose
-    TYPE(Geometry)          :: Gmtry
-    TYPE(PropertiesField)     :: PptFld
-    TYPE(BoundaryConditions):: BCFld
-    Mat                     :: A
-    Vec                     :: b,x
+    PetscErrorCode              :: ierr
+    PetscBool                   :: Verbose
+    TYPE(Geometry)              :: Gmtry
+    TYPE(PropertiesField)       :: PptFld
+    TYPE(BoundaryConditions)    :: BCFld
+    Mat                         :: A
+    Vec                         :: b,x
 
-    PetscLogStage           :: Stage
-    CHARACTER(LEN=200)      :: StageName
+    PetscLogStage               :: Stage
+    CHARACTER(LEN=200)          :: StageName
+
 
     CALL PetscInitialize(PETSC_COMM_WORLD,ierr)
 
