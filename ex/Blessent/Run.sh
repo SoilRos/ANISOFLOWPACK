@@ -3,7 +3,7 @@
 ProgramDir=../../src/
 ProgramName=ANISOFLOW.exe
 
-np=1														# Number of processors to be used
+np=2														# Number of processors to be used
 
 
 InputType=1													# Input files type
@@ -20,7 +20,7 @@ OutputType=3 												# Output files type
 OutputDir=out/ 												# Output directory
 
 Scheme=2 													# Scheme type used 
-Time=0														#
+Time=1														#
 
 mpiexec -n $np ./$ProgramDir$ProgramName 			\
 -Input_type 				$InputType 				\
@@ -37,4 +37,6 @@ mpiexec -n $np ./$ProgramDir$ProgramName 			\
 -Run_options_scheme 		$Scheme 				\
 -Run_options_time 			$Time 					\
 -log_view 					ascii:ANISOFLOW.log 	\
-#-ksp_monitor_lg_residualnorm 1
+-ksp_monitor_lg_residualnorm 1
+
+

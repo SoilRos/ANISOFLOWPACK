@@ -106,8 +106,6 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
 #include <petsc/finclude/petscdmda.h>
 #include <petsc/finclude/petscdmda.h90>
 
-#include <petsc/finclude/petscao.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertiesField),INTENT(INOUT) :: PptFld
