@@ -15,7 +15,7 @@ CONTAINS
  !             information related to a regular rectangular grid, a grid indformation and, a Topology 
  !             that describes the geometry with identifiers.
 
-SUBROUTINE GetGeometry(Gmtry,ierr)
+SUBROUTINE GetGeometry(Comm,Gmtry,ierr)
 
     USE ANISOFLOW_Interface,    ONLY : GetVerbose
     USE ANISOFLOW_Types,        ONLY : Geometry
@@ -25,6 +25,7 @@ SUBROUTINE GetGeometry(Gmtry,ierr)
 #include <petsc/finclude/petscsys.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
+    MPI_Comm,INTENT(IN)             :: Comm
     TYPE(Geometry),INTENT(OUT)      :: Gmtry
 
     PetscBool                       :: Verbose
@@ -40,13 +41,13 @@ SUBROUTINE GetGeometry(Gmtry,ierr)
     CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
     CALL GetVerbose(Verbose,ierr)
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
     
-    CALL GetDataMngr(Gmtry%DataMngr,ierr)
-    CALL GetGrid(Gmtry%DataMngr,Gmtry%x,Gmtry%y,Gmtry%z,ierr)
-    CALL GetTopology(Gmtry%DataMngr,Gmtry%Tplgy,Gmtry%DirichIS,Gmtry%SourceIS,Gmtry%CauchyIS,ierr)
+    CALL GetDataMngr(Comm,Gmtry%DataMngr,ierr)
+    CALL GetGrid(Comm,Gmtry%DataMngr,Gmtry%x,Gmtry%y,Gmtry%z,ierr)
+    CALL GetTopology(Comm,Gmtry%DataMngr,Gmtry%Tplgy,Gmtry%DirichIS,Gmtry%SourceIS,Gmtry%CauchyIS,ierr)
     
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
     CALL PetscLogFlops(EventFlops,ierr)
     CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
@@ -61,7 +62,7 @@ END SUBROUTINE GetGeometry
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
  !    > NOTES: The DataMngr takes the size of the domain and assign a subdomain to each processor.
 
-SUBROUTINE GetDataMngr(DataMngr,ierr)
+SUBROUTINE GetDataMngr(Comm,DataMngr,ierr)
 
     USE ANISOFLOW_Types,        ONLY : InputTypeVar
     USE ANISOFLOW_Interface,    ONLY : GetInputType,GetVerbose
@@ -72,6 +73,7 @@ SUBROUTINE GetDataMngr(DataMngr,ierr)
 #include <petsc/finclude/petscdm.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
+    MPI_Comm,INTENT(IN)             :: Comm
     DM,INTENT(OUT)                  :: DataMngr
 
     TYPE(InputTypeVar)              :: InputType
@@ -83,11 +85,11 @@ SUBROUTINE GetDataMngr(DataMngr,ierr)
     !   2: Defined by Perez. An example is provided in "../ex/Perez/in/sanpck.domnRST"
 
     IF (InputType%Gmtry.EQ.1) THEN
-        CALL GetDataMngr_1(DataMngr,ierr)
+        CALL GetDataMngr_1(Comm,DataMngr,ierr)
     ELSE IF (InputType%Gmtry.EQ.2) THEN
-        CALL GetDataMngr_2(DataMngr,ierr)
+        CALL GetDataMngr_2(Comm,DataMngr,ierr)
     ELSE
-        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+        CALL PetscSynchronizedPrintf(Comm, &
             & "[ERROR] Geometry InputType wrong\n",ierr)
         STOP
     END IF
@@ -102,7 +104,7 @@ END SUBROUTINE GetDataMngr
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
  !    > NOTES: The DataMngr takes the size of the domain and assign a subdomain to each processor.
 
-SUBROUTINE GetDataMngr_1(DataMngr,ierr)
+SUBROUTINE GetDataMngr_1(Comm,DataMngr,ierr)
 
     USE ANISOFLOW_Types,        ONLY : RunOptionsVar
     USE ANISOFLOW_Interface,    ONLY : GetInputDir,GetInputFileGmtry,GetRunOptions,GetVerbose
@@ -114,6 +116,7 @@ SUBROUTINE GetDataMngr_1(DataMngr,ierr)
 #include <petsc/finclude/petscdmda.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
+    MPI_Comm,INTENT(IN)             :: Comm
     DM,INTENT(OUT)                  :: DataMngr
 
     PetscMPIInt                     :: process
@@ -134,7 +137,7 @@ SUBROUTINE GetDataMngr_1(DataMngr,ierr)
     ! It obtains run options.
     CALL GetRunOptions(RunOptions,ierr)
 
-    CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+    CALL MPI_Comm_rank(Comm,process,ierr)
 
     ! It obtains the global size of the domain on the first processor.
     IF (process.EQ.0) THEN
@@ -147,7 +150,7 @@ SUBROUTINE GetDataMngr_1(DataMngr,ierr)
     END IF
 
     ! It broadcasts the global size to other processors.
-    CALL MPI_Bcast(widthG,3,MPI_INT,0, PETSC_COMM_WORLD,ierr)
+    CALL MPI_Bcast(widthG,3,MPI_INT,0, Comm,ierr)
 
     ! It decides the stencil shape depending on the scheme used.
     IF (RunOptions%Scheme.EQ.1) THEN
@@ -155,28 +158,28 @@ SUBROUTINE GetDataMngr_1(DataMngr,ierr)
     ELSEIF (RunOptions%Scheme.EQ.2) THEN
         Stencil=DMDA_STENCIL_BOX
     ELSE
-        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+        CALL PetscSynchronizedPrintf(Comm,                         &
             & "[ERROR] Run_options_scheme command must be an integer between 1 and 2\n",ierr)
         STOP
     END IF
 
     ! It creates the Data Manager to Distributed Arrays by the information provided.
     IF (widthG(3).NE.1) THEN
-        CALL DMDACreate3d(PETSC_COMM_WORLD,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
+        CALL DMDACreate3d(Comm,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
             & DM_BOUNDARY_GHOSTED,Stencil,widthG(1),widthG(2),widthG(3),     &
             & PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,1,1,PETSC_NULL_INTEGER,       &
             & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,DataMngr,ierr)
     ELSE
-        CALL DMDACreate2d(PETSC_COMM_WORLD,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
+        CALL DMDACreate2d(Comm,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
             & Stencil,widthG(1),widthG(2),PETSC_DECIDE,PETSC_DECIDE,1,1,PETSC_NULL_INTEGER,       &
             & PETSC_NULL_INTEGER,DataMngr,ierr)
     END IF
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Data Manager was satisfactorily created\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Data Manager was satisfactorily created\n",ierr)
 
 END SUBROUTINE GetDataMngr_1
 
-SUBROUTINE GetDataMngr_2(DataMngr,ierr)
+SUBROUTINE GetDataMngr_2(Comm,DataMngr,ierr)
 
     USE ANISOFLOW_Types,        ONLY : RunOptionsVar
     USE ANISOFLOW_Interface,    ONLY : GetInputDir,GetInputFileGmtry,GetRunOptions,GetVerbose
@@ -188,6 +191,7 @@ SUBROUTINE GetDataMngr_2(DataMngr,ierr)
 #include <petsc/finclude/petscdmda.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
+    MPI_Comm,INTENT(IN)             :: Comm
     DM,INTENT(OUT)                  :: DataMngr
 
     PetscMPIInt                     :: process
@@ -209,7 +213,7 @@ SUBROUTINE GetDataMngr_2(DataMngr,ierr)
     CALL GetRunOptions(RunOptions,ierr)
 
     ! It tag every processor from 0 to n-1
-    CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+    CALL MPI_Comm_rank(Comm,process,ierr)
 
     ! It obtains the global size of the domain on the first processor.
     IF (process.EQ.0) THEN
@@ -224,7 +228,7 @@ SUBROUTINE GetDataMngr_2(DataMngr,ierr)
     END IF
 
     ! It broadcasts the global size to other processors.
-    CALL MPI_Bcast(widthG,3,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
+    CALL MPI_Bcast(widthG,3,MPI_INT, 0, Comm,ierr)
 
     ! It decides the stencil shape depending on the scheme used.
     IF (RunOptions%Scheme.EQ.1) THEN
@@ -232,24 +236,24 @@ SUBROUTINE GetDataMngr_2(DataMngr,ierr)
     ELSEIF (RunOptions%Scheme.EQ.2) THEN
         Stencil=DMDA_STENCIL_BOX
     ELSE
-        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+        CALL PetscSynchronizedPrintf(Comm,                         &
             & "[ERROR] Run_options_scheme command must be an integer between 1 and 2\n",ierr)
         STOP
     END IF
 
     ! It creates the Data Manager to Distributed Arrays by the information provided.
     IF (widthG(3).NE.1) THEN
-        CALL DMDACreate3d(PETSC_COMM_WORLD,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
+        CALL DMDACreate3d(Comm,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
             & DM_BOUNDARY_GHOSTED,Stencil,widthG(1),widthG(2),widthG(3),     &
             & PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,1,1,PETSC_NULL_INTEGER,       &
             & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,DataMngr,ierr)
     ELSE
-        CALL DMDACreate2d(PETSC_COMM_WORLD,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
+        CALL DMDACreate2d(Comm,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
             & Stencil,widthG(1),widthG(2),PETSC_DECIDE,PETSC_DECIDE,1,1,PETSC_NULL_INTEGER,       &
             & PETSC_NULL_INTEGER,DataMngr,ierr)
     END IF
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Data Manager was satisfactorily created\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Data Manager was satisfactorily created\n",ierr)
 
 END SUBROUTINE GetDataMngr_2
 
@@ -263,7 +267,7 @@ END SUBROUTINE GetDataMngr_2
  !               every processor 
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
-SUBROUTINE GetGrid(DataMngr,x,y,z,ierr)
+SUBROUTINE GetGrid(Comm,DataMngr,x,y,z,ierr)
 
     USE ANISOFLOW_Types,        ONLY : InputTypeVar
     USE ANISOFLOW_Interface,    ONLY : GetInputType,GetVerbose
@@ -273,22 +277,23 @@ SUBROUTINE GetGrid(DataMngr,x,y,z,ierr)
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
 
-    PetscErrorCode,INTENT(INOUT)    :: ierr
-    DM,INTENT(IN)                   :: DataMngr
-    Vec,INTENT(OUT)                 :: x,y,z
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    MPI_Comm,INTENT(IN)                 :: Comm
+    DM,INTENT(IN)                       :: DataMngr
+    PetscReal,ALLOCATABLE,INTENT(OUT)   :: x(:),y(:),z(:)
 
-    TYPE(InputTypeVar)              :: InputType
+    TYPE(InputTypeVar)                  :: InputType
 
     CALL GetInputType(InputType,ierr)
 
     ! InputType define the type of file that is provided.
     !   1: Defined by default. Default grid used has DX=DY=DZ=1.0
     IF (InputType%Gmtry.EQ.1) THEN
-        CALL GetGrid_1(DataMngr,x,y,z,ierr)
+        CALL GetGrid_1(Comm,DataMngr,x,y,z,ierr)
     ELSE IF (InputType%Gmtry.EQ.2) THEN
-        CALL GetGrid_2(DataMngr,x,y,z,ierr)
+        CALL GetGrid_2(Comm,DataMngr,x,y,z,ierr)
     ELSE        
-        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+        CALL PetscSynchronizedPrintf(Comm, &
             & "[ERROR] Geometry InputType wrong\n",ierr)
         STOP
     END IF
@@ -305,7 +310,7 @@ END SUBROUTINE GetGrid
  !               every processor 
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
-SUBROUTINE GetGrid_1(DataMngr,x,y,z,ierr)
+SUBROUTINE GetGrid_1(Comm,DataMngr,x,y,z,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetInputDir,GetInputFileGmtry,GetVerbose
 
@@ -314,14 +319,15 @@ SUBROUTINE GetGrid_1(DataMngr,x,y,z,ierr)
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
 
-    PetscErrorCode,INTENT(INOUT)    :: ierr
-    DM,INTENT(IN)                   :: DataMngr
-    Vec,INTENT(OUT)                 :: x,y,z
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    MPI_Comm,INTENT(IN)                 :: Comm
+    DM,INTENT(IN)                       :: DataMngr
+    PetscReal,ALLOCATABLE,INTENT(OUT)   :: x(:),y(:),z(:)
 
-    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry
-    PetscInt                        :: widthG(3),size,i
-    PetscReal                       :: Value
-    PetscBool                       :: Verbose
+    CHARACTER(LEN=200)                  :: InputDir,InputFileGmtry
+    PetscInt                            :: widthG(3),size,i
+    PetscReal                           :: Value
+    PetscBool                           :: Verbose
 
     CALL GetVerbose(Verbose,ierr)
 
@@ -336,46 +342,37 @@ SUBROUTINE GetGrid_1(DataMngr,x,y,z,ierr)
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
         & PETSC_NULL_INTEGER,ierr)
 
-    ! It create the vectors
+    ! It create the arrays
     size=widthG(1)+1
-    CALL VecCreateSeq(PETSC_COMM_SELF,size,x,ierr)
+    ALLOCATE(x(size))
 
     size=widthG(2)+1
-    CALL VecCreateSeq(PETSC_COMM_SELF,size,y,ierr)
+    ALLOCATE(y(size))
 
     size=widthG(3)+1
-    CALL VecCreateSeq(PETSC_COMM_SELF,size,z,ierr)
+    ALLOCATE(z(size))
 
     
-    DO i=0,widthG(1)
-        Value=REAL(i)
-        CALL VecSetValue(x,i,Value,INSERT_VALUES,ierr)
+    DO i=1,widthG(1)+1
+        Value=REAL(i-1)
+        x(i)=Value
     END DO
-    DO i=0,widthG(2)
-        Value=REAL(i)
-        CALL VecSetValue(y,i,Value,INSERT_VALUES,ierr)
+    DO i=1,widthG(2)+1
+        Value=REAL(i-1)
+        y(i)=Value
     END DO
-    DO i=0,widthG(3)
-        Value=REAL(i)
-        CALL VecSetValue(z,i,Value,INSERT_VALUES,ierr)
+    DO i=1,widthG(3)+1
+        Value=REAL(i-1)
+        z(i)=Value
     END DO
     ! Default DX=DY=DZ=1.0
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] WARNING: Grid System wasn't provided. Default grid used has DX=DY=DZ=1.0\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] WARNING: Grid System wasn't provided. Default grid used has DX=DY=DZ=1.0\n",ierr)
 
-    CALL VecAssemblyBegin(x,ierr)
-    CALL VecAssemblyEnd(x,ierr)
-
-    CALL VecAssemblyBegin(y,ierr)
-    CALL VecAssemblyEnd(y,ierr)
-    
-    CALL VecAssemblyBegin(z,ierr)
-    CALL VecAssemblyEnd(z,ierr)
-
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Grid System was satisfactorily created\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Grid System was satisfactorily created\n",ierr)
 
 END SUBROUTINE GetGrid_1
 
-SUBROUTINE GetGrid_2(DataMngr,x,y,z,ierr)
+SUBROUTINE GetGrid_2(Comm,DataMngr,x,y,z,ierr)
     
     USE ANISOFLOW_Interface, ONLY : GetInputDir,GetInputFileGmtry,GetVerbose
 
@@ -384,15 +381,16 @@ SUBROUTINE GetGrid_2(DataMngr,x,y,z,ierr)
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
 
-    PetscErrorCode,INTENT(INOUT)    :: ierr
-    DM,INTENT(IN)                   :: DataMngr
-    Vec,INTENT(OUT)                 :: x,y,z
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    MPI_Comm,INTENT(IN)                 :: Comm
+    DM,INTENT(IN)                       :: DataMngr
+    PetscReal,ALLOCATABLE,INTENT(OUT)   :: x(:),y(:),z(:)
 
-    PetscMPIInt                     :: process
-    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry,Route
-    PetscInt                        :: widthG(3),size,i,u
-    PetscReal                       :: Value
-    PetscBool                       :: Verbose
+    PetscMPIInt                         :: process
+    CHARACTER(LEN=200)                  :: InputDir,InputFileGmtry,Route
+    PetscInt                            :: widthG(3),size,i,u
+    PetscReal                           :: Value
+    PetscBool                           :: Verbose
 
     PARAMETER(u=01)
 
@@ -409,18 +407,18 @@ SUBROUTINE GetGrid_2(DataMngr,x,y,z,ierr)
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
         & PETSC_NULL_INTEGER,ierr)
 
-    ! It create the vectors
+    ! It create the arrays
     size=widthG(1)+1
-    CALL VecCreateSeq(PETSC_COMM_SELF,size,x,ierr)
+    ALLOCATE(x(size))
 
     size=widthG(2)+1
-    CALL VecCreateSeq(PETSC_COMM_SELF,size,y,ierr)
+    ALLOCATE(y(size))
 
     size=widthG(3)+1
-    CALL VecCreateSeq(PETSC_COMM_SELF,size,z,ierr)
+    ALLOCATE(z(size))
 
     ! It tag every processor from 0 to n-1
-    CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+    CALL MPI_Comm_rank(Comm,process,ierr)
 
     ! It obtains the global size of the domain on the first processor.
     IF (process.EQ.0) THEN
@@ -431,50 +429,38 @@ SUBROUTINE GetGrid_2(DataMngr,x,y,z,ierr)
         READ(u,*)
     END IF
 
-    DO i=0,widthG(1)
+    DO i=1,widthG(1)+1
         IF (process.EQ.0) THEN
             READ(u, '(ES17.11)')Value
         END IF
         ! It broadcasts the global size to other processors.
-        CALL MPI_Bcast(Value,1,MPI_DOUBLE, 0, PETSC_COMM_WORLD,ierr)
-        
-        CALL VecSetValue(x,i,Value,INSERT_VALUES,ierr)
+        CALL MPI_Bcast(Value,1,MPI_DOUBLE, 0, Comm,ierr)
+        x(i)=Value
     END DO
     
-    DO i=0,widthG(2) 
+    DO i=1,widthG(2)+1
         IF (process.EQ.0) THEN
             READ(u, '(ES17.11)')Value
         END IF
         ! It broadcasts the global size to other processors.
-        CALL MPI_Bcast(Value,1,MPI_DOUBLE, 0, PETSC_COMM_WORLD,ierr)
-
-        CALL VecSetValue(y,i,Value,INSERT_VALUES,ierr)
+        CALL MPI_Bcast(Value,1,MPI_DOUBLE, 0, Comm,ierr)
+        y(i)=Value
     END DO
 
-    DO i=0,widthG(3) 
+    DO i=1,widthG(3)+1
         IF (process.EQ.0) THEN
             READ(u, '(ES17.11)')Value
         END IF
         ! It broadcasts the global size to other processors.
-        CALL MPI_Bcast(Value,1,MPI_DOUBLE, 0, PETSC_COMM_WORLD,ierr)
-
-        CALL VecSetValue(z,i,Value,INSERT_VALUES,ierr)
+        CALL MPI_Bcast(Value,1,MPI_DOUBLE, 0, Comm,ierr)
+        z(i)=Value
     END DO
 
     IF (process.EQ.0) THEN
         CLOSE(u)
     END IF
 
-    CALL VecAssemblyBegin(x,ierr)
-    CALL VecAssemblyEnd(x,ierr)
-
-    CALL VecAssemblyBegin(y,ierr)
-    CALL VecAssemblyEnd(y,ierr)
-    
-    CALL VecAssemblyBegin(z,ierr)
-    CALL VecAssemblyEnd(z,ierr)
-
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Grid System was satisfactorily created\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Grid System was satisfactorily created\n",ierr)
 
 END SUBROUTINE GetGrid_2
 
@@ -499,7 +485,7 @@ END SUBROUTINE GetGrid_2
  !                  produced by DataMngr.
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
-SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
+SUBROUTINE GetTopology(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
 
     USE ANISOFLOW_Types, ONLY : InputTypeVar
     USE ANISOFLOW_Interface, ONLY : GetInputType,GetVerbose
@@ -509,6 +495,7 @@ SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
 #include <petsc/finclude/petscsys.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
+    MPI_Comm,INTENT(IN)             :: Comm
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
     IS,INTENT(OUT)                  :: DirichIS,CauchyIS,SourceIS
@@ -521,11 +508,13 @@ SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
     ! InputType define the type of file that is provided.
     !   1: Default topology, it doesn't need a file. The first border layer is Dirichlet, active in other case.
     IF (InputType%Tplgy.EQ.1) THEN
-        CALL GetTopology_1(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
+        CALL GetTopology_1(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
     ELSE IF (InputType%Tplgy.EQ.2) THEN
-        CALL GetTopology_2(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
+        CALL GetTopology_2(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
+    ELSE IF (InputType%Tplgy.EQ.3) THEN
+        CALL GetTopology_3(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
     ELSE
-        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+        CALL PetscSynchronizedPrintf(Comm, &
             & "[ERROR] Topology InputType wrong\n",ierr)
         STOP
     END IF
@@ -535,7 +524,7 @@ SUBROUTINE GetTopology(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
     CALL ISGetLocalSize(CauchyIS,SizeCauchyIS,ierr)
 
     IF ((SizeDirichIS+SizeSourceIS+SizeCauchyIS).EQ.0) THEN
-        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+        CALL PetscSynchronizedPrintf(Comm,&
             & "[ERROR] It has to have at least one boundary condition.\n",ierr)
         STOP
     END IF
@@ -564,7 +553,105 @@ END SUBROUTINE GetTopology
  !                  produced by DataMngr.
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
-SUBROUTINE GetTopology_1(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
+! from file
+
+SUBROUTINE GetTopology_1(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
+
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileTplgy
+    USE ANISOFLOW_View, ONLY : ViewTopology
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
+#include <petsc/finclude/petscdmda.h90>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    MPI_Comm,INTENT(IN)             :: Comm
+    DM,INTENT(IN)                   :: DataMngr
+    Vec,INTENT(OUT)                 :: Tplgy
+    IS,INTENT(OUT)                  :: DirichIS,SourceIS,CauchyIS
+
+    PetscMPIInt                     :: process
+    CHARACTER(LEN=200)              :: InputDir,InputFileTplgy,Route,ViewName,EventName
+    PetscReal                       :: ValR
+    PetscInt                        :: u,i,ValI,widthG(3),BCLenL(3),BCLenG(3)
+    Vec                             :: TmpTplgy
+    PetscBool                       :: Verbose
+
+    PARAMETER(u=01)
+
+    CALL GetVerbose(Verbose,ierr)
+
+    ! It obtains the route to open a geometry file.
+    CALL GetInputDir(InputDir,ierr)
+    CALL GetInputFileTplgy(InputFileTplgy,ierr)
+
+    ! It obtains a temporal vector to store topology identificatiors in application ordering
+    CALL DMCreateGlobalVector(DataMngr,TmpTplgy,ierr)
+
+    ! It quantifies Dirichlet, and Cauchy boundary condition on global processors.
+    BCLenL(:)=0
+    BCLenG(:)=0
+
+    ! It gets the global size from the geometry data manager.
+    CALL DMDAGetInfo(DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,ierr)
+
+    ! It tag every processor from 0 to n-1
+    CALL MPI_Comm_rank(Comm,process,ierr)
+
+    ! It obtains the global size of the domain on the first processor.
+    IF (process.EQ.0) THEN
+        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileTplgy))
+        OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
+        DO i=1,widthG(1)*widthG(2)*widthG(3)
+            ValI=0
+            READ(u,*)ValI
+            IF (ValI.EQ.2) BCLenL(1)=BCLenL(1)+1 ! Dirichlet
+            IF (ValI.EQ.3) BCLenL(2)=BCLenL(2)+1 ! Source
+            IF (ValI.EQ.4) BCLenL(3)=BCLenL(3)+1 ! Cauchy
+            ValR=REAL(ValI)
+            CALL VecSetValue(TmpTplgy,i-1,ValR,INSERT_VALUES,ierr)
+        END DO
+        CLOSE(u)
+    END IF
+
+    CALL VecAssemblyBegin(TmpTplgy,ierr)
+    CALL VecAssemblyEnd(TmpTplgy,ierr)
+
+    ! Changing temporal topology identificators from application ordering to PETSc ordering
+    CALL VecApplicationToPetsc(DataMngr,TmpTplgy,ierr)
+    ViewName="ANISOFLOW_Tplgy"
+    EventName="GetTopology"
+    CALL ViewTopology(TmpTplgy,ViewName,EventName,ierr)
+
+    ! Saving topology identificators as local vector in PETSc ordering
+    CALL DMCreateLocalVector(DataMngr,Tplgy,ierr)
+
+    CALL DMGlobalToLocalBegin(DataMngr,TmpTplgy,INSERT_VALUES,  &
+        & Tplgy,ierr)
+    CALL DMGlobalToLocalEnd(DataMngr,TmpTplgy,INSERT_VALUES,    &
+        & Tplgy,ierr)
+
+    CALL VecDestroy(TmpTplgy,ierr)
+
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Topology Identifiers were satisfactorily created\n",ierr)
+
+    CALL MPI_ALLREDUCE(BCLenL,BCLenG,3,MPI_INT,MPI_SUM,Comm,ierr)
+
+    CALL GetTopologyBC(Comm,DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
+
+END SUBROUTINE GetTopology_1
+
+! border of first layer dirichlet
+
+SUBROUTINE GetTopology_2(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetVerbose
     USE ANISOFLOW_View, ONLY : ViewTopology
@@ -578,6 +665,7 @@ SUBROUTINE GetTopology_1(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
 #include <petsc/finclude/petscdmda.h90>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
+    MPI_Comm,INTENT(IN)             :: Comm
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
     IS,INTENT(OUT)                  :: DirichIS,SourceIS,CauchyIS
@@ -632,7 +720,7 @@ SUBROUTINE GetTopology_1(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
             END DO
         END DO
     END DO
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] WARNING: Topology File wasn't provided. Default topology used is ...\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] WARNING: Topology File wasn't provided. Default topology used is ...\n",ierr)
 
     ViewName="ANISOFLOW_Tplgy"
     EventName="GetTopology"
@@ -649,17 +737,19 @@ SUBROUTINE GetTopology_1(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
 
     CALL VecDestroy(TmpTplgy,ierr)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Topology Identifiers were satisfactorily created\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Topology Identifiers were satisfactorily created\n",ierr)
 
-    CALL MPI_ALLREDUCE(BCLenL,BCLenG,3,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
+    CALL MPI_ALLREDUCE(BCLenL,BCLenG,3,MPI_INT,MPI_SUM,Comm,ierr)
 
-    CALL GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
+    CALL GetTopologyBC(Comm,DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
 
-END SUBROUTINE GetTopology_1
+END SUBROUTINE GetTopology_2
 
-SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
+! bourders dirichlet
 
-    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileTplgy
+SUBROUTINE GetTopology_3(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
+
+    USE ANISOFLOW_Interface, ONLY : GetVerbose
     USE ANISOFLOW_View, ONLY : ViewTopology
 
     IMPLICIT NONE
@@ -670,34 +760,30 @@ SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
 #include <petsc/finclude/petscdmda.h>
 #include <petsc/finclude/petscdmda.h90>
 
-#include <petsc/finclude/petscao.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
+    MPI_Comm,INTENT(IN)             :: Comm
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
     IS,INTENT(OUT)                  :: DirichIS,SourceIS,CauchyIS
 
-    PetscMPIInt                     :: process
-    CHARACTER(LEN=200)              :: InputDir,InputFileTplgy,Route,ViewName,EventName
+    PetscReal,POINTER               :: TmpTplgyArray(:,:,:)
     PetscReal                       :: ValR
-    PetscInt                        :: u,i,ValI,widthG(3),BCLenL(3),BCLenG(3)
+    PetscInt                        :: i,j,k,widthL(3),widthG(3),corn(3),BCLenL(3),BCLenG(3)
     Vec                             :: TmpTplgy
     PetscBool                       :: Verbose
-
-    PARAMETER(u=01)
+    CHARACTER(LEN=200)              :: ViewName,EventName
 
     CALL GetVerbose(Verbose,ierr)
 
-    ! It obtains the route to open a geometry file.
-    CALL GetInputDir(InputDir,ierr)
-    CALL GetInputFileTplgy(InputFileTplgy,ierr)
-
-    ! It obtains a temporal vector to store topology identificatiors in application ordering
+    ! It obtains a temporal Fortran array where will be filled each topology identifier.
     CALL DMCreateGlobalVector(DataMngr,TmpTplgy,ierr)
+    CALL DMDAVecGetArrayF90(DataMngr,TmpTplgy,TmpTplgyArray,ierr)
 
-    ! It quantifies Dirichlet, and Cauchy boundary condition on global processors.
+    ! It quantifies Dirichlet, Neumman, and Cauchy boundary condition on local and global processor.
     BCLenL(:)=0
     BCLenG(:)=0
+
+    ! It fills the temporal Fortran array.
 
     ! It gets the global size from the geometry data manager.
     CALL DMDAGetInfo(DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
@@ -706,35 +792,39 @@ SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
         & PETSC_NULL_INTEGER,ierr)
 
-    ! It tag every processor from 0 to n-1
-    CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+    CALL DMDAGetCorners(DataMngr,corn(1),corn(2),corn(3),widthL(1),  &
+        & widthL(2),widthL(3),ierr)
 
-    ! It obtains the global size of the domain on the first processor.
-    IF (process.EQ.0) THEN
-        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileTplgy))
-        OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
-        DO i=1,widthG(1)*widthG(2)*widthG(3)
-            ValI=0
-            READ(u,*)ValI
-            IF (ValI.EQ.2) BCLenL(1)=BCLenL(1)+1 ! Dirichlet
-            IF (ValI.EQ.3) BCLenL(2)=BCLenL(2)+1 ! Source
-            IF (ValI.EQ.4) BCLenL(3)=BCLenL(3)+1 ! Cauchy
-            ValR=REAL(ValI)
-            CALL VecSetValue(TmpTplgy,i-1,ValR,INSERT_VALUES,ierr)
+    ! It assigns active identifier to every cell.
+    ValR=1.0
+    TmpTplgyArray(:,:,:)=ValR
+
+    ! It changes the identifier depending on the position.
+    DO k=corn(3),corn(3)+widthL(3)-1
+        DO j=corn(2),corn(2)+widthL(2)-1
+            DO i=corn(1),corn(1)+widthL(1)-1
+                ValR=1.0
+                ! Dirichlet on the border
+                ! Active in nother case.
+                IF ((Bk.EQ.0).OR.(Bk.EQ.(Width(3)-1)).OR. &
+                  & (Bj.EQ.0).OR.(Bj.EQ.(width(2)-1)).OR. &
+                  & (Bi.EQ.0).OR.(Bi.EQ.(width(1)-1))) THEN
+                    ! Dirichlet
+                    ValR=2.0
+                    BCLenL(1)=BCLenL(1)+1
+                END IF
+                TmpTplgyArray(i,j,k)=ValR
+            END DO
         END DO
-        CLOSE(u)
-    END IF
+    END DO
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] WARNING: Topology File wasn't provided. Default topology used is ...\n",ierr)
 
-    CALL VecAssemblyBegin(TmpTplgy,ierr)
-    CALL VecAssemblyEnd(TmpTplgy,ierr)
-
-    ! Changing temporal topology identificators from application ordering to PETSc ordering
-    CALL VecApplicationToPetsc(DataMngr,TmpTplgy,ierr)
     ViewName="ANISOFLOW_Tplgy"
     EventName="GetTopology"
     CALL ViewTopology(TmpTplgy,ViewName,EventName,ierr)
 
-    ! Saving topology identificators as local vector in PETSc ordering
+    ! It moves the temporal Fortran array to a petsc vector, Tplgy, stored in Gmtry.
+    CALL DMDAVecRestoreArrayF90(DataMngr,TmpTplgy,TmpTplgyArray,ierr)
     CALL DMCreateLocalVector(DataMngr,Tplgy,ierr)
 
     CALL DMGlobalToLocalBegin(DataMngr,TmpTplgy,INSERT_VALUES,  &
@@ -744,13 +834,13 @@ SUBROUTINE GetTopology_2(DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
 
     CALL VecDestroy(TmpTplgy,ierr)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Topology Identifiers were satisfactorily created\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Topology Identifiers were satisfactorily created\n",ierr)
 
-    CALL MPI_ALLREDUCE(BCLenL,BCLenG,3,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
+    CALL MPI_ALLREDUCE(BCLenL,BCLenG,3,MPI_INT,MPI_SUM,Comm,ierr)
 
-    CALL GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
+    CALL GetTopologyBC(Comm,DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
 
-END SUBROUTINE GetTopology_2
+END SUBROUTINE GetTopology_3
 
  !  - GetTopologyBC: It's a routine that creates the Boundary Condition Index Sets from Tplgy vector.
  !    > IN: DataMngr, Tplgy, BCLenG.
@@ -774,7 +864,7 @@ END SUBROUTINE GetTopology_2
  !                  produced by DataMngr.
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
-SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
+SUBROUTINE GetTopologyBC(Comm,DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetVerbose
 
@@ -786,6 +876,7 @@ SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
 #include <petsc/finclude/petscvec.h90>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
+    MPI_Comm,INTENT(IN)             :: Comm
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(IN)                  :: Tplgy
     PetscInt,INTENT(IN)             :: BCLenG(3)
@@ -837,7 +928,7 @@ SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
                 SumaL(3)=1
             END IF
         END IF
-        CALL MPI_ALLREDUCE(SumaL,SumaG,3,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
+        CALL MPI_ALLREDUCE(SumaL,SumaG,3,MPI_INT,MPI_SUM,Comm,ierr)
         Count(:)=Count(:)+SumaG(:)
     END DO
 
@@ -850,11 +941,11 @@ SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
 
     CALL VecDestroy(TmpTplgy,ierr)
 
-    CALL ISCreateGeneral(MPI_COMM_WORLD,BCLenG(1),IndexDirich,                 &
+    CALL ISCreateGeneral(Comm,BCLenG(1),IndexDirich,                 &
         & PETSC_COPY_VALUES,DirichIS,ierr)
-    CALL ISCreateGeneral(PETSC_COMM_WORLD,BCLenG(2),IndexSource,               &
+    CALL ISCreateGeneral(Comm,BCLenG(2),IndexSource,               &
         & PETSC_COPY_VALUES,SourceIS,ierr)
-    CALL ISCreateGeneral(PETSC_COMM_WORLD,BCLenG(3),IndexCauchy,               &
+    CALL ISCreateGeneral(Comm,BCLenG(3),IndexCauchy,               &
         & PETSC_COPY_VALUES,CauchyIS,ierr)
 
 
@@ -862,7 +953,7 @@ SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
     DEALLOCATE(IndexSource)
     DEALLOCATE(IndexCauchy)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Boundary condition index sets of topology identifiers were satisfactorily created\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Boundary condition index sets of topology identifiers were satisfactorily created\n",ierr)
 
 END SUBROUTINE GetTopologyBC
 
@@ -884,36 +975,25 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
     TYPE(Property),INTENT(INOUT)        :: Ppt
     PetscErrorCode,INTENT(INOUT)        :: ierr
 
-    PetscReal,POINTER                   :: TmpTplgyArray(:,:,:),xArray(:),yArray(:),zArray(:)
-    PetscInt                            :: i,j,k,xSize,ySize,zSize
+    PetscReal,POINTER                   :: TmpTplgyArray(:,:,:)
+    PetscInt                            :: i,j,k
     TYPE(RunOptionsVar)                 :: RunOptions
 
     i=Ppt%Pstn%i
     j=Ppt%Pstn%j
     k=Ppt%Pstn%k
 
-    CALL VecGetSize(Gmtry%x,xSize,ierr)
-    CALL VecGetArrayReadF90(Gmtry%x,xArray,ierr)
-    Ppt%dxB=xArray(i+1)-xArray(i)
-    Ppt%dx =xArray(i+2)-xArray(i+1)
-    Ppt%dxF=xArray(i+3)-xArray(i+2)
-    CALL VecRestoreArrayReadF90(Gmtry%x,xArray,ierr)
+    Ppt%dxB=Gmtry%x(i+1)-Gmtry%x(i)
+    Ppt%dx =Gmtry%x(i+2)-Gmtry%x(i+1)
+    Ppt%dxF=Gmtry%x(i+3)-Gmtry%x(i+2)
 
+    Ppt%dyB=Gmtry%y(j+1)-Gmtry%y(j)
+    Ppt%dy =Gmtry%y(j+2)-Gmtry%y(j+1)
+    Ppt%dyF=Gmtry%y(j+3)-Gmtry%y(j+2)
 
-    CALL VecGetSize(Gmtry%y,ySize,ierr)
-    CALL VecGetArrayReadF90(Gmtry%y,yArray,ierr)
-    Ppt%dyB=yArray(j+1)-yArray(j)
-    Ppt%dy =yArray(j+2)-yArray(j+1)
-    Ppt%dyF=yArray(j+3)-yArray(j+2)
-    CALL VecRestoreArrayReadF90(Gmtry%y,yArray,ierr)
-
-
-    CALL VecGetSize(Gmtry%z,zSize,ierr)
-    CALL VecGetArrayReadF90(Gmtry%z,zArray,ierr)
-    Ppt%dzB=zArray(k+1)-zArray(k)
-    Ppt%dz =zArray(k+2)-zArray(k+1)
-    Ppt%dzF=zArray(k+3)-zArray(k+2)
-    CALL VecRestoreArrayReadF90(Gmtry%z,zArray,ierr)
+    Ppt%dzB=Gmtry%z(k+1)-Gmtry%z(k)
+    Ppt%dz =Gmtry%z(k+2)-Gmtry%z(k+1)
+    Ppt%dzF=Gmtry%z(k+3)-Gmtry%z(k+2)
 
     ! Revisar los diferenciales de x,y,z que se usan como dividendo, si los valores son cercanos a cero puede haber problemas!!!!
 
@@ -995,9 +1075,9 @@ SUBROUTINE DestroyGeometry(Gmtry,ierr)
 
     CALL DMDestroy(Gmtry%DataMngr,ierr)
     CALL VecDestroy(Gmtry%Tplgy,ierr)
-    CALL VecDestroy(Gmtry%x,ierr)
-    CALL VecDestroy(Gmtry%y,ierr)
-    CALL VecDestroy(Gmtry%z,ierr)
+    DEALLOCATE(Gmtry%x)
+    DEALLOCATE(Gmtry%y)
+    DEALLOCATE(Gmtry%z)
     CALL ISDestroy(Gmtry%DirichIS,ierr)
     CALL ISDestroy(Gmtry%SourceIS,ierr)
     CALL ISDestroy(Gmtry%CauchyIS,ierr)

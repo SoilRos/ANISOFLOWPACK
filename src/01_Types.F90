@@ -20,7 +20,7 @@ MODULE ANISOFLOW_Types
  !          2: Dirichlet boundary condition cell.
  !          3: Source in cell Q (It's treated as active cell).
  !          4: Cauchy boundary condition
- !      + x,y,z: It's a PETSc vector that contains the grid coordinates on each direction.
+ !      + x,y,z: It's an array of PETSc reals that contains the grid coordinates on each direction.
  !      + DirichIS: It's a PETSc index set that has a map between Dirichlet information and vecs 
  !                  produced by DataMngr.
  !      + SourceIS: It's a PETSc index set that has a map between Source information and vecs 
@@ -34,7 +34,7 @@ MODULE ANISOFLOW_Types
     TYPE Geometry
         DM                              :: DataMngr
         Vec                             :: Tplgy
-        Vec                             :: x,y,z
+        PetscReal,ALLOCATABLE           :: x(:),y(:),z(:)
         IS                              :: DirichIS,SourceIS,CauchyIS
     END TYPE Geometry
 
@@ -260,8 +260,9 @@ MODULE ANISOFLOW_Types
  !          2: Defined by Perez. An example is provided in "../ex/Perez/in/sanpck.domnRST"
  !      + Tplgy: It's an integer that defines a type of file that will provide the identifiers to
  !               each cell.
- !          1: Default topology, it doesn't need a file. Every face of the domain is a Neumman
- !             condition but on the first layer where the boundary is dirichlet.
+ !          1: from file... Default
+ !          2: ...
+ !          3: dirichlet on every border
  !      + Cvt: It's an integer that defines a type of file that will provide conductivity to each 
  !             cell or zone.
  !          1: It's a pair of files that provide block conductivities by zones and another one that

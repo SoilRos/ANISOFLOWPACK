@@ -37,7 +37,7 @@ PROGRAM ANISOFLOW
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(StageName))//" Stage] Inizialited\n",ierr)
 
-    CALL GetGeometry(Gmtry,ierr)
+    CALL GetGeometry(PETSC_COMM_WORLD,Gmtry,ierr)
     CALL GetProrperties(Gmtry,PptFld,ierr)
     CALL GetBC(Gmtry,BCFld,ierr)
 
