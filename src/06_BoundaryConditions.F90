@@ -173,6 +173,7 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
         CALL ISGetLocalSize(Gmtry%SourceIS,SizeSourceIS,ierr)
 
         IF (BCFld%SizeSource.NE.SizeSourceIS) THEN
+            PRINT*,BCFld%SizeSource,SizeSourceIS
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Boundary condition file doesn't has the same number of source entries as topology file\n",ierr)
             STOP

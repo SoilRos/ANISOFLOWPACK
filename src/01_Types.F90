@@ -10,7 +10,11 @@ MODULE ANISOFLOW_Types
 #include <petsc/finclude/petscdm.h>
 
  !  - Geometry: It's a data structure that manages every information needed related to geometry.
- !    > VARIABLES: DataMngr, Tplgy, DirichIS, CauchyIS, NeummanIS.
+ !    > VARIABLES: Scale, DataMngr, Tplgy, DirichIS, CauchyIS, NeummanIS.
+ !      + Scale: It's a PETSc Integer that indentify the geometry scale
+ !          1: Default scale when no other scalres are not being used, fine scale otherwise. Collectice
+ !          2: Upscale geometry. Collective
+ !          3: Fine Block, usually an extraction of Fine-scale. Not Collective
  !      + DataMngr: It's a PETSc manager data for structured grid in 3 dimensions, providing general 
  !                  information on the grid to be managed in parallel programming.
  !      + Tplgy: It's a PETSc vector type produced by DataMngr that contains a topology identifier
@@ -32,6 +36,7 @@ MODULE ANISOFLOW_Types
  !             the system.
 
     TYPE Geometry
+        PetscInt                        :: Scale=1
         DM                              :: DataMngr
         Vec                             :: Tplgy
         PetscReal,ALLOCATABLE           :: x(:),y(:),z(:)

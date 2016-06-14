@@ -43,9 +43,9 @@ SUBROUTINE GetGeometry(Comm,Gmtry,ierr)
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
     
-    CALL GetDataMngr(Comm,Gmtry%DataMngr,ierr)
-    CALL GetGrid(Comm,Gmtry%DataMngr,Gmtry%x,Gmtry%y,Gmtry%z,ierr)
-    CALL GetTopology(Comm,Gmtry%DataMngr,Gmtry%Tplgy,Gmtry%DirichIS,Gmtry%SourceIS,Gmtry%CauchyIS,ierr)
+    CALL GetDataMngr(Comm,Gmtry%DataMngr,Gmtry%Scale,ierr)
+    CALL GetGrid(Comm,Gmtry%DataMngr,Gmtry%x,Gmtry%y,Gmtry%z,Gmtry%Scale,ierr)
+    CALL GetTopology(Comm,Gmtry%DataMngr,Gmtry%Tplgy,Gmtry%DirichIS,Gmtry%SourceIS,Gmtry%CauchyIS,Gmtry%Scale,ierr)
     
     IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
@@ -62,7 +62,7 @@ END SUBROUTINE GetGeometry
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
  !    > NOTES: The DataMngr takes the size of the domain and assign a subdomain to each processor.
 
-SUBROUTINE GetDataMngr(Comm,DataMngr,ierr)
+SUBROUTINE GetDataMngr(Comm,DataMngr,Scale,ierr)
 
     USE ANISOFLOW_Types,        ONLY : InputTypeVar
     USE ANISOFLOW_Interface,    ONLY : GetInputType,GetVerbose
@@ -74,20 +74,23 @@ SUBROUTINE GetDataMngr(Comm,DataMngr,ierr)
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
+    PetscInt,INTENT(IN)             :: Scale
     DM,INTENT(OUT)                  :: DataMngr
 
     TYPE(InputTypeVar)              :: InputType
 
-    CALL GetInputType(InputType,ierr)
+    IF (Scale.EQ.1) THEN
+        CALL GetInputType(InputType,ierr)
+    END IF
 
     ! InputType define the type of file that is provided.
     !   1: Defined by Blessent. An example is provided in "../ex/Blessent/in/tsim_USMH.asc"
     !   2: Defined by Perez. An example is provided in "../ex/Perez/in/sanpck.domnRST"
 
     IF (InputType%Gmtry.EQ.1) THEN
-        CALL GetDataMngr_1(Comm,DataMngr,ierr)
+        CALL GetDataMngr_1(Comm,DataMngr,Scale,ierr)
     ELSE IF (InputType%Gmtry.EQ.2) THEN
-        CALL GetDataMngr_2(Comm,DataMngr,ierr)
+        CALL GetDataMngr_2(Comm,DataMngr,Scale,ierr)
     ELSE
         CALL PetscSynchronizedPrintf(Comm, &
             & "[ERROR] Geometry InputType wrong\n",ierr)
@@ -104,7 +107,7 @@ END SUBROUTINE GetDataMngr
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
  !    > NOTES: The DataMngr takes the size of the domain and assign a subdomain to each processor.
 
-SUBROUTINE GetDataMngr_1(Comm,DataMngr,ierr)
+SUBROUTINE GetDataMngr_1(Comm,DataMngr,Scale,ierr)
 
     USE ANISOFLOW_Types,        ONLY : RunOptionsVar
     USE ANISOFLOW_Interface,    ONLY : GetInputDir,GetInputFileGmtry,GetRunOptions,GetVerbose
@@ -117,6 +120,7 @@ SUBROUTINE GetDataMngr_1(Comm,DataMngr,ierr)
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
+    PetscInt,INTENT(IN)             :: Scale
     DM,INTENT(OUT)                  :: DataMngr
 
     PetscMPIInt                     :: process
@@ -131,8 +135,10 @@ SUBROUTINE GetDataMngr_1(Comm,DataMngr,ierr)
     CALL GetVerbose(Verbose,ierr)
 
     ! It obtains the route to open a geometry file.
-    CALL GetInputDir(InputDir,ierr)
-    CALL GetInputFileGmtry(InputFileGmtry,ierr)
+    IF (Scale.EQ.1) THEN
+        CALL GetInputDir(InputDir,ierr)
+        CALL GetInputFileGmtry(InputFileGmtry,ierr)
+    END IF
 
     ! It obtains run options.
     CALL GetRunOptions(RunOptions,ierr)
@@ -179,7 +185,7 @@ SUBROUTINE GetDataMngr_1(Comm,DataMngr,ierr)
 
 END SUBROUTINE GetDataMngr_1
 
-SUBROUTINE GetDataMngr_2(Comm,DataMngr,ierr)
+SUBROUTINE GetDataMngr_2(Comm,DataMngr,Scale,ierr)
 
     USE ANISOFLOW_Types,        ONLY : RunOptionsVar
     USE ANISOFLOW_Interface,    ONLY : GetInputDir,GetInputFileGmtry,GetRunOptions,GetVerbose
@@ -192,6 +198,7 @@ SUBROUTINE GetDataMngr_2(Comm,DataMngr,ierr)
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
+    PetscInt,INTENT(IN)             :: Scale
     DM,INTENT(OUT)                  :: DataMngr
 
     PetscMPIInt                     :: process
@@ -206,8 +213,10 @@ SUBROUTINE GetDataMngr_2(Comm,DataMngr,ierr)
     CALL GetVerbose(Verbose,ierr)
 
     ! It obtains the route to open a geometry file.
-    CALL GetInputDir(InputDir,ierr)
-    CALL GetInputFileGmtry(InputFileGmtry,ierr)
+    IF (Scale.EQ.1) THEN
+        CALL GetInputDir(InputDir,ierr)
+        CALL GetInputFileGmtry(InputFileGmtry,ierr)
+    END IF
 
     ! It obtains run options.
     CALL GetRunOptions(RunOptions,ierr)
@@ -267,7 +276,7 @@ END SUBROUTINE GetDataMngr_2
  !               every processor 
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
-SUBROUTINE GetGrid(Comm,DataMngr,x,y,z,ierr)
+SUBROUTINE GetGrid(Comm,DataMngr,x,y,z,Scale,ierr)
 
     USE ANISOFLOW_Types,        ONLY : InputTypeVar
     USE ANISOFLOW_Interface,    ONLY : GetInputType,GetVerbose
@@ -279,19 +288,22 @@ SUBROUTINE GetGrid(Comm,DataMngr,x,y,z,ierr)
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     MPI_Comm,INTENT(IN)                 :: Comm
+    PetscInt,INTENT(IN)                 :: Scale
     DM,INTENT(IN)                       :: DataMngr
     PetscReal,ALLOCATABLE,INTENT(OUT)   :: x(:),y(:),z(:)
 
     TYPE(InputTypeVar)                  :: InputType
 
-    CALL GetInputType(InputType,ierr)
+    IF (Scale.EQ.1) THEN
+        CALL GetInputType(InputType,ierr)
+    END IF
 
     ! InputType define the type of file that is provided.
     !   1: Defined by default. Default grid used has DX=DY=DZ=1.0
     IF (InputType%Gmtry.EQ.1) THEN
-        CALL GetGrid_1(Comm,DataMngr,x,y,z,ierr)
+        CALL GetGrid_1(Comm,DataMngr,x,y,z,Scale,ierr)
     ELSE IF (InputType%Gmtry.EQ.2) THEN
-        CALL GetGrid_2(Comm,DataMngr,x,y,z,ierr)
+        CALL GetGrid_2(Comm,DataMngr,x,y,z,Scale,ierr)
     ELSE        
         CALL PetscSynchronizedPrintf(Comm, &
             & "[ERROR] Geometry InputType wrong\n",ierr)
@@ -310,7 +322,7 @@ END SUBROUTINE GetGrid
  !               every processor 
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
-SUBROUTINE GetGrid_1(Comm,DataMngr,x,y,z,ierr)
+SUBROUTINE GetGrid_1(Comm,DataMngr,x,y,z,Scale,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetInputDir,GetInputFileGmtry,GetVerbose
 
@@ -321,6 +333,7 @@ SUBROUTINE GetGrid_1(Comm,DataMngr,x,y,z,ierr)
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     MPI_Comm,INTENT(IN)                 :: Comm
+    PetscInt,INTENT(IN)                 :: Scale
     DM,INTENT(IN)                       :: DataMngr
     PetscReal,ALLOCATABLE,INTENT(OUT)   :: x(:),y(:),z(:)
 
@@ -332,8 +345,10 @@ SUBROUTINE GetGrid_1(Comm,DataMngr,x,y,z,ierr)
     CALL GetVerbose(Verbose,ierr)
 
     ! It obtains the route to open a geometry file.
-    CALL GetInputDir(InputDir,ierr)
-    CALL GetInputFileGmtry(InputFileGmtry,ierr)
+    IF (Scale.EQ.1) THEN
+        CALL GetInputDir(InputDir,ierr)
+        CALL GetInputFileGmtry(InputFileGmtry,ierr)
+    END IF
 
     ! It gets the global size from the geometry data manager.
     CALL DMDAGetInfo(DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
@@ -372,7 +387,7 @@ SUBROUTINE GetGrid_1(Comm,DataMngr,x,y,z,ierr)
 
 END SUBROUTINE GetGrid_1
 
-SUBROUTINE GetGrid_2(Comm,DataMngr,x,y,z,ierr)
+SUBROUTINE GetGrid_2(Comm,DataMngr,x,y,z,Scale,ierr)
     
     USE ANISOFLOW_Interface, ONLY : GetInputDir,GetInputFileGmtry,GetVerbose
 
@@ -383,6 +398,7 @@ SUBROUTINE GetGrid_2(Comm,DataMngr,x,y,z,ierr)
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     MPI_Comm,INTENT(IN)                 :: Comm
+    PetscInt,INTENT(IN)                 :: Scale
     DM,INTENT(IN)                       :: DataMngr
     PetscReal,ALLOCATABLE,INTENT(OUT)   :: x(:),y(:),z(:)
 
@@ -397,8 +413,11 @@ SUBROUTINE GetGrid_2(Comm,DataMngr,x,y,z,ierr)
     CALL GetVerbose(Verbose,ierr)
 
     ! It obtains the route to open a geometry file.
-    CALL GetInputDir(InputDir,ierr)
-    CALL GetInputFileGmtry(InputFileGmtry,ierr)
+    IF (Scale.EQ.1) THEN
+        CALL GetInputDir(InputDir,ierr)
+        CALL GetInputFileGmtry(InputFileGmtry,ierr)
+    END IF
+
 
     ! It gets the global size from the geometry data manager.
     CALL DMDAGetInfo(DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
@@ -485,7 +504,7 @@ END SUBROUTINE GetGrid_2
  !                  produced by DataMngr.
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
-SUBROUTINE GetTopology(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
+SUBROUTINE GetTopology(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,Scale,ierr)
 
     USE ANISOFLOW_Types, ONLY : InputTypeVar
     USE ANISOFLOW_Interface, ONLY : GetInputType,GetVerbose
@@ -496,6 +515,7 @@ SUBROUTINE GetTopology(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
+    PetscInt,INTENT(IN)             :: Scale
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
     IS,INTENT(OUT)                  :: DirichIS,CauchyIS,SourceIS
@@ -503,16 +523,18 @@ SUBROUTINE GetTopology(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
     TYPE(InputTypeVar)              :: InputType
     PetscInt                        :: SizeDirichIS,SizeSourceIS,SizeCauchyIS
 
-    CALL GetInputType(InputType,ierr)
+    IF (Scale.EQ.1) THEN
+        CALL GetInputType(InputType,ierr)
+    END IF
 
     ! InputType define the type of file that is provided.
     !   1: Default topology, it doesn't need a file. The first border layer is Dirichlet, active in other case.
     IF (InputType%Tplgy.EQ.1) THEN
-        CALL GetTopology_1(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
+        CALL GetTopology_1(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,Scale,ierr)
     ELSE IF (InputType%Tplgy.EQ.2) THEN
-        CALL GetTopology_2(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
+        CALL GetTopology_2(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,Scale,ierr)
     ELSE IF (InputType%Tplgy.EQ.3) THEN
-        CALL GetTopology_3(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
+        CALL GetTopology_3(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,Scale,ierr)
     ELSE
         CALL PetscSynchronizedPrintf(Comm, &
             & "[ERROR] Topology InputType wrong\n",ierr)
@@ -555,7 +577,7 @@ END SUBROUTINE GetTopology
 
 ! from file
 
-SUBROUTINE GetTopology_1(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
+SUBROUTINE GetTopology_1(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,Scale,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileTplgy
     USE ANISOFLOW_View, ONLY : ViewTopology
@@ -570,6 +592,7 @@ SUBROUTINE GetTopology_1(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
+    PetscInt,INTENT(IN)             :: Scale
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
     IS,INTENT(OUT)                  :: DirichIS,SourceIS,CauchyIS
@@ -586,8 +609,10 @@ SUBROUTINE GetTopology_1(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
     CALL GetVerbose(Verbose,ierr)
 
     ! It obtains the route to open a geometry file.
-    CALL GetInputDir(InputDir,ierr)
-    CALL GetInputFileTplgy(InputFileTplgy,ierr)
+    IF (Scale.EQ.1) THEN
+        CALL GetInputDir(InputDir,ierr)
+        CALL GetInputFileTplgy(InputFileTplgy,ierr)
+    END IF
 
     ! It obtains a temporal vector to store topology identificatiors in application ordering
     CALL DMCreateGlobalVector(DataMngr,TmpTplgy,ierr)
@@ -651,7 +676,7 @@ END SUBROUTINE GetTopology_1
 
 ! border of first layer dirichlet
 
-SUBROUTINE GetTopology_2(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
+SUBROUTINE GetTopology_2(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,Scale,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetVerbose
     USE ANISOFLOW_View, ONLY : ViewTopology
@@ -666,6 +691,7 @@ SUBROUTINE GetTopology_2(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
+    PetscInt,INTENT(IN)             :: Scale ! Here it do nothing, but it's keeped just to maintain syntax
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
     IS,INTENT(OUT)                  :: DirichIS,SourceIS,CauchyIS
@@ -747,7 +773,7 @@ END SUBROUTINE GetTopology_2
 
 ! bourders dirichlet
 
-SUBROUTINE GetTopology_3(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
+SUBROUTINE GetTopology_3(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,Scale,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetVerbose
     USE ANISOFLOW_View, ONLY : ViewTopology
@@ -762,6 +788,7 @@ SUBROUTINE GetTopology_3(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
+    PetscInt,INTENT(IN)             :: Scale ! Here it do nothing, but it's keeped just to maintain syntax
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
     IS,INTENT(OUT)                  :: DirichIS,SourceIS,CauchyIS
@@ -806,9 +833,9 @@ SUBROUTINE GetTopology_3(Comm,DataMngr,Tplgy,DirichIS,SourceIS,CauchyIS,ierr)
                 ValR=1.0
                 ! Dirichlet on the border
                 ! Active in nother case.
-                IF ((Bk.EQ.0).OR.(Bk.EQ.(Width(3)-1)).OR. &
-                  & (Bj.EQ.0).OR.(Bj.EQ.(width(2)-1)).OR. &
-                  & (Bi.EQ.0).OR.(Bi.EQ.(width(1)-1))) THEN
+                IF ((k.EQ.0).OR.(k.EQ.(widthG(3)-1)).OR. &
+                  & (j.EQ.0).OR.(j.EQ.(widthG(2)-1)).OR. &
+                  & (i.EQ.0).OR.(i.EQ.(widthG(1)-1))) THEN
                     ! Dirichlet
                     ValR=2.0
                     BCLenL(1)=BCLenL(1)+1

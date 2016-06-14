@@ -128,7 +128,6 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
 
     PptFld%Cvt%DefinedByZones=.TRUE.
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetConductivity Event] Conductivity Field is stored as Zones by Block\n",ierr)
-
     CALL DMCreateGlobalVector(Gmtry%DataMngr,CvtTypeGlobal,ierr)
     CALL DMCreateLocalVector(Gmtry%DataMngr,PptFld%PptType,ierr)
 
