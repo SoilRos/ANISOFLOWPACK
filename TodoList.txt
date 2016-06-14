@@ -1,3 +1,5 @@
 1. Implementar solución inicial en el transitorio
 2. Implementar el coeficiente de almacenamiento para el transitorio
 3. Modulo de escalamiento con el método de la china.
+4. Agregar condiciones de Cauchy
+5. Hacer el User Manual
