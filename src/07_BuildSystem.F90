@@ -51,9 +51,9 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
         CALL ApplyTimeDiff(BCFld,TimeZone,TimeStep,A,b,x,ierr)
     END IF
 
-    CALL ApplyDirichlet(Gmtry,BCFld,TimeZone,b,ierr)
-    CALL ApplySource(Gmtry,BCFld,TimeZone,b,ierr)
-    ! CALL ApplyCauchy(Gmtry,BCFld,TimeZone,A,b,ierr)
+    CALL ApplyDirichlet(BCFld,TimeZone,b,ierr)
+    CALL ApplySource(BCFld,TimeZone,b,ierr)
+    ! CALL ApplyCauchy(BCFld,TimeZone,A,b,ierr)
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
@@ -713,7 +713,7 @@ END SUBROUTINE GetLiStencil
 
 ! END SUBROUTINE AnisoflowStencil
 
-SUBROUTINE ApplyDirichlet(Gmtry,BCFld,TimeZone,b,ierr)
+SUBROUTINE ApplyDirichlet(BCFld,TimeZone,b,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
     USe ANISOFLOW_Interface, ONLY : GetVerbose
@@ -724,7 +724,6 @@ SUBROUTINE ApplyDirichlet(Gmtry,BCFld,TimeZone,b,ierr)
 #include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
-    TYPE(Geometry),INTENT(IN)               :: Gmtry
     TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
     PetscInt,INTENT(IN)                     :: TimeZone
     Vec,INTENT(INOUT)                       :: b
@@ -737,7 +736,7 @@ SUBROUTINE ApplyDirichlet(Gmtry,BCFld,TimeZone,b,ierr)
     CALL VecGetSize(BCFld%Dirich(TimeZone),DirichSize,ierr)
 
     CALL ISCreateStride(PETSC_COMM_WORLD,DirichSize,0,1,NaturalOrder,ierr)
-    CALL VecScatterCreate(BCFld%Dirich(TimeZone),NaturalOrder,b,Gmtry%DirichIS,Scatter,ierr)
+    CALL VecScatterCreate(BCFld%Dirich(TimeZone),NaturalOrder,b,BCFld%DirichIS(TimeZone),Scatter,ierr)
 
     CALL VecScatterBegin(Scatter,BCFld%Dirich(TimeZone),b,INSERT_VALUES,SCATTER_FORWARD,ierr)
     CALL VecScatterEnd(Scatter,BCFld%Dirich(TimeZone),b,INSERT_VALUES,SCATTER_FORWARD,ierr)
@@ -750,7 +749,7 @@ SUBROUTINE ApplyDirichlet(Gmtry,BCFld,TimeZone,b,ierr)
 
 END SUBROUTINE ApplyDirichlet
 
-SUBROUTINE ApplySource(Gmtry,BCFld,TimeZone,b,ierr)
+SUBROUTINE ApplySource(BCFld,TimeZone,b,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
     USe ANISOFLOW_Interface, ONLY : GetVerbose
@@ -761,7 +760,6 @@ SUBROUTINE ApplySource(Gmtry,BCFld,TimeZone,b,ierr)
 #include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
-    TYPE(Geometry),INTENT(IN)               :: Gmtry
     TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
     PetscInt,INTENT(IN)                     :: TimeZone
     Vec,INTENT(INOUT)                       :: b
@@ -774,7 +772,7 @@ SUBROUTINE ApplySource(Gmtry,BCFld,TimeZone,b,ierr)
     CALL VecGetSize(BCFld%Source(TimeZone),SourceSize,ierr)
 
     CALL ISCreateStride(PETSC_COMM_WORLD,SourceSize,0,1,NaturalOrder,ierr)
-    CALL VecScatterCreate(BCFld%Source(TimeZone),NaturalOrder,b,Gmtry%SourceIS,Scatter,ierr)
+    CALL VecScatterCreate(BCFld%Source(TimeZone),NaturalOrder,b,BCFld%SourceIS(TimeZone),Scatter,ierr)
 
     CALL VecScatterBegin(Scatter,BCFld%Source(TimeZone),b,ADD_VALUES,SCATTER_FORWARD,ierr)
     CALL VecScatterEnd(Scatter,BCFld%Source(TimeZone),b,ADD_VALUES,SCATTER_FORWARD,ierr)

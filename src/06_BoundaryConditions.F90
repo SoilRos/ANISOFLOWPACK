@@ -70,8 +70,7 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
     TYPE(BoundaryConditions),INTENT(OUT)    :: BCFld
 
     PetscMPIInt                             :: process
-    PetscInt                                :: u,i,j,CountTimeZone,CountDirich,CountSource,CountCauchy
-    PetscInt                                :: SizeDirichIS,SizeSourceIS,SizeCauchyIS
+    PetscInt                                :: u,i,j,ValI,CountTimeZone,CountDirich,CountSource,CountCauchy
     PetscInt,ALLOCATABLE                    :: IndexDirich(:),IndexSource(:),IndexCauchy(:)
     PetscReal                               :: ValR,DT
     CHARACTER(LEN=200)                      :: InputFileBC,InputDir,Route
@@ -82,8 +81,8 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
     CHARACTER(LEN=27)                       :: Text1Dirich
     CHARACTER(LEN=25)                       :: Text1Source
     CHARACTER(LEN=24)                       :: Text1Cauchy
-    PetscBool                               :: AllocationFlag
     PetscBool                               :: Verbose
+    AO                                      :: AppOrd
 
     PARAMETER(u=01)
 
@@ -92,6 +91,8 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputFileBC(InputFileBC,ierr)
     
+    CALL DMDAGetAO(Gmtry%DataMngr,AppOrd,ierr)
+
     CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
 
     IF (process.EQ.0) THEN
@@ -107,6 +108,9 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
     ALLOCATE(BCFld%Dirich(BCFld%SizeTimeZone))
     ALLOCATE(BCFld%Source(BCFld%SizeTimeZone))
     ALLOCATE(BCFld%Cauchy(BCFld%SizeTimeZone))
+    ALLOCATE(BCFld%DirichIS(BCFld%SizeTimeZone))
+    ALLOCATE(BCFld%SourceIS(BCFld%SizeTimeZone))
+    ALLOCATE(BCFld%CauchyIS(BCFld%SizeTimeZone))
 
     DO i=1,BCFld%SizeTimeZone
         ! TIME
@@ -116,8 +120,7 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
         END IF
 
         CALL MPI_Bcast(BCFld%TimeZone(i)%SizeTime,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
-        AllocationFlag=ALLOCATED(BCFld%TimeZone(i)%Time)
-        IF (.NOT.AllocationFlag) ALLOCATE(BCFld%TimeZone(i)%Time(BCFld%TimeZone(i)%SizeTime))
+        ALLOCATE(BCFld%TimeZone(i)%Time(BCFld%TimeZone(i)%SizeTime))
 
         IF (process.EQ.0) THEN
             READ(u,'(A4,F15.10)')TextDT,DT
@@ -140,9 +143,8 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
         END IF
         
         CALL MPI_Bcast(BCFld%SizeDirich,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
-        CALL ISGetLocalSize(Gmtry%DirichIS,SizeDirichIS,ierr)
-        
-        IF (BCFld%SizeDirich.NE.SizeDirichIS) THEN
+
+        IF (BCFld%SizeDirich.GT.Gmtry%SizeTplgy(2)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Boundary condition file doesn't has the same number of dirichlet entries as topology file\n",ierr)
             STOP
@@ -150,19 +152,27 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
 
         CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeDirich,BCFld%Dirich(i),ierr)
         
-        AllocationFlag=ALLOCATED(IndexDirich)
-        IF (.NOT.AllocationFlag) ALLOCATE(IndexDirich(BCFld%SizeDirich))
+        ALLOCATE(IndexDirich(BCFld%SizeDirich))
 
         IF (process.EQ.0) THEN
             DO j=1,BCFld%SizeDirich
-                READ(u, '(I12,F15.10)')IndexDirich(j),ValR
+                READ(u, '(I12,F15.10)')ValI,ValR
+                IndexDirich(j)=ValI-1
                 CALL VecSetValue(BCFld%Dirich(i),j-1,-ValR,INSERT_VALUES,ierr)
             END DO
         END IF
+        
+        CALL MPI_Bcast(IndexDirich,BCFld%SizeDirich,MPI_INT,0, PETSC_COMM_WORLD,ierr)
+        CALL ISCreateGeneral(MPI_COMM_WORLD,BCFld%SizeDirich,IndexDirich,PETSC_COPY_VALUES,BCFld%DirichIS(i),ierr)
 
+        DEALLOCATE(IndexDirich)
+
+        CALL AOApplicationToPetscIS(AppOrd,BCFld%DirichIS(i),ierr)
         CALL VecAssemblyBegin(BCFld%Dirich(i),ierr)
         CALL VecAssemblyEnd(BCFld%Dirich(i),ierr)
         
+
+
         ! Source
         IF (process.EQ.0) THEN
             READ(u,'(A25,I8,A3,I8)')Text1Source,CountSource,Text2Source,BCFld%SizeSource
@@ -170,9 +180,8 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
         END IF
 
         CALL MPI_Bcast(BCFld%SizeSource,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
-        CALL ISGetLocalSize(Gmtry%SourceIS,SizeSourceIS,ierr)
 
-        IF (BCFld%SizeSource.NE.SizeSourceIS) THEN
+        IF (BCFld%SizeSource.GT.Gmtry%SizeTplgy(3)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Boundary condition file doesn't has the same number of source entries as topology file\n",ierr)
             STOP
@@ -180,16 +189,22 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
 
         CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeSource,BCFld%Source(i),ierr)
 
-        AllocationFlag=ALLOCATED(IndexSource)
-        IF (.NOT.AllocationFlag) ALLOCATE(IndexSource(BCFld%SizeSource))
+        ALLOCATE(IndexSource(BCFld%SizeSource))
 
         IF (process.EQ.0) THEN
             DO j=1,BCFld%SizeSource
-                READ(u, '(I12,F15.10)')IndexSource(j),ValR
+                READ(u, '(I12,F15.10)')ValI,ValR
+                IndexSource(j)=ValI-1
                 CALL VecSetValue(BCFld%Source(i),j-1,-ValR,INSERT_VALUES,ierr)
             END DO
         END IF
 
+        CALL MPI_Bcast(IndexSource,BCFld%SizeSource,MPI_INT,0, PETSC_COMM_WORLD,ierr)
+        CALL ISCreateGeneral(MPI_COMM_WORLD,BCFld%SizeSource,IndexSource,PETSC_COPY_VALUES,BCFld%SourceIS(i),ierr)
+
+        DEALLOCATE(IndexSource)
+
+        CALL AOApplicationToPetscIS(AppOrd,BCFld%SourceIS(i),ierr)
         CALL VecAssemblyBegin(BCFld%Source(i),ierr)
         CALL VecAssemblyEnd(BCFld%Source(i),ierr)
 
@@ -200,25 +215,30 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
         END IF
 
         CALL MPI_Bcast(BCFld%SizeCauchy,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
-        CALL ISGetLocalSize(Gmtry%CauchyIS,SizeCauchyIS,ierr)
 
-        IF (BCFld%SizeCauchy.NE.SizeCauchyIS) THEN
+        IF (BCFld%SizeCauchy.GT.Gmtry%SizeTplgy(4)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Boundary condition file doesn't has the same number of cauchy entries as topology file\n",ierr)
             STOP
         END IF
         CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeCauchy,BCFld%Cauchy(i),ierr)
 
-        AllocationFlag=ALLOCATED(IndexCauchy)
-        IF (.NOT.AllocationFlag) ALLOCATE(IndexCauchy(BCFld%SizeCauchy))
+        ALLOCATE(IndexCauchy(BCFld%SizeCauchy))
 
         IF (process.EQ.0) THEN
             DO j=1,BCFld%SizeCauchy
-                READ(u, '(I12,F15.10)')IndexCauchy(j),ValR
+                READ(u, '(I12,F15.10)')ValI,ValR
+                IndexCauchy(j)=ValI-1
                 CALL VecSetValue(BCFld%Cauchy(i),j-1,ValR,INSERT_VALUES,ierr)
             END DO
         END IF
 
+        CALL MPI_Bcast(IndexCauchy,BCFld%SizeCauchy,MPI_INT,0, PETSC_COMM_WORLD,ierr)
+        CALL ISCreateGeneral(MPI_COMM_WORLD,BCFld%SizeCauchy,IndexCauchy,PETSC_COPY_VALUES,BCFld%CauchyIS(i),ierr)
+
+        DEALLOCATE(IndexCauchy)
+
+        CALL AOApplicationToPetscIS(AppOrd,BCFld%CauchyIS(i),ierr)
         CALL VecAssemblyBegin(BCFld%Cauchy(i),ierr)
         CALL VecAssemblyEnd(BCFld%Cauchy(i),ierr)
 
@@ -266,6 +286,10 @@ SUBROUTINE DestroyBC(BCFld,ierr)
         DEALLOCATE(BCFld%TimeZone(i)%Time)
     END DO
     DEALLOCATE(BCFld%TimeZone)
+
+    CALL ISDestroy(BCFld%DirichIS,ierr)
+    CALL ISDestroy(BCFld%SourceIS,ierr)
+    CALL ISDestroy(BCFld%CauchyIS,ierr)
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
