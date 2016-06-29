@@ -650,9 +650,6 @@ SUBROUTINE GetTopology_1(DataMngr,Tplgy,SizeTplgy,ierr)
     SizeTplgy(2:4)=BCLenG(:)
     SizeTplgy(1)=widthG(1)*widthG(3)*widthG(3)-(SizeTplgy(2)+SizeTplgy(3)+SizeTplgy(4))
 
-!     CALL GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
-!     TODO: arreglar esta fucnion
-
 END SUBROUTINE GetTopology_1
 
 SUBROUTINE GetTopology_2(DataMngr,Tplgy,SizeTplgy,ierr)
@@ -748,127 +745,7 @@ SUBROUTINE GetTopology_2(DataMngr,Tplgy,SizeTplgy,ierr)
     SizeTplgy(2:4)=BCLenG(:)
     SizeTplgy(1)=widthG(1)*widthG(3)*widthG(3)-(SizeTplgy(2)+SizeTplgy(3)+SizeTplgy(4))
 
-!     CALL GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
-!     TODO: arreglar esta fucnion
-
 END SUBROUTINE GetTopology_2
-
- !  - GetTopologyBC: It's a routine that creates the Boundary Condition Index Sets from Tplgy vector.
- !    > IN: DataMngr, Tplgy, BCLenG.
- !      + DataMngr: It's a DMDA PETSc structure that has stored the information related with a 
- !                 regular rectangular grid.
- !      + Tplgy: It's a PETSc vector type produced by DataMngr that contains a topology identifier
- !               in each cell.
- !          0: Inactive cell.
- !          1: Active cell.
- !          2: Dirichlet boundary condition cell.
- !          3: Source Q.
- !          4: Cauchy boundary condition
- !      + BCLenG: It's an Array that contains the global length of each Boundary Condition in the 
- !                following order: DirichIS, NeummanIS, CauchyIS, SourceIS.
- !    > OUT: DirichIS, NeummanIS, CauchyIS, SourceIS, ierr.
- !      + DirichIS: It's a PETSc index set that has a map between Dirichlet information and vecs 
- !                  produced by DataMngr.
- !      + SourceIS: It's a PETSc index set that has a map between Source information and vecs 
- !                   roduced by DataMngr.
- !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
- !                  produced by DataMngr.
- !      + ierr: It's an integer that indicates whether an error has occurred during the call.
-
-
-!     TODO: arreglar esta fucnion
-
-! SUBROUTINE GetTopologyBC(DataMngr,Tplgy,BCLenG,DirichIS,SourceIS,CauchyIS,ierr)
-
-!     USE ANISOFLOW_Interface, ONLY : GetVerbose
-
-!     IMPLICIT NONE
-
-! #include <petsc/finclude/petscsys.h>
-! #include <petsc/finclude/petscis.h>
-! #include <petsc/finclude/petscvec.h>
-! #include <petsc/finclude/petscvec.h90>
-
-!     PetscErrorCode,INTENT(INOUT)    :: ierr
-!     DM,INTENT(IN)                   :: DataMngr
-!     Vec,INTENT(IN)                  :: Tplgy
-!     PetscInt,INTENT(IN)             :: BCLenG(3)
-!     IS,INTENT(OUT)                  :: DirichIS,SourceIS,CauchyIS
-
-!     PetscInt,ALLOCATABLE            :: IndexDirich(:),IndexSource(:),IndexCauchy(:)
-!     PetscInt                        :: i,Low,High,Size,ValI,Count(3),SumaL(3),SumaG(3)
-!     PetscReal,POINTER               :: TmpTplgyArray(:)
-!     Vec                             :: TmpTplgy
-!     PetscBool                       :: Verbose
-
-!     CALL GetVerbose(Verbose,ierr)
-
-!     ALLOCATE(IndexDirich(BCLenG(1)))
-!     ALLOCATE(IndexSource(BCLenG(2)))
-!     ALLOCATE(IndexCauchy(BCLenG(3)))
-
-!     IndexDirich(:)=0
-!     IndexSource(:)=0
-!     IndexCauchy(:)=0
-
-!     CALL DMCreateGlobalVector(DataMngr,TmpTplgy,ierr)
-
-!     CALL DMLocalToGlobalBegin(DataMngr,Tplgy,INSERT_VALUES,  &
-!         & TmpTplgy,ierr)
-!     CALL DMLocalToGlobalEnd(DataMngr,Tplgy,INSERT_VALUES,    &
-!         & TmpTplgy,ierr)
-
-!     CALL VecGetOwnershipRange(TmpTplgy,Low,High,ierr)
-!     CALL VecGetSize(TmpTplgy,Size,ierr)
-
-!     CALL VecGetArrayReadF90(TmpTplgy,TmpTplgyArray,ierr)
-
-!     Count(:)=1
-
-!     DO i=0,Size
-!         SumaL(:)=0
-!         SumaG(:)=0
-!         IF ((i.GE.Low).AND.(i.LT.High)) THEN
-!             ValI=INT(TmpTplgyArray(i-Low+1))
-!             IF (ValI.EQ.2) THEN
-!                 IndexDirich(Count(1))=i
-!                 SumaL(1)=1
-!             ELSEIF (ValI.EQ.3) THEN
-!                 IndexSource(Count(2))=i
-!                 SumaL(2)=1
-!             ELSEIF (ValI.EQ.4) THEN
-!                 IndexCauchy(Count(3))=i
-!                 SumaL(3)=1
-!             END IF
-!         END IF
-!         CALL MPI_ALLREDUCE(SumaL,SumaG,3,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
-!         Count(:)=Count(:)+SumaG(:)
-!     END DO
-
-!     CALL VecRestoreArrayReadF90(TmpTplgy,TmpTplgyArray,ierr)
-
-!     CALL DMGlobalToLocalBegin(DataMngr,TmpTplgy,INSERT_VALUES,  &
-!         & Tplgy,ierr)
-!     CALL DMGlobalToLocalEnd(DataMngr,TmpTplgy,INSERT_VALUES,    &
-!         & Tplgy,ierr)
-
-!     CALL VecDestroy(TmpTplgy,ierr)
-
-!     CALL ISCreateGeneral(MPI_COMM_WORLD,BCLenG(1),IndexDirich,                 &
-!         & PETSC_COPY_VALUES,DirichIS,ierr)
-!     CALL ISCreateGeneral(PETSC_COMM_WORLD,BCLenG(2),IndexSource,               &
-!         & PETSC_COPY_VALUES,SourceIS,ierr)
-!     CALL ISCreateGeneral(PETSC_COMM_WORLD,BCLenG(3),IndexCauchy,               &
-!         & PETSC_COPY_VALUES,CauchyIS,ierr)
-
-
-!     DEALLOCATE(IndexDirich)
-!     DEALLOCATE(IndexSource)
-!     DEALLOCATE(IndexCauchy)
-
-!     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetGeometry Event] Boundary condition index sets of topology identifiers were satisfactorily created\n",ierr)
-
-! END SUBROUTINE GetTopologyBC
 
 SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
 
