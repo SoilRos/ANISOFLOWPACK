@@ -6,7 +6,7 @@ CONTAINS
 
 !This subrutine manage all subrutines related with upscaling procedures
 
-SUBROUTINE GetUpsclSystem(Gmtry,PptFld,BCFld,ierr)
+SUBROUTINE GetUpsclSystem(FineGmtry,PptFld,BCFld,ierr)
     USE ANISOFLOW_Types
     USE ANISOFLOW_Geometry
     USE ANISOFLOW_BuildSystem
@@ -17,7 +17,7 @@ SUBROUTINE GetUpsclSystem(Gmtry,PptFld,BCFld,ierr)
     IMPLICIT NONE
 
     PetscErrorCode,INTENT(INOUT)               :: ierr
-    TYPE(Geometry),INTENT(INOUT)               :: Gmtry
+    TYPE(Geometry),INTENT(INOUT)               :: FineGmtry
     TYPE(PropertyField),INTENT(INOUT)          :: PptFld
     TYPE(BoundaryConditions),INTENT(INOUT)     :: BCFld
 
@@ -40,22 +40,22 @@ SUBROUTINE GetUpsclSystem(Gmtry,PptFld,BCFld,ierr)
         DO j=UpsclCorn(2),UpsclCorn(2)+UpsclWidthL(2)-1
             DO i=UpsclCorn(1),UpsclCorn(1)+UpsclWidthL(1)-1
 
-                CALL GetFineBlockGmtry(Gmtry,UpsclGmtry,i,j,k,FineBlockGmtry,ierr)
+                CALL GetFineBlockGmtry(FineGmtry,UpsclGmtry,i,j,k,FineBlockGmtry,ierr)
 !                 DO w=1,8
-!                     CALL GetSystem(Gmtry,PptFld,BCFld,i,j,A,b,x,ierr)
-!                     CALL SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
+!                     CALL GetSystem(FineGmtry,PptFld,BCFld,i,j,A,b,x,ierr)
+!                     CALL SolveSystem(FineGmtry,PptFld,BCFld,A,b,x,ierr)
 !                 END DO
             END DO
         END DO
     END DO
 
-!     Gmtry=UpsclGmtry
+!     FineGmtry=UpsclGmtry
 
 
 
 END SUBROUTINE GetUpsclSystem
 
-!This subrutine construct the fine geometry related to a block of coarse geometry
+!This subrutine build the fine geometry related to a block of coarse geometry
 !i=Bloque iesimo
 !j=Bloque siguiente en direccion Y
 !Bloque siguiente en direccion Z
@@ -78,21 +78,21 @@ SUBROUTINE GetFineBlockGmtry(FineGmtry,UpsclGmtry,Ui,Uj,Uk,FineBlockGmtry,ierr)
     PetscInt                                    :: Bi,Bj,Bk !Block indices
     PetscInt                                    :: GridSize(3),Width(3)
     PetscReal                                   :: xB,xF,yB,yF,zB,zF
-    Vec                             :: TmpTplgy
-    PetscReal,POINTER               :: TmpTplgyArray(:,:,:)
+    Vec                                         :: TmpTplgy
+    PetscReal,POINTER                           :: TmpTplgyArray(:,:,:)
 
     ! Skin used in upscaling procedure
     PARAMETER(Skin=5) !TODO: Interface GetUpsclSkin
 
     ! Get grid -----------------------------
-    xB=UpsclGmtry%x(Ui)
-    xF=UpsclGmtry%x(Ui+1)
+!     xB=UpsclGmtry%x(Ui)
+!     xF=UpsclGmtry%x(Ui+1)
 
-    yB=UpsclGmtry%y(Uj)
-    yF=UpsclGmtry%y(Uj+1)
+!     yB=UpsclGmtry%y(Uj)
+!     yF=UpsclGmtry%y(Uj+1)
 
-    zB=UpsclGmtry%z(Uk)
-    zF=UpsclGmtry%z(Uk+1)
+!     zB=UpsclGmtry%z(Uk)
+!     zF=UpsclGmtry%z(Uk+1)
 
 
     FiB=BinarySearch(FineGmtry%x,xB)

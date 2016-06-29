@@ -290,7 +290,7 @@ SUBROUTINE GetGrid(Comm,DataMngr,x,y,z,Scale,ierr)
     MPI_Comm,INTENT(IN)                 :: Comm
     PetscInt,INTENT(IN)                 :: Scale
     DM,INTENT(IN)                       :: DataMngr
-    PetscReal,ALLOCATABLE,INTENT(OUT)   :: x(:),y(:),z(:)
+    Vec,INTENT(OUT)                     :: x,y,z
 
     TYPE(InputTypeVar)                  :: InputType
 
@@ -335,7 +335,7 @@ SUBROUTINE GetGrid_1(Comm,DataMngr,x,y,z,Scale,ierr)
     MPI_Comm,INTENT(IN)                 :: Comm
     PetscInt,INTENT(IN)                 :: Scale
     DM,INTENT(IN)                       :: DataMngr
-    PetscReal,ALLOCATABLE,INTENT(OUT)   :: x(:),y(:),z(:)
+    Vec,INTENT(OUT)                     :: x,y,z
 
     CHARACTER(LEN=200)                  :: InputDir,InputFileGmtry
     PetscInt                            :: widthG(3),size,i
@@ -357,31 +357,40 @@ SUBROUTINE GetGrid_1(Comm,DataMngr,x,y,z,Scale,ierr)
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
         & PETSC_NULL_INTEGER,ierr)
 
-    ! It create the arrays
+    ! It create the vectors
     size=widthG(1)+1
-    ALLOCATE(x(size))
+    CALL VecCreateSeq(PETSC_COMM_SELF,size,x,ierr)
 
     size=widthG(2)+1
-    ALLOCATE(y(size))
+    CALL VecCreateSeq(PETSC_COMM_SELF,size,y,ierr)
 
     size=widthG(3)+1
-    ALLOCATE(z(size))
+    CALL VecCreateSeq(PETSC_COMM_SELF,size,z,ierr)
 
     
-    DO i=1,widthG(1)+1
+    DO i=0,widthG(1)
         Value=REAL(i-1)
-        x(i)=Value
+        CALL VecSetValue(x,i,Value,INSERT_VALUES,ierr)
     END DO
-    DO i=1,widthG(2)+1
+    DO i=0,widthG(2)
         Value=REAL(i-1)
-        y(i)=Value
+        CALL VecSetValue(y,i,Value,INSERT_VALUES,ierr)
     END DO
-    DO i=1,widthG(3)+1
+    DO i=0,widthG(3)
         Value=REAL(i-1)
-        z(i)=Value
+        CALL VecSetValue(z,i,Value,INSERT_VALUES,ierr)
     END DO
     ! Default DX=DY=DZ=1.0
     IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] WARNING: Grid System wasn't provided. Default grid used has DX=DY=DZ=1.0\n",ierr)
+
+    CALL VecAssemblyBegin(x,ierr)
+    CALL VecAssemblyEnd(x,ierr)
+
+    CALL VecAssemblyBegin(y,ierr)
+    CALL VecAssemblyEnd(y,ierr)
+
+    CALL VecAssemblyBegin(z,ierr)
+    CALL VecAssemblyEnd(z,ierr)
 
     IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Grid System was satisfactorily created\n",ierr)
 
@@ -400,7 +409,7 @@ SUBROUTINE GetGrid_2(Comm,DataMngr,x,y,z,Scale,ierr)
     MPI_Comm,INTENT(IN)                 :: Comm
     PetscInt,INTENT(IN)                 :: Scale
     DM,INTENT(IN)                       :: DataMngr
-    PetscReal,ALLOCATABLE,INTENT(OUT)   :: x(:),y(:),z(:)
+    Vec,INTENT(OUT)                     :: x,y,z
 
     PetscMPIInt                         :: process
     CHARACTER(LEN=200)                  :: InputDir,InputFileGmtry,Route
@@ -426,15 +435,15 @@ SUBROUTINE GetGrid_2(Comm,DataMngr,x,y,z,Scale,ierr)
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
         & PETSC_NULL_INTEGER,ierr)
 
-    ! It create the arrays
+    ! It create the vectors
     size=widthG(1)+1
-    ALLOCATE(x(size))
+    CALL VecCreateSeq(PETSC_COMM_SELF,size,x,ierr)
 
     size=widthG(2)+1
-    ALLOCATE(y(size))
+    CALL VecCreateSeq(PETSC_COMM_SELF,size,y,ierr)
 
     size=widthG(3)+1
-    ALLOCATE(z(size))
+    CALL VecCreateSeq(PETSC_COMM_SELF,size,z,ierr)
 
     ! It tag every processor from 0 to n-1
     CALL MPI_Comm_rank(Comm,process,ierr)
@@ -448,36 +457,45 @@ SUBROUTINE GetGrid_2(Comm,DataMngr,x,y,z,Scale,ierr)
         READ(u,*)
     END IF
 
-    DO i=1,widthG(1)+1
+    DO i=0,widthG(1)
         IF (process.EQ.0) THEN
             READ(u, '(ES17.11)')Value
         END IF
         ! It broadcasts the global size to other processors.
         CALL MPI_Bcast(Value,1,MPI_DOUBLE, 0, Comm,ierr)
-        x(i)=Value
+        CALL VecSetValue(x,i,Value,INSERT_VALUES,ierr)
     END DO
     
-    DO i=1,widthG(2)+1
+    DO i=0,widthG(2)
         IF (process.EQ.0) THEN
             READ(u, '(ES17.11)')Value
         END IF
         ! It broadcasts the global size to other processors.
         CALL MPI_Bcast(Value,1,MPI_DOUBLE, 0, Comm,ierr)
-        y(i)=Value
+        CALL VecSetValue(y,i,Value,INSERT_VALUES,ierr)
     END DO
 
-    DO i=1,widthG(3)+1
+    DO i=0,widthG(3)
         IF (process.EQ.0) THEN
             READ(u, '(ES17.11)')Value
         END IF
         ! It broadcasts the global size to other processors.
         CALL MPI_Bcast(Value,1,MPI_DOUBLE, 0, Comm,ierr)
-        z(i)=Value
+        CALL VecSetValue(z,i,Value,INSERT_VALUES,ierr)
     END DO
 
     IF (process.EQ.0) THEN
         CLOSE(u)
     END IF
+
+    CALL VecAssemblyBegin(x,ierr)
+    CALL VecAssemblyEnd(x,ierr)
+
+    CALL VecAssemblyBegin(y,ierr)
+    CALL VecAssemblyEnd(y,ierr)
+
+    CALL VecAssemblyBegin(z,ierr)
+    CALL VecAssemblyEnd(z,ierr)
 
     IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Grid System was satisfactorily created\n",ierr)
 
@@ -1002,25 +1020,34 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
     TYPE(Property),INTENT(INOUT)        :: Ppt
     PetscErrorCode,INTENT(INOUT)        :: ierr
 
-    PetscReal,POINTER                   :: TmpTplgyArray(:,:,:)
-    PetscInt                            :: i,j,k
+    PetscReal,POINTER                   :: TmpTplgyArray(:,:,:),xArray(:),yArray(:),zArray(:)
+    PetscInt                            :: i,j,k,xSize,ySize,zSize
     TYPE(RunOptionsVar)                 :: RunOptions
 
     i=Ppt%Pstn%i
     j=Ppt%Pstn%j
     k=Ppt%Pstn%k
 
-    Ppt%dxB=Gmtry%x(i+1)-Gmtry%x(i)
-    Ppt%dx =Gmtry%x(i+2)-Gmtry%x(i+1)
-    Ppt%dxF=Gmtry%x(i+3)-Gmtry%x(i+2)
+    CALL VecGetSize(Gmtry%x,xSize,ierr)
+    CALL VecGetArrayReadF90(Gmtry%x,xArray,ierr)
+    Ppt%dxB=xArray(i+1)-xArray(i)
+    Ppt%dx =xArray(i+2)-xArray(i+1)
+    Ppt%dxF=xArray(i+3)-xArray(i+2)
+    CALL VecRestoreArrayReadF90(Gmtry%x,xArray,ierr)
 
-    Ppt%dyB=Gmtry%y(j+1)-Gmtry%y(j)
-    Ppt%dy =Gmtry%y(j+2)-Gmtry%y(j+1)
-    Ppt%dyF=Gmtry%y(j+3)-Gmtry%y(j+2)
+    CALL VecGetSize(Gmtry%y,ySize,ierr)
+    CALL VecGetArrayReadF90(Gmtry%y,yArray,ierr)
+    Ppt%dyB=yArray(j+1)-yArray(j)
+    Ppt%dy =yArray(j+2)-yArray(j+1)
+    Ppt%dyF=yArray(j+3)-yArray(j+2)
+    CALL VecRestoreArrayReadF90(Gmtry%y,yArray,ierr)
 
-    Ppt%dzB=Gmtry%z(k+1)-Gmtry%z(k)
-    Ppt%dz =Gmtry%z(k+2)-Gmtry%z(k+1)
-    Ppt%dzF=Gmtry%z(k+3)-Gmtry%z(k+2)
+    CALL VecGetSize(Gmtry%z,zSize,ierr)
+    CALL VecGetArrayReadF90(Gmtry%z,zArray,ierr)
+    Ppt%dyB=zArray(k+1)-zArray(k)
+    Ppt%dy =zArray(k+2)-zArray(k+1)
+    Ppt%dyF=zArray(k+3)-zArray(k+2)
+    CALL VecRestoreArrayReadF90(Gmtry%z,zArray,ierr)
 
     ! Revisar los diferenciales de x,y,z que se usan como dividendo, si los valores son cercanos a cero puede haber problemas!!!!
 
@@ -1102,9 +1129,9 @@ SUBROUTINE DestroyGeometry(Gmtry,ierr)
 
     CALL DMDestroy(Gmtry%DataMngr,ierr)
     CALL VecDestroy(Gmtry%Tplgy,ierr)
-    DEALLOCATE(Gmtry%x)
-    DEALLOCATE(Gmtry%y)
-    DEALLOCATE(Gmtry%z)
+    CALL VecDestroy(Gmtry%x,ierr)
+    CALL VecDestroy(Gmtry%y,ierr)
+    CALL VecDestroy(Gmtry%z,ierr)
     CALL ISDestroy(Gmtry%DirichIS,ierr)
     CALL ISDestroy(Gmtry%SourceIS,ierr)
     CALL ISDestroy(Gmtry%CauchyIS,ierr)

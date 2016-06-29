@@ -24,7 +24,7 @@ MODULE ANISOFLOW_Types
  !          2: Dirichlet boundary condition cell.
  !          3: Source in cell Q (It's treated as active cell).
  !          4: Cauchy boundary condition
- !      + x,y,z: It's an array of PETSc reals that contains the grid coordinates on each direction.
+ !      + x,y,z: x,y,z: It's a PETSc vector that contains the grid coordinates on each direction.
  !      + DirichIS: It's a PETSc index set that has a map between Dirichlet information and vecs 
  !                  produced by DataMngr.
  !      + SourceIS: It's a PETSc index set that has a map between Source information and vecs 
@@ -39,7 +39,7 @@ MODULE ANISOFLOW_Types
         PetscInt                        :: Scale=1
         DM                              :: DataMngr
         Vec                             :: Tplgy
-        PetscReal,ALLOCATABLE           :: x(:),y(:),z(:)
+        Vec                             :: x,y,z
         IS                              :: DirichIS,SourceIS,CauchyIS
     END TYPE Geometry
 
