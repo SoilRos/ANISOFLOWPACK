@@ -1,14 +1,14 @@
 # ANISOFLOW
 
-ANISOFLOW is still in development!!
-
-## Documentation
-
-To get an early documentation pdf, download it from [here](https://www.overleaf.com/read/trycqnfcynsp)
+**ANISOFLOW is still in development!!**
 
 ## Synopsis
 
 The main philosophy of ANISOFLOW is to capture the anisotropies of the medium into the flow, for that purpose the program has three ways to carry the calculus. The first one is the most usual method used to solve the groundwa- ter equation, a scheme of seven blocks on finite difference, used by MODFLOW and the most popular programs to analyze aquifers. The second one is the finite difference equation proposed by Li, et al (2014) using a scheme of 19 blocks. And the last one is a finite difference scheme of 19 blocks we have proposed to attack the anisotropy of the mediums.
+
+## Documentation
+
+To get an early documentation pdf, download it from [here](https://www.overleaf.com/read/trycqnfcynsp)
 
 ## Example
 
@@ -33,7 +33,7 @@ To test ANISOFLOW just run the bash files on the examples folders:
 
 ## Contributors
 
-Santiago Ospina De Los Ríos, Kevin Alverto Pérez, Oscar David Álvarez-Villa and Andrea Gómez
+Santiago Ospina De Los Ríos, Kevin Alverto Pérez, and Oscar David Álvarez-Villa
 
 ## License
 
