@@ -33,7 +33,7 @@ To test ANISOFLOW just run the bash files on the examples folders:
 
 ## Contributors
 
-Santiago Ospina De Los Ríos, Kevin Alverto Pérez, Oscar David Álvarez-Villa y Andrea Gómez
+Santiago Ospina De Los Ríos, Kevin Alverto Pérez, Oscar David Álvarez-Villa and Andrea Gómez
 
 ## License
 
