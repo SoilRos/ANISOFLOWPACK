@@ -17,19 +17,19 @@ Some examples of anisotropic flow are provided in **ex/** folder.
 ## Installation
 
 You have to have installed:
-* Fortran and C compiler
-* BLAS libraries
-* LACPACK libraries
-* MPICH libraries
-* PETSc 3.7 libraries
-* HDF5 parallel libraries connected with PETSc libraries (optional and recommend)
+* **Fortran** and **C** compiler
+* **BLAS** libraries
+* **LACPACK** libraries
+* **MPICH** libraries
+* **PETSc 3.7** libraries
+* **HDF5** parallel libraries connected with PETSc libraries (optional and recommend)
 
 Then, just compile the source files in **src/** folder with **make ANISOFLOW**
 
 ## Tests
 
 To test ANISOFLOW just run the bash files on the examples folders:
-ex/Blesset/Run.sh
+* **ex/Blesset/Run.sh**
 
 ## Contributors
 
@@ -37,6 +37,6 @@ Santiago Ospina De Los Ríos, Kevin Alverto Pérez, Oscar David Álvarez-Villa y
 
 ## License
 
-ANISOFLOW is Copyright, 2015-2016 National University of Colombia, Gotta Ingeniería S.A.S., the ANISOFLOW Development Team, and licensed under terms of the GNU General Public License (GPL). This includes all software, documentation, and associated materials.
+ANISOFLOW is Copyright, 2015-2016 **National University of Colombia**, **Gotta Ingeniería S.A.S.**, and the **ANISOFLOW Development Team**, licensed under terms of the **GNU General Public License (GPL)**. This includes all software, documentation, and associated materials.
 
 ANISOFLOW is free software, you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation.
