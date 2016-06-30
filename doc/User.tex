@@ -1,0 +1,23 @@
+\chapter{Using ANISOFLOW}
+
+Once ANISOFLOW has been installed, it can be executed as any other program on Unix systems; opening a Terminal and typing the name of the program there, then, pressing intro to execute.
+\begin{verbatim}
+> ANISOFLOW
+\end{verbatim}
+
+To give instructions to the program, like input parameters, output directories, solution parameters, and others, is needed to provide options before the word who call the program. For example, to provide a directory of input parameters you have to use an option of a list of options given in the chapter 5, in this case the option is ``\texttt{-Input\_dir}'' followed by the directory of yournput parameters.
+\begin{verbatim}
+> ANISOFLOW -Input_dir /input_test/ 
+\end{verbatim}
+
+Depending on the running options you will use, you have to provide several information to the program as input files. In general are needed a topology, a conductivity field and the boundary conditions. This information have to be provided in formatted documents, for more information about formatted documents supported please review the list of options and their explanation.
+
+\section{Domain}
+
+The calculus domain is a parallelepiped with a structured grid which form also parallelepiped cells within the domain.
+
+\section{Ordering}
+
+Every sequential notation of the cells in the program will have priority toward $x$-axis, later on $y$-axis, and finally on $z$-axis. Therefore, the identification of each cell have the same ordering starting on 1.\\
+
+Note it is an ordering to have a framework on inputs and outputs, but inside the program, that ordering has to switch to PETSc ordering in the parallel environment, however, as user you have not to be worried about.

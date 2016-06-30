@@ -3,14 +3,67 @@
 ANISOFLOW can be installed in Unix and Widows systems, but we highly recommend install it over Unix systems.
 
 \section{Prerequisites}
-To install ANISOFLOW you must have the following programs in your system working
+To install ANISOFLOW you must have the following programs in your system:
 \begin{itemize}
 \item Fortran and C compiler
 \item BLAS libraries
 \item LACPACK libraries
 \item MPICH libraries
+\item HDF5 libraries connected with PETSc libraries (optional and recommend)
 \item PETSc 3.7 libraries
-\item hdf5 libraries connected with PETSc libraries (optional and recommend)
 \end{itemize}
 
-By our experience, we know the most painful part of ANISOFLOW installation is their prerequisites, therefore, this chapter is focused of how to install those things in  Linux, Mac and Widows. 
+By our experience, we know the most painful part of ANISOFLOW installation is installing their prerequisites, therefore, this chapter is focused of how to install those things on Linux, Mac and Widows. 
+
+\section{Linux}
+\subsection{Preparing the system}
+...
+\subsection{Fortran and C compiler}
+...
+\subsection{BLAS and LAPACK libraries}
+...
+\subsection{MPICH libraries}
+...
+\subsection{HDF5 libraries}
+...
+\subsection{PETSc libraries}
+...
+\subsection{ANISOFLOW}
+...
+\section{Mac}
+The following procedures were tested on Mac OS X El Capitan 10.11.5, but you shouldn't have problems with older versions.
+
+\subsection{Preparing the system}
+From \texttt{App Store} download \texttt{xCode}, which is the basic developer tool in Mac OS. Although you don't have to use it to run the program, take care with their updates, because each time \texttt{xCode} is updated, is very probable you have to re-install everything which depends of \texttt{xCode}.\\
+
+Once \texttt{xCode} is installed is also needed a \texttt{Command Line Tool} to the \texttt{xCode}. It ca be downloaded from https://developer.apple.com/downloads/index.action/. Make sure \texttt{Command Line Tool} is the same version of the \texttt{xCode} you have installed.
+
+\subsection{Fortran and C compiler}
+http://hpc.sourceforge.net
+\subsection{BLAS and LAPACK libraries}
+Those libraries are usually installed on Mac OS and you don't have to be worried about.
+\subsection{MPICH libraries}
+The MPICH libraries can be installed automatically from PETSc, unfortunately, the version of MPICH installed from PETSc is incompatible with hdf5. If you don't want HDF5 libraries go to the PETSc installation section and just add \texttt{--download-mpich} in the configuration step.
+
+...
+...
+\subsection{HDF5 libraries}
+...
+\subsection{PETSc libraries}
+...
+\subsection{ANISOFLOW}
+...
+\section{Windows}
+\subsection{Preparing the system}
+...
+\subsection{Fortran and C compiler}
+...
+\subsection{BLAS and LAPACK libraries}
+...
+\subsection{MPICH libraries}
+...
+\subsection{HDF5 libraries}
+...
+\subsection{PETSc libraries}
+...
+\subsection{ANISOFLOW}
