@@ -99,13 +99,16 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
     ELSE ! Steady
 
         IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Steady solution inizialited\n",ierr)
-    
+   
+        Name="ANISOFLOW_b"
+        CALL ViewSolution(b,Name,EventName,ierr)
+
         CALL KSPSetOperators(Solver,A,A,ierr)
         CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,    &
             & PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)
         CALL KSPSetFromOptions(Solver,ierr)
         CALL KSPSolve(Solver,b,x,ierr)
-        
+
         Name="ANISOFLOW_Sol"
         CALL ViewSolution(x,Name,EventName,ierr)
 

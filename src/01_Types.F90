@@ -24,13 +24,13 @@ MODULE ANISOFLOW_Types
  !          2: Dirichlet boundary condition cell.
  !          3: Source in cell Q (It's treated as active cell).
  !          4: Cauchy boundary condition
- !      + x,y,z: x,y,z: It's a PETSc vector that contains the grid coordinates on each direction.
- !      + DirichIS: It's a PETSc index set that has a map between Dirichlet information and vecs 
- !                  produced by DataMngr.
- !      + SourceIS: It's a PETSc index set that has a map between Source information and vecs 
- !                   roduced by DataMngr.
- !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
- !                  produced by DataMngr.
+ !      + SizeTplgy: It's a array of integers that quantify the indentifiers of each type decribed above
+ !                   where inactive cells quantifier doesn't exist. It can be calculated with  the rest.
+ !          1: Active cell quantifier.
+ !          2: Dirichlet boundary condition cell quantifier.
+ !          3: Source in cell quantifier.
+ !          4: Cauchy boundary condition quantifier.
+ !      + x,y,z: It's a PETSc vector that contains the grid coordinates on each direction.
  !    > NOTES: The variables DirichIS, CauchyIS, NeummanIS and Source have redundant information 
  !             that are contained on Tplgy. In any case is needed to transfer the information to
  !             the system.
@@ -39,8 +39,8 @@ MODULE ANISOFLOW_Types
         PetscInt                        :: Scale=1
         DM                              :: DataMngr
         Vec                             :: Tplgy
+        PetscInt                        :: SizeTplgy(4)
         Vec                             :: x,y,z
-        IS                              :: DirichIS,SourceIS,CauchyIS
     END TYPE Geometry
 
 
@@ -186,6 +186,12 @@ MODULE ANISOFLOW_Types
  !                size as Neumman identifiers defined in Geometry data structure.
  !      + Cauchy: It's a PETSc vector with the values of the Cauchy cells. It must have the same 
  !                size as Cauchy identifiers defined in Geometry data structure.
+ !      + DirichIS: It's a PETSc index set that has a map between Dirichlet information and vecs 
+ !                  produced by DataMngr.
+ !      + SourceIS: It's a PETSc index set that has a map between Source information and vecs 
+ !                   roduced by DataMngr.
+ !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
+ !                  produced by DataMngr.
  !    > NOTES: The Index Sets defined in Geometry for each boundary condition point the value of  
  !             Dirich, Neumman, and Cauchy vectors to the real position of every global vector 
  !             created with DataMngr defined in Geometry.
@@ -193,6 +199,7 @@ MODULE ANISOFLOW_Types
     TYPE BoundaryConditions
         PetscInt                        :: SizeTimeZone,SizeDirich,SizeSource,SizeCauchy
         Vec,ALLOCATABLE                 :: Dirich(:),Source(:),Cauchy(:)
+        IS,ALLOCATABLE                  :: DirichIS(:),SourceIS(:),CauchyIS(:)
         TYPE(TimeZoneVar),ALLOCATABLE   :: TimeZone(:)
     END TYPE BoundaryConditions
 

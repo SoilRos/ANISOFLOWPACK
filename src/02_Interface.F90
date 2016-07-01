@@ -652,7 +652,7 @@ SUBROUTINE GetVerbose(Verbose,ierr)
 
     PetscBool                       :: VerboseFlg
 
-    CALL PetscOptionsGetBool(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-verbose",         &
+    CALL PetscOptionsGetBool(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Verbose",         &
         Verbose,VerboseFlg,ierr)
 
     IF (.NOT.VerboseFlg) THEN

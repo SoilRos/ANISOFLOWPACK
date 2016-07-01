@@ -44,7 +44,7 @@ PROGRAM ANISOFLOW
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(StageName))//" Stage] Finalized\n",ierr)
     CALL PetscLogStagePop(Stage,ierr)
 
-    StageName="Seting up ANISOFLOW"
+    StageName="Setting up ANISOFLOW"
     CALL PetscLogStageRegister(StageName, stage,ierr)
     CALL PetscLogStagePush(Stage,ierr)
 
