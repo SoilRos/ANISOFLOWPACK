@@ -369,15 +369,15 @@ SUBROUTINE GetGrid_1(Comm,DataMngr,Scale,x,y,z,ierr)
 
     
     DO i=0,widthG(1)
-        Value=REAL(i-1)
+        Value=REAL(i)
         CALL VecSetValue(x,i,Value,INSERT_VALUES,ierr)
     END DO
     DO i=0,widthG(2)
-        Value=REAL(i-1)
+        Value=REAL(i)
         CALL VecSetValue(y,i,Value,INSERT_VALUES,ierr)
     END DO
     DO i=0,widthG(3)
-        Value=REAL(i-1)
+        Value=REAL(i)
         CALL VecSetValue(z,i,Value,INSERT_VALUES,ierr)
     END DO
     ! Default DX=DY=DZ=1.0
@@ -545,7 +545,9 @@ SUBROUTINE GetTopology(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     END IF
 
     ! InputType define the type of file that is provided.
-    !   1: Default topology, it doesn't need a file. The first border layer is Dirichlet, active in other case.
+    !   1: From file
+    !   2: Border of first layer dirichlet
+    !   3: Borders dirichlet
     IF (InputType%Tplgy.EQ.1) THEN
         CALL GetTopology_1(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     ELSE IF (InputType%Tplgy.EQ.2) THEN
@@ -687,8 +689,6 @@ SUBROUTINE GetTopology_1(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
 
 END SUBROUTINE GetTopology_1
 
-! border of first layer dirichlet
-
 SUBROUTINE GetTopology_2(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetVerbose
@@ -783,9 +783,6 @@ SUBROUTINE GetTopology_2(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     SizeTplgy(1)=widthG(1)*widthG(3)*widthG(3)-(SizeTplgy(2)+SizeTplgy(3)+SizeTplgy(4))
 
 END SUBROUTINE GetTopology_2
-
-
-! bourders dirichlet
 
 SUBROUTINE GetTopology_3(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
 
@@ -925,9 +922,9 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
 
     CALL VecGetSize(Gmtry%z,zSize,ierr)
     CALL VecGetArrayReadF90(Gmtry%z,zArray,ierr)
-    Ppt%dyB=zArray(k+1)-zArray(k)
-    Ppt%dy =zArray(k+2)-zArray(k+1)
-    Ppt%dyF=zArray(k+3)-zArray(k+2)
+    Ppt%dzB=zArray(k+1)-zArray(k)
+    Ppt%dz =zArray(k+2)-zArray(k+1)
+    Ppt%dzF=zArray(k+3)-zArray(k+2)
     CALL VecRestoreArrayReadF90(Gmtry%z,zArray,ierr)
 
     ! Revisar los diferenciales de x,y,z que se usan como dividendo, si los valores son cercanos a cero puede haber problemas!!!!
