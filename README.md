@@ -29,11 +29,13 @@ Then, just compile the source files in **src/** folder with **make ANISOFLOW**
 ## Tests
 
 To test ANISOFLOW just run the bash files on the examples folders:
-* **ex/Blesset/Run.sh**
+* **ex/Blesset/ex.sh**
 
 ## Contributors
 
-Santiago Ospina De Los Ríos, Kevin Alverto Pérez, and Oscar David Álvarez-Villa
+* Santiago Ospina De Los Ríos
+* Kevin Alverto Pérez
+* Oscar David Álvarez-Villa
 
 ## License
 

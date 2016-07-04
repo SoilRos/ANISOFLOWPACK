@@ -38,7 +38,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
     PetscBool                               :: Verbose
     PetscLogEvent                           :: Event
     PetscClassId                            :: ClassID
-    PetscLogDouble                          :: EventFlops
+    PetscLogDouble                          :: EventFlops=0.d0
 
 
     ClassName="System"

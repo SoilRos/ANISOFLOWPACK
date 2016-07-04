@@ -32,7 +32,7 @@ SUBROUTINE GetGeometry(Comm,Gmtry,ierr)
     CHARACTER(LEN=200)              :: EventName,ClassName
     PetscLogEvent                   :: Event
     PetscClassId                    :: ClassID
-    PetscLogDouble                  :: EventFlops
+    PetscLogDouble                  :: EventFlops=0.d0
 
     ClassName="Geometry"
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
@@ -49,6 +49,7 @@ SUBROUTINE GetGeometry(Comm,Gmtry,ierr)
 
     IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
+    CALL PetscGetFlops(EventFlops,ierr)
     CALL PetscLogFlops(EventFlops,ierr)
     CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
@@ -1036,7 +1037,7 @@ SUBROUTINE DestroyGeometry(Gmtry,ierr)
     CHARACTER(LEN=200)              :: EventName,ClassName
     PetscLogEvent                   :: Event
     PetscClassId                    :: ClassID
-    PetscLogDouble                  :: EventFlops
+    PetscLogDouble                  :: EventFlops=0.d0
 
     ClassName="Geometry"
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)

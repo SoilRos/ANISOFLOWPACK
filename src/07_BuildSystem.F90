@@ -28,7 +28,7 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
     PetscBool                               :: Verbose
     PetscLogEvent                           :: Event
     PetscClassId                            :: ClassID
-    PetscLogDouble                          :: EventFlops
+    PetscLogDouble                          :: EventFlops=0.d0
 
     ClassName="System"
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
@@ -88,7 +88,7 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
     PetscBool                               :: Verbose
     PetscLogEvent                           :: Event
     PetscClassId                            :: ClassID
-    PetscLogDouble                          :: EventFlops
+    PetscLogDouble                          :: EventFlops=0.d0
 
     ClassName="System"
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
@@ -147,7 +147,7 @@ SUBROUTINE GetStencil(Ppt,Stencil,ierr)
     CHARACTER(LEN=200)                      :: EventName,ClassName
     PetscLogEvent                           :: Event
     PetscClassId                            :: ClassID
-    PetscLogDouble                          :: EventFlops
+    PetscLogDouble                          :: EventFlops=0.d0
 
     ClassName="System"
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)

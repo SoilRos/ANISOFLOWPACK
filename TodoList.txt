@@ -3,3 +3,4 @@
 3. Modulo de escalamiento con el método de la china.
 4. Agregar condiciones de Cauchy
 5. Hacer el User Manual
+6. Agregar los Flops a los eventos

@@ -21,7 +21,7 @@ SUBROUTINE GetProrperties(Gmtry,PptFld,ierr)
     PetscBool                           :: Verbose
     PetscLogEvent                       :: Event
     PetscClassId                        :: ClassID
-    PetscLogDouble                      :: EventFlops
+    PetscLogDouble                      :: EventFlops=0.d0
 
     ClassName="Property"
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
@@ -60,7 +60,7 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
     CHARACTER(LEN=200)                  :: EventName,ClassName
     PetscLogEvent                       :: Event
     PetscClassId                        :: ClassID
-    PetscLogDouble                      :: EventFlops
+    PetscLogDouble                      :: EventFlops=0.d0
 
     ClassName="Property"
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
@@ -571,7 +571,7 @@ SUBROUTINE DestroyProperties(PptFld,ierr)
     CHARACTER(LEN=200)                  :: EventName,ClassName
     PetscLogEvent                       :: Event
     PetscClassId                        :: ClassID
-    PetscLogDouble                      :: EventFlops
+    PetscLogDouble                      :: EventFlops=0.d0
 
     ClassName="Property"
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
