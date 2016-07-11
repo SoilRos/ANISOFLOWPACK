@@ -23,6 +23,7 @@ SUBROUTINE GetGeometry(Comm,Gmtry,ierr)
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
@@ -46,6 +47,10 @@ SUBROUTINE GetGeometry(Comm,Gmtry,ierr)
     CALL GetDataMngr(Comm,Gmtry%Scale,Gmtry%DataMngr,ierr)
     CALL GetGrid(Comm,Gmtry%DataMngr,Gmtry%Scale,Gmtry%x,Gmtry%y,Gmtry%z,ierr)
     CALL GetTopology(Comm,Gmtry%DataMngr,Gmtry%Scale,Gmtry%Tplgy,Gmtry%SizeTplgy,ierr)
+
+    ! Storing a permanet topology on pTplgy
+    CALL VecDuplicate(Gmtry%Tplgy,Gmtry%pTplgy,ierr)
+    CALL VecCopy(Gmtry%Tplgy,Gmtry%pTplgy,ierr)
 
     IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
@@ -880,6 +885,71 @@ SUBROUTINE GetTopology_3(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     SizeTplgy(1)=widthG(1)*widthG(3)*widthG(3)-(SizeTplgy(2)+SizeTplgy(3)+SizeTplgy(4))
 
 END SUBROUTINE GetTopology_3
+
+SUBROUTINE UpdateGmtry(Gmtry,DirichIS,SourceIS,CauchyIS,ierr)
+
+    USE ANISOFLOW_Types, ONLY : Geometry
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+
+    TYPE(Geometry),INTENT(INOUT)        :: Gmtry
+    IS,INTENT(IN)                       :: DirichIS,SourceIS,CauchyIS
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+
+    PetscInt                            :: SizeDirich,SizeSource,SizeCauchy
+    PetscReal                           :: rTwo=2.d0,rThree=3.d0,rFour=4.d0
+    Vec                                 :: TmpTplgy,vTwo,vThree,vFour
+    IS                                  :: NatOrderDirichIS,NatOrderSourceIS,NatOrderCauchyIS
+    VecScatter                          :: DirichScatter,SourceScatter,CauchyScatter
+
+
+    ! Copying topology from the permanent Topology
+    CALL VecCopy(Gmtry%pTplgy,Gmtry%Tplgy,ierr)
+
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,TmpTplgy,ierr)
+    CALL DMLocalToGlobalBegin(Gmtry%DataMngr,Gmtry%Tplgy,INSERT_VALUES,TmpTplgy,ierr)
+    CALL DMLocalToGlobalEnd(Gmtry%DataMngr,Gmtry%Tplgy,INSERT_VALUES,TmpTplgy,ierr)
+
+    CALL ISGetLocalSize(DirichIS,SizeDirich,ierr)
+    CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,SizeDirich,vTwo,ierr)
+    CALL VecSet(vTwo,rTwo,ierr)
+    CALL ISCreateStride(PETSC_COMM_WORLD,SizeDirich,0,1,NatOrderDirichIS,ierr)
+    CALL VecScatterCreate(vTwo,NatOrderDirichIS,TmpTplgy,DirichIS,DirichScatter,ierr)
+    CALL VecScatterBegin(DirichScatter,vTwo,TmpTplgy,INSERT_VALUES,SCATTER_FORWARD,ierr)
+    CALL VecScatterEnd(DirichScatter,vTwo,TmpTplgy,INSERT_VALUES,SCATTER_FORWARD,ierr)
+    CALL VecScatterDestroy(DirichScatter,ierr)
+    CALL VecDestroy(vTwo,ierr)
+    CALL ISDestroy(NatOrderDirichIS,ierr)
+
+    CALL ISGetLocalSize(SourceIS,SizeSource,ierr)
+    CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,SizeSource,vThree,ierr)
+    CALL VecSet(vThree,rThree,ierr)
+    CALL ISCreateStride(PETSC_COMM_WORLD,SizeSource,0,1,NatOrderSourceIS,ierr)
+    CALL VecScatterCreate(vThree,NatOrderSourceIS,TmpTplgy,SourceIS,SourceScatter,ierr)
+    CALL VecScatterBegin(SourceScatter,vThree,TmpTplgy,INSERT_VALUES,SCATTER_FORWARD,ierr)
+    CALL VecScatterEnd(SourceScatter,vThree,TmpTplgy,INSERT_VALUES,SCATTER_FORWARD,ierr)
+    CALL VecScatterDestroy(SourceScatter,ierr)
+    CALL VecDestroy(vThree,ierr)
+    CALL ISDestroy(NatOrderSourceIS,ierr)
+
+    CALL ISGetLocalSize(CauchyIS,SizeCauchy,ierr)
+    CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,SizeCauchy,vFour,ierr)
+    CALL VecSet(vFour,rFour,ierr)
+    CALL ISCreateStride(PETSC_COMM_WORLD,SizeCauchy,0,1,NatOrderCauchyIS,ierr)
+    CALL VecScatterCreate(vFour,NatOrderCauchyIS,TmpTplgy,CauchyIS,CauchyScatter,ierr)
+    CALL VecScatterBegin(CauchyScatter,vFour,TmpTplgy,INSERT_VALUES,SCATTER_FORWARD,ierr)
+    CALL VecScatterEnd(CauchyScatter,vFour,TmpTplgy,INSERT_VALUES,SCATTER_FORWARD,ierr)
+    CALL VecScatterDestroy(CauchyScatter,ierr)
+    CALL VecDestroy(vFour,ierr)
+    CALL ISDestroy(NatOrderCauchyIS,ierr)
+
+    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,TmpTplgy,INSERT_VALUES,Gmtry%Tplgy,ierr)
+    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,TmpTplgy,INSERT_VALUES,Gmtry%Tplgy,ierr)
+
+END SUBROUTINE UpdateGmtry
 
 SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
 

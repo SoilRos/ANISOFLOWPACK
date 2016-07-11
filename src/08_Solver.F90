@@ -20,7 +20,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 #include <petsc/finclude/petscviewer.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
-    TYPE(Geometry),INTENT(IN)               :: Gmtry
+    TYPE(Geometry),INTENT(INOUT)               :: Gmtry
     TYPE(PropertiesField),INTENT(IN)        :: PptFld
     TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
     Mat,INTENT(INOUT)                       :: A

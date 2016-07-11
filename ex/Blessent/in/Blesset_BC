@@ -13122,5 +13122,7 @@ DirichletBoundaryCondition(1       ): 13120
 268999      4.539172
 269000      4.537066
 269001      4.534512
-NeummanBoundaryCondition(1       ): 0
-CauchyBoundaryCondition(1       ): 0
+SourceBoundaryCondition (1       ): 0
+CauchyBoundaryCondition(1       ): 2
+ 83         5             100.0000
+ 134500     5             100.0000

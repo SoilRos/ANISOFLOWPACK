@@ -38,7 +38,7 @@ MODULE ANISOFLOW_Types
     TYPE Geometry
         PetscInt                        :: Scale=1
         DM                              :: DataMngr
-        Vec                             :: Tplgy
+        Vec                             :: Tplgy,pTplgy
         PetscInt                        :: SizeTplgy(4)
         Vec                             :: x,y,z
     END TYPE Geometry
@@ -80,11 +80,8 @@ MODULE ANISOFLOW_Types
  !          0: Inactive cell.
  !          1: Active cell.
  !          2: Dirichlet boundary condition cell.
- !          3: Neumman on x boundary condition cell.
- !          4: Neumman on y boundary condition cell.
- !          5: Neumman on z boundary condition cell.
- !          6: Cauchy boundary condition
- !          6: Source Q.
+ !          3: Source in cell Q (It's treated as active cell).
+ !          4: Cauchy boundary condition
  !      + dx,dy,dz: A real that describes the size of the central cell in the directions on x, y,
  !                  and z axis.
  !      + dxB,dyB,dzB: A real that describes the size of the backward cell in the directions on x, 
@@ -198,7 +195,7 @@ MODULE ANISOFLOW_Types
 
     TYPE BoundaryConditions
         PetscInt                        :: SizeTimeZone,SizeDirich,SizeSource,SizeCauchy
-        Vec,ALLOCATABLE                 :: Dirich(:),Source(:),Cauchy(:)
+        Vec,ALLOCATABLE                 :: Dirich(:),Source(:),CauchyC(:),CauchyHe(:)
         IS,ALLOCATABLE                  :: DirichIS(:),SourceIS(:),CauchyIS(:)
         TYPE(TimeZoneVar),ALLOCATABLE   :: TimeZone(:)
     END TYPE BoundaryConditions

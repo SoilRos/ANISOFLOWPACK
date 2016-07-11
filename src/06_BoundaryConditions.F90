@@ -72,7 +72,7 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
     PetscMPIInt                             :: process
     PetscInt                                :: u,i,j,ValI,CountTimeZone,CountDirich,CountSource,CountCauchy
     PetscInt,ALLOCATABLE                    :: IndexDirich(:),IndexSource(:),IndexCauchy(:)
-    PetscReal                               :: ValR,DT
+    PetscReal                               :: ValR1,ValR2,DT
     CHARACTER(LEN=200)                      :: InputFileBC,InputDir,Route
     CHARACTER(LEN=20)                       :: TextTimeZones
     CHARACTER(LEN=11)                       :: Text1TimeZone
@@ -107,7 +107,8 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
     ALLOCATE(BCFld%TimeZone(BCFld%SizeTimeZone))
     ALLOCATE(BCFld%Dirich(BCFld%SizeTimeZone))
     ALLOCATE(BCFld%Source(BCFld%SizeTimeZone))
-    ALLOCATE(BCFld%Cauchy(BCFld%SizeTimeZone))
+    ALLOCATE(BCFld%CauchyC(BCFld%SizeTimeZone))
+    ALLOCATE(BCFld%CauchyHe(BCFld%SizeTimeZone))
     ALLOCATE(BCFld%DirichIS(BCFld%SizeTimeZone))
     ALLOCATE(BCFld%SourceIS(BCFld%SizeTimeZone))
     ALLOCATE(BCFld%CauchyIS(BCFld%SizeTimeZone))
@@ -147,7 +148,7 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
         IF (BCFld%SizeDirich.GT.Gmtry%SizeTplgy(2)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Boundary condition file doesn't has the same number of dirichlet entries as topology file\n",ierr)
-            STOP
+!             STOP
         END IF
 
         CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeDirich,BCFld%Dirich(i),ierr)
@@ -156,9 +157,10 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
 
         IF (process.EQ.0) THEN
             DO j=1,BCFld%SizeDirich
-                READ(u, '(I12,F15.10)')ValI,ValR
+                READ(u, '(I12,F15.10)')ValI,ValR1
                 IndexDirich(j)=ValI-1
-                CALL VecSetValue(BCFld%Dirich(i),j-1,-ValR,INSERT_VALUES,ierr)
+                ! Dirich is saved in its negative form
+                CALL VecSetValue(BCFld%Dirich(i),j-1,-ValR1,INSERT_VALUES,ierr)
             END DO
         END IF
         
@@ -182,7 +184,7 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
         IF (BCFld%SizeSource.GT.Gmtry%SizeTplgy(3)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Boundary condition file doesn't has the same number of source entries as topology file\n",ierr)
-            STOP
+!             STOP
         END IF
 
         CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeSource,BCFld%Source(i),ierr)
@@ -191,9 +193,9 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
 
         IF (process.EQ.0) THEN
             DO j=1,BCFld%SizeSource
-                READ(u, '(I12,F15.10)')ValI,ValR
+                READ(u, '(I12,F15.10)')ValI,ValR1
                 IndexSource(j)=ValI-1
-                CALL VecSetValue(BCFld%Source(i),j-1,-ValR,INSERT_VALUES,ierr)
+                CALL VecSetValue(BCFld%Source(i),j-1,-ValR1,INSERT_VALUES,ierr)
             END DO
         END IF
 
@@ -217,17 +219,21 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
         IF (BCFld%SizeCauchy.GT.Gmtry%SizeTplgy(4)) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Boundary condition file doesn't has the same number of cauchy entries as topology file\n",ierr)
-            STOP
+!             STOP
         END IF
-        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeCauchy,BCFld%Cauchy(i),ierr)
+        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeCauchy,BCFld%CauchyC(i),ierr)
+        CALL VecDuplicate(BCFld%CauchyC(i),BCFld%CauchyHe(i),ierr)
 
         ALLOCATE(IndexCauchy(BCFld%SizeCauchy))
 
+        print*,"Arreglar entrada en BC!!!!"
         IF (process.EQ.0) THEN
             DO j=1,BCFld%SizeCauchy
-                READ(u, '(I12,F15.10)')ValI,ValR
+                READ(u, '(I12,F10.0,F10.0)')ValI,ValR1,ValR2
                 IndexCauchy(j)=ValI-1
-                CALL VecSetValue(BCFld%Cauchy(i),j-1,ValR,INSERT_VALUES,ierr)
+                ! Cauchy He is saved in its negative form
+                CALL VecSetValue(BCFld%CauchyC(i),j-1,ValR1,INSERT_VALUES,ierr)
+                CALL VecSetValue(BCFld%CauchyHe(i),j-1,-ValR2,INSERT_VALUES,ierr)
             END DO
         END IF
 
@@ -237,8 +243,10 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
         DEALLOCATE(IndexCauchy)
 
         CALL AOApplicationToPetscIS(AppOrd,BCFld%CauchyIS(i),ierr)
-        CALL VecAssemblyBegin(BCFld%Cauchy(i),ierr)
-        CALL VecAssemblyEnd(BCFld%Cauchy(i),ierr)
+        CALL VecAssemblyBegin(BCFld%CauchyC(i),ierr)
+        CALL VecAssemblyEnd(BCFld%CauchyC(i),ierr)
+        CALL VecAssemblyBegin(BCFld%CauchyHe(i),ierr)
+        CALL VecAssemblyEnd(BCFld%CauchyHe(i),ierr)
 
     END DO
 
@@ -279,7 +287,8 @@ SUBROUTINE DestroyBC(BCFld,ierr)
 
     CALL VecDestroy(BCFld%Dirich,ierr)
     CALL VecDestroy(BCFld%Source,ierr)
-    CALL VecDestroy(BCFld%Cauchy,ierr)
+    CALL VecDestroy(BCFld%CauchyC,ierr)
+    CALL VecDestroy(BCFld%CauchyHe,ierr)
     DO i=1,BCFld%SizeTimeZone
         DEALLOCATE(BCFld%TimeZone(i)%Time)
     END DO

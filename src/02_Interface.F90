@@ -473,7 +473,11 @@ SUBROUTINE GetOutputType(OutputType,ierr)
         & OutputTypeFlg,ierr)
 
     IF (OutputTypeFlg) THEN
-        IF (OutputTypeTmp.EQ.1) THEN
+        IF (OutputTypeTmp.EQ.0) THEN
+            OutputType%Tplgy=0
+            OutputType%Cvt=0
+            OutputType%Sol=0
+        ELSE IF (OutputTypeTmp.EQ.1) THEN
             OutputType%Tplgy=1
             OutputType%Cvt=1
             OutputType%Sol=1
@@ -522,7 +526,9 @@ SUBROUTINE GetOutputTypeTplgy(OutputType,ierr)
         & OutputTypeTplgyTmp,OutputTypeTplgyFlg,ierr)
 
     IF (OutputTypeTplgyFlg) THEN
-        IF (OutputTypeTplgyTmp.EQ.1) THEN
+        IF (OutputTypeTplgyTmp.EQ.0) THEN
+            OutputType%Tplgy=OutputTypeTplgyTmp
+        ELSE IF (OutputTypeTplgyTmp.EQ.1) THEN
             OutputType%Tplgy=OutputTypeTplgyTmp
         ELSE IF (OutputTypeTplgyTmp.EQ.2) THEN
             OutputType%Tplgy=OutputTypeTplgyTmp
@@ -555,7 +561,9 @@ SUBROUTINE GetOutputTypeCvt(OutputType,ierr)
         & OutputTypeCvtTmp,OutputTypeCvtFlg,ierr)
 
     IF (OutputTypeCvtFlg) THEN
-        IF (OutputTypeCvtTmp.EQ.1) THEN
+        IF (OutputTypeCvtTmp.EQ.0) THEN
+            OutputType%Cvt=OutputTypeCvtTmp
+        ELSE IF (OutputTypeCvtTmp.EQ.1) THEN
             OutputType%Cvt=OutputTypeCvtTmp
         ELSE IF (OutputTypeCvtTmp.EQ.2) THEN
             OutputType%Cvt=OutputTypeCvtTmp
@@ -588,7 +596,9 @@ SUBROUTINE GetOutputTypeSol(OutputType,ierr)
         & OutputTypeSolTmp,OutputTypeSolFlg,ierr)
 
     IF (OutputTypeSolFlg) THEN
-        IF (OutputTypeSolTmp.EQ.1) THEN
+        IF (OutputTypeSolTmp.EQ.0) THEN
+            OutputType%Sol=OutputTypeSolTmp
+        ELSE IF (OutputTypeSolTmp.EQ.1) THEN
             OutputType%Sol=OutputTypeSolTmp
         ELSE IF (OutputTypeSolTmp.EQ.2) THEN
             OutputType%Sol=OutputTypeSolTmp

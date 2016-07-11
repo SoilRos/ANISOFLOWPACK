@@ -7,6 +7,7 @@ CONTAINS
 SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,BoundaryConditions,RunOptionsVar
+    USE ANISOFLOW_Geometry, ONLY : UpdateGmtry
     USE ANISOFLOW_Interface, ONLY : GetRunOptions,GetVerbose
 
     IMPLICIT NONE
@@ -16,8 +17,8 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
 #include <petsc/finclude/petscmat.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
-    TYPE(Geometry),INTENT(IN)               :: Gmtry
-    TYPE(PropertiesField),INTENT(IN)          :: PptFld
+    TYPE(Geometry),INTENT(INOUT)            :: Gmtry
+    TYPE(PropertiesField),INTENT(IN)        :: PptFld
     TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
     PetscInt,INTENT(IN)                     :: TimeZone,TimeStep
     Mat,INTENT(INOUT)                       :: A
@@ -42,18 +43,21 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
     CALL GetRunOptions(RunOptions,ierr)
 
     IF ((TimeZone.EQ.1).AND.(TimeStep.EQ.1)) THEN
+        CALL UpdateGmtry(Gmtry,BCFld%DirichIS(TimeZone),BCFld%SourceIS(TimeZone),BCFld%CauchyIS(TimeZone),ierr)
         CALL BuildSystem(Gmtry,PptFld,A,ierr)
         CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr)
         CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
     END IF
 
     IF ((RunOptions%Time).AND..NOT.((TimeZone.EQ.1).AND.(TimeStep.EQ.1))) THEN
+!         CALL UpdateGmtry(Gmtry,DirichIS,SourceIS,CauchyIS,ierr)
+!         CALL BuildSystem(Gmtry,PptFld,A,ierr)
         CALL ApplyTimeDiff(BCFld,TimeZone,TimeStep,A,b,x,ierr)
     END IF
 
     CALL ApplyDirichlet(BCFld,TimeZone,b,ierr)
     CALL ApplySource(BCFld,TimeZone,b,ierr)
-    ! CALL ApplyCauchy(BCFld,TimeZone,A,b,ierr)
+    CALL ApplyCauchy(BCFld,TimeZone,A,b,ierr)
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
@@ -217,8 +221,8 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
     ! Initial stencil vaulues
     Stencil%Values(:)=zero
 
-    ! If the current cell is an active or source cell:
-    IF ((Ppt%StnclTplgy(4).EQ.1).OR.(Ppt%StnclTplgy(4).EQ.3)) THEN
+    ! If the current cell is an active, source, or cauchy cell:
+    IF ((Ppt%StnclTplgy(4).EQ.1).OR.(Ppt%StnclTplgy(4).EQ.3).OR.(Ppt%StnclTplgy(4).EQ.4)) THEN
 
         Stencil%idx_clmns(MatStencil_i,1) = i
         Stencil%idx_clmns(MatStencil_j,1) = j
@@ -257,7 +261,7 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_k,7) = k+1
         Stencil%Values(7)=2*Ppt%dx*Ppt%dy*Ppt%CvtFz%zz/(Ppt%dzF+Ppt%dz)
 
-    ELSEIF ((Ppt%StnclTplgy(4).EQ.2).OR.(Ppt%StnclTplgy(4).EQ.0)) THEN ! Dirichlet or inactive cell
+    ELSEIF ((Ppt%StnclTplgy(4).EQ.2).OR.(Ppt%StnclTplgy(4).EQ.0)) THEN ! Dirichlet, Cauchy or inactive cell
         Stencil%Values(4)=-one
     END IF
 
@@ -310,8 +314,8 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
     ! Initial stencil vaulues
     Stencil%Values(:)=zero
 
-    ! If the current cell is an active or source cell:
-    IF ((Ppt%StnclTplgy(10).EQ.1).OR.(Ppt%StnclTplgy(10).EQ.3)) THEN
+    ! If the current cell is an active, source, or cauchy cell:
+    IF ((Ppt%StnclTplgy(10).EQ.1).OR.(Ppt%StnclTplgy(10).EQ.3).OR.(Ppt%StnclTplgy(10).EQ.4)) THEN
 
     ! 1-S Bloque centro-detras-superior
         ! It sets the column position on the matrix
@@ -784,6 +788,70 @@ SUBROUTINE ApplySource(BCFld,TimeZone,b,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetSystem Event] Source terms properly implemented\n",ierr)
 
 END SUBROUTINE ApplySource
+
+SUBROUTINE ApplyCauchy(BCFld,TimeZone,A,b,ierr)
+
+    USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
+    USe ANISOFLOW_Interface, ONLY : GetVerbose
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+
+    PetscErrorCode,INTENT(INOUT)            :: ierr
+    TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
+    PetscInt,INTENT(IN)                     :: TimeZone
+    Vec,INTENT(INOUT)                       :: b
+    Mat,INTENT(INOUT)                       :: A
+
+    Vec                                     :: MultHC,MultHeC,DiagA,DiagApartial
+    VecScatter                              :: Scatter
+    IS                                      :: NaturalOrder
+    PetscBool                               :: Verbose
+
+!     CALL VecView(BCFld%CauchyHe(TimeZone),PETSC_VIEWER_STDOUT_WORLD,ierr)
+!     CALL VecView(BCFld%CauchyC(TimeZone),PETSC_VIEWER_STDOUT_WORLD,ierr)
+
+    CALL VecDuplicate(BCFld%CauchyHe(TimeZone),MultHC,ierr)
+    CALL VecDuplicate(BCFld%CauchyHe(TimeZone),MultHeC,ierr)
+    CALL VecDuplicate(BCFld%CauchyHe(TimeZone),DiagApartial,ierr)
+
+    CALL VecPointwiseMult(MultHeC,BCFld%CauchyC(TimeZone),BCFld%CauchyHe(TimeZone),ierr)
+
+!     CALL VecView(MultHeC,PETSC_VIEWER_STDOUT_WORLD,ierr)
+
+    CALL ISCreateStride(PETSC_COMM_WORLD,BCFld%SizeCauchy,0,1,NaturalOrder,ierr)
+    CALL VecScatterCreate(MultHeC,NaturalOrder,b,BCFld%CauchyIS(TimeZone),Scatter,ierr)
+
+    CALL VecScatterBegin(Scatter,MultHeC,b,ADD_VALUES,SCATTER_FORWARD,ierr)
+    CALL VecScatterEnd(Scatter,MultHeC,b,ADD_VALUES,SCATTER_FORWARD,ierr)
+
+    CALL VecDestroy(MultHeC,ierr)
+
+    CALL VecDuplicate(b,DiagA,ierr)
+    CALL MatGetDiagonal(A,DiagA,ierr)
+
+    CALL VecScatterBegin(Scatter,DiagA,DiagApartial,ADD_VALUES,SCATTER_REVERSE,ierr)
+    CALL VecScatterEnd(Scatter,DiagA,DiagApartial,ADD_VALUES,SCATTER_REVERSE,ierr)
+
+!     CALL VecView(DiagA,PETSC_VIEWER_STDOUT_WORLD,ierr)
+!     CALL VecView(DiagApartial,PETSC_VIEWER_STDOUT_WORLD,ierr)
+
+    CALL VecPointwiseMult(DiagApartial,BCFld%CauchyC(TimeZone),MultHC,ierr)
+
+    CALL VecScatterBegin(Scatter,DiagApartial,DiagA,ADD_VALUES,SCATTER_FORWARD,ierr)
+    CALL VecScatterEnd(Scatter,DiagApartial,DiagA,ADD_VALUES,SCATTER_FORWARD,ierr)
+
+    CALL MatDiagonalSet(A,diagA,INSERT_VALUES,ierr)
+
+    CALL VecScatterDestroy(Scatter,ierr)
+    CALL ISDestroy(NaturalOrder,ierr)
+
+    CALL GetVerbose(Verbose,ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetSystem Event] Source terms properly implemented\n",ierr)
+
+END SUBROUTINE ApplyCauchy
 
 SUBROUTINE ApplyTimeDiff(BCFld,TimeZone,TimeStep,A,b,x,ierr)
 
