@@ -10,7 +10,7 @@ MODULE ANISOFLOW_Types
 #include <petsc/finclude/petscdm.h>
 
  !  - Geometry: It's a data structure that manages every information needed related to geometry.
- !    > VARIABLES: Scale, DataMngr, Tplgy, DirichIS, CauchyIS, NeummanIS.
+ !    > VARIABLES: Scale, DataMngr, Tplgy, pTplgy, DirichIS, CauchyIS, NeummanIS.
  !      + Scale: It's a PETSc Integer that indentify the geometry scale
  !          1: Default scale when no other scalres are not being used, fine scale otherwise. Collectice
  !          2: Upscale geometry. Collective
@@ -18,12 +18,13 @@ MODULE ANISOFLOW_Types
  !      + DataMngr: It's a PETSc manager data for structured grid in 3 dimensions, providing general 
  !                  information on the grid to be managed in parallel programming.
  !      + Tplgy: It's a PETSc vector type produced by DataMngr that contains a topology identifier
- !               in each cell.
+ !               in each cell. It is changed over the time steps by the boundary condition file.
  !          0: Inactive cell.
  !          1: Active cell.
  !          2: Dirichlet boundary condition cell.
  !          3: Source in cell Q (It's treated as active cell).
- !          4: Cauchy boundary condition
+ !          4: Cauchy boundary conditio
+ !      + pTplgy: It's a PETSc vector which has the a permanent form of Tplgy; Provided by the topology file.
  !      + SizeTplgy: It's a array of integers that quantify the indentifiers of each type decribed above
  !                   where inactive cells quantifier doesn't exist. It can be calculated with  the rest.
  !          1: Active cell quantifier.
@@ -34,6 +35,8 @@ MODULE ANISOFLOW_Types
  !    > NOTES: The variables DirichIS, CauchyIS, NeummanIS and Source have redundant information 
  !             that are contained on Tplgy. In any case is needed to transfer the information to
  !             the system.
+ !             The variable SizeTplgy doesn't have inactive cell identificator because it can be obtained
+ !             from the others.
 
     TYPE Geometry
         PetscInt                        :: Scale=1
@@ -48,7 +51,7 @@ MODULE ANISOFLOW_Types
  !    > VARIABLES: xx, yy, zz, xy, xz, yz, yx, zx, zy.
  !      + xx,yy,zz,xy,xz,yz,yx,zx,zy: Property components.
  !    > NOTES: To use this structure is first needed filling the xx, yy, zz, xy, xz, and yz 
- !               components and then use TargetFullTensor subroutine to have (xy=yx, xz=zx, and 
+ !               components and then use TargetFullTensor subroutine to have symmetry (xy=yx, xz=zx, and 
  !               yz=zy). This process is required over every tensor created; after that is 
  !               guaranteed the symmetry on the tensor.
 

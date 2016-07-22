@@ -90,13 +90,10 @@ SUBROUTINE GetDataMngr(Comm,Scale,DataMngr,ierr)
     END IF
 
     ! InputType define the type of file that is provided.
-    !   1: Defined by Blessent. An example is provided in "../ex/Blessent/in/tsim_USMH.asc"
-    !   2: Defined by Perez. An example is provided in "../ex/Perez/in/sanpck.domnRST"
+    !   1 and 2: Defined by Perez. An example is provided in "../ex/Perez/in/sanpck.domnRST"
 
-    IF (InputType%Gmtry.EQ.1) THEN
+    IF ((InputType%Gmtry.EQ.1).OR.(InputType%Gmtry.EQ.2)) THEN
         CALL GetDataMngr_1(Comm,Scale,DataMngr,ierr)
-    ELSE IF (InputType%Gmtry.EQ.2) THEN
-        CALL GetDataMngr_2(Comm,Scale,DataMngr,ierr)
     ELSE
         CALL PetscSynchronizedPrintf(Comm, &
             & "[ERROR] Geometry InputType wrong\n",ierr)
@@ -105,93 +102,7 @@ SUBROUTINE GetDataMngr(Comm,Scale,DataMngr,ierr)
 
 END SUBROUTINE GetDataMngr
 
- !  - GetDataMngr_1: It's a routine that creates and fills the information related with a regular 
- !                   rectangular grid when InputType%Gmtry=1.
- !    > OUT: DataMngr, ierr.
- !      + DataMngr: It's a DMDA PETSc structure that stores the information related with a regular 
- !                 rectangular grid.
- !      + ierr: It's an integer that indicates whether an error has occurred during the call.
- !    > NOTES: The DataMngr takes the size of the domain and assign a subdomain to each processor.
-
 SUBROUTINE GetDataMngr_1(Comm,Scale,DataMngr,ierr)
-
-    USE ANISOFLOW_Types,        ONLY : RunOptionsVar
-    USE ANISOFLOW_Interface,    ONLY : GetInputDir,GetInputFileGmtry,GetRunOptions,GetVerbose
-
-    IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-
-    PetscErrorCode,INTENT(INOUT)    :: ierr
-    MPI_Comm,INTENT(IN)             :: Comm
-    PetscInt,INTENT(IN)             :: Scale
-    DM,INTENT(OUT)                  :: DataMngr
-
-    PetscMPIInt                     :: process
-    PetscInt                        :: u,widthG(3)
-    CHARACTER(LEN=200)              :: InputDir,InputFileGmtry,Route
-    TYPE(RunOptionsVar)             :: RunOptions
-    DMDAStencilType                 :: Stencil
-    PetscBool                       :: Verbose
-
-    PARAMETER(u=01)
-
-    CALL GetVerbose(Verbose,ierr)
-
-    ! It obtains the route to open a geometry file.
-    IF (Scale.EQ.1) THEN
-        CALL GetInputDir(InputDir,ierr)
-        CALL GetInputFileGmtry(InputFileGmtry,ierr)
-    END IF
-
-    ! It obtains run options.
-    CALL GetRunOptions(RunOptions,ierr)
-
-    CALL MPI_Comm_rank(Comm,process,ierr)
-
-    ! It obtains the global size of the domain on the first processor.
-    IF (process.EQ.0) THEN
-        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileGmtry))
-        OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
-
-        ! It gets the size of the domain 
-        READ(u, '((I10),(I10),(I10))')widthG(1),widthG(2),widthG(3)
-        CLOSE(u)
-    END IF
-
-    ! It broadcasts the global size to other processors.
-    CALL MPI_Bcast(widthG,3,MPI_INT,0, Comm,ierr)
-
-    ! It decides the stencil shape depending on the scheme used.
-    IF (RunOptions%Scheme.EQ.1) THEN
-        Stencil=DMDA_STENCIL_STAR
-    ELSEIF (RunOptions%Scheme.EQ.2) THEN
-        Stencil=DMDA_STENCIL_BOX
-    ELSE
-        CALL PetscSynchronizedPrintf(Comm,                         &
-            & "[ERROR] Run_options_scheme command must be an integer between 1 and 2\n",ierr)
-        STOP
-    END IF
-
-    ! It creates the Data Manager to Distributed Arrays by the information provided.
-    IF (widthG(3).NE.1) THEN
-        CALL DMDACreate3d(Comm,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
-            & DM_BOUNDARY_GHOSTED,Stencil,widthG(1),widthG(2),widthG(3),     &
-            & PETSC_DECIDE,PETSC_DECIDE,PETSC_DECIDE,1,1,PETSC_NULL_INTEGER,       &
-            & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,DataMngr,ierr)
-    ELSE
-        CALL DMDACreate2d(Comm,DM_BOUNDARY_GHOSTED,DM_BOUNDARY_GHOSTED,      &
-            & Stencil,widthG(1),widthG(2),PETSC_DECIDE,PETSC_DECIDE,1,1,PETSC_NULL_INTEGER,       &
-            & PETSC_NULL_INTEGER,DataMngr,ierr)
-    END IF
-
-    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Data Manager was satisfactorily created\n",ierr)
-
-END SUBROUTINE GetDataMngr_1
-
-SUBROUTINE GetDataMngr_2(Comm,Scale,DataMngr,ierr)
 
     USE ANISOFLOW_Types,        ONLY : RunOptionsVar
     USE ANISOFLOW_Interface,    ONLY : GetInputDir,GetInputFileGmtry,GetRunOptions,GetVerbose
@@ -236,9 +147,9 @@ SUBROUTINE GetDataMngr_2(Comm,Scale,DataMngr,ierr)
         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
 
         ! It gets the size of the domain 
-        READ(u, '((A10),(I10))')aux,widthG(1)
-        READ(u, '((A10),(I10))')aux,widthG(2)
-        READ(u, '((A10),(I10))')aux,widthG(3)
+        READ(u,*)aux,widthG(1)
+        READ(u,*)aux,widthG(2)
+        READ(u,*)aux,widthG(3)
         CLOSE(u)
     END IF
 
@@ -270,7 +181,7 @@ SUBROUTINE GetDataMngr_2(Comm,Scale,DataMngr,ierr)
 
     IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Data Manager was satisfactorily created\n",ierr)
 
-END SUBROUTINE GetDataMngr_2
+END SUBROUTINE GetDataMngr_1
 
  !  - GetGrid: It's a routine that creates and fills the information related with a a coordinates of
  !             a regular rectangular grid.
@@ -306,6 +217,8 @@ SUBROUTINE GetGrid(Comm,DataMngr,Scale,x,y,z,ierr)
 
     ! InputType define the type of file that is provided.
     !   1: Defined by default. Default grid used has DX=DY=DZ=1.0
+    !   2: Defined by Perez. An example is provided in "../ex/Perez/in/sanpck.domnRST"
+
     IF (InputType%Gmtry.EQ.1) THEN
         CALL GetGrid_1(Comm,DataMngr,Scale,x,y,z,ierr)
     ELSE IF (InputType%Gmtry.EQ.2) THEN
@@ -465,7 +378,7 @@ SUBROUTINE GetGrid_2(Comm,DataMngr,Scale,x,y,z,ierr)
 
     DO i=0,widthG(1)
         IF (process.EQ.0) THEN
-            READ(u, '(ES17.11)')Value
+            READ(u,*)Value
         END IF
         ! It broadcasts the global size to other processors.
         CALL MPI_Bcast(Value,1,MPI_DOUBLE, 0, Comm,ierr)
@@ -474,7 +387,7 @@ SUBROUTINE GetGrid_2(Comm,DataMngr,Scale,x,y,z,ierr)
     
     DO i=0,widthG(2)
         IF (process.EQ.0) THEN
-            READ(u, '(ES17.11)')Value
+            READ(u,*)Value
         END IF
         ! It broadcasts the global size to other processors.
         CALL MPI_Bcast(Value,1,MPI_DOUBLE, 0, Comm,ierr)
@@ -483,7 +396,7 @@ SUBROUTINE GetGrid_2(Comm,DataMngr,Scale,x,y,z,ierr)
 
     DO i=0,widthG(3)
         IF (process.EQ.0) THEN
-            READ(u, '(ES17.11)')Value
+            READ(u,*)Value
         END IF
         ! It broadcasts the global size to other processors.
         CALL MPI_Bcast(Value,1,MPI_DOUBLE, 0, Comm,ierr)
@@ -567,9 +480,7 @@ SUBROUTINE GetTopology(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     END IF
 
     IF ((SizeTplgy(2)+SizeTplgy(3)+SizeTplgy(4)).EQ.0) THEN
-        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "[ERROR] It has to have at least one boundary condition.\n",ierr)
-        STOP
+        ! Imprimir un mensaje de advertencia, no está mal, pero obliga a que se agregen condiciones de frontera "temporales".
     END IF
 
 END SUBROUTINE GetTopology
@@ -710,7 +621,7 @@ SUBROUTINE GetTopology_2(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
-    PetscInt,INTENT(IN)             :: Scale ! Here it do nothing, but it's keeped just to maintain syntax
+    PetscInt,INTENT(IN)             :: Scale ! Here, it do nothing, but it's keeped just to maintain the syntax.
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
     PetscInt,INTENT(OUT)            :: SizeTplgy(4)

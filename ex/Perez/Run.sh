@@ -1,13 +1,13 @@
 
 
 ProgramDir=../../src/
-ProgramName=ANISOFLOW.exe
+ProgramName=ANISOFLOW
 
 np=2														# Number of processors to be used
 
 
 InputType=1													# Input files type
-InputTypeTplgy=2 											# Input toplogy file type
+InputTypeTplgy=1 											# Input toplogy file type
 InputTypeGmtry=2 											# Input gemoetry file type
 InputTypeCvt=2
 InputDir=in/ 												# Input directory

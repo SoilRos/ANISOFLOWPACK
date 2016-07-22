@@ -28,7 +28,7 @@ SUBROUTINE GetInputDir(InputDir,ierr)
 
     CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_dir",InputDir,     &
         & InputDirFlg,ierr)
-    IF (.NOT.InputDirFlg) InputDir="/"
+    IF (.NOT.InputDirFlg) InputDir=""
     InputDir=TRIM(InputDir)
 
 END SUBROUTINE GetInputDir
@@ -98,8 +98,8 @@ END SUBROUTINE GetInputType
  !                     and BC=1. See InputType definition for more information.
  !             or use "-Input_type_gmtry" followed by an integer that the file type to use as input 
  !             geometry:
- !                  1: Defined by Blessent. An example is provided in "../ex/Blessent/in/tsim_USMH.asc"
- !                  2: Defined by Perez. An example is provided in "../ex/Perez/in/sanpck.domnRST"
+ !                  1 and 2: Defined by Perez. An example is provided in "../ex/Perez/in/sanpck.domnRST"
+ !                  1 has a default grid, 2 porvided by the file but both has the same syntax.
 
 SUBROUTINE GetInputTypeGmtry(InputType,ierr)
 
@@ -120,7 +120,7 @@ SUBROUTINE GetInputTypeGmtry(InputType,ierr)
     IF (InputTypeGmtryFlg) THEN
         IF (InputTypeGmtryTmp.EQ.1) THEN
             InputType%Gmtry=InputTypeGmtryTmp
-        ELSE IF (InputTypeGmtryTmp.EQ.2) THEN
+        ELSEIF (InputTypeGmtryTmp.EQ.2) THEN
             InputType%Gmtry=InputTypeGmtryTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
@@ -257,6 +257,8 @@ SUBROUTINE GetInputTypeBC(InputType,ierr)
 
     IF (InputTypeBCFlg) THEN
         IF (InputTypeBCTmp.EQ.1) THEN
+            InputType%BC=InputTypeBCTmp
+        ELSEIF (InputTypeBCTmp.EQ.2) THEN
             InputType%BC=InputTypeBCTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
@@ -448,7 +450,7 @@ SUBROUTINE GetOutputDir(OutputDir,ierr)
 
     CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Output_dir",OutputDir,     &
         & OutputDirFlg,ierr)
-    IF (.NOT.OutputDirFlg) OutputDir="/"
+    IF (.NOT.OutputDirFlg) OutputDir=""
     OutputDir=TRIM(OutputDir)
 
 END SUBROUTINE GetOutputDir

@@ -41,6 +41,8 @@ SUBROUTINE GetBC(Gmtry,BCFld,ierr)
 
     IF (InputType%BC.EQ.1) THEN
         CALL GetBC_1(Gmtry,BCFld,ierr)
+    ELSEIF (InputType%BC.EQ.2) THEN
+        CALL GetBC_2(Gmtry,BCFld,ierr)
     ELSE 
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Boundary Condition InputType wrong\n",ierr)
@@ -74,13 +76,7 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
     PetscInt,ALLOCATABLE                    :: IndexDirich(:),IndexSource(:),IndexCauchy(:)
     PetscReal                               :: ValR1,ValR2,DT
     CHARACTER(LEN=200)                      :: InputFileBC,InputDir,Route
-    CHARACTER(LEN=20)                       :: TextTimeZones
-    CHARACTER(LEN=11)                       :: Text1TimeZone
-    CHARACTER(LEN=3)                        :: Text2TimeZone,Text2Dirich,Text2Source,Text2Cauchy
-    CHARACTER(LEN=4)                        :: TextDT
-    CHARACTER(LEN=27)                       :: Text1Dirich
-    CHARACTER(LEN=25)                       :: Text1Source
-    CHARACTER(LEN=24)                       :: Text1Cauchy
+    CHARACTER(LEN=200)                      :: aux
     PetscBool                               :: Verbose
     AO                                      :: AppOrd
 
@@ -98,8 +94,7 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
     IF (process.EQ.0) THEN
         Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileBC))
         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
-        READ(u,'(A20,I8)')TextTimeZones,BCFld%SizeTimeZone
-        ! Imprimir errores de lectura de texto
+        READ(u,*)aux,BCFld%SizeTimeZone
     END IF
 
     CALL MPI_Bcast(BCFld%SizeTimeZone,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
@@ -116,15 +111,14 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
     DO i=1,BCFld%SizeTimeZone
         ! TIME
         IF (process.EQ.0) THEN
-            READ(u,'(A9,I8,A3,I8)')Text1TimeZone,CountTimeZone,Text2TimeZone,BCFld%TimeZone(i)%SizeTime
-            ! Imprimir errores de lectura de texto
+            READ(u,*)aux,CountTimeZone,aux,BCFld%TimeZone(i)%SizeTime
         END IF
 
         CALL MPI_Bcast(BCFld%TimeZone(i)%SizeTime,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
         ALLOCATE(BCFld%TimeZone(i)%Time(BCFld%TimeZone(i)%SizeTime))
 
         IF (process.EQ.0) THEN
-            READ(u,'(A4,F15.10)')TextDT,DT
+            READ(u,*)aux,DT
             DO j=1,BCFld%TimeZone(i)%SizeTime
                 IF ((i.EQ.1).AND.(j.EQ.1)) THEN
                     BCFld%TimeZone(1)%Time(1)=0.0
@@ -139,120 +133,369 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
 
         ! Dirichlet
         IF (process.EQ.0) THEN
-            READ(u,'(A27,I8,A3,I8)')Text1Dirich,CountDirich,Text2Dirich,BCFld%SizeDirich
-            ! TODO:Imprimir errores de lectura de texto
+            READ(u,*)aux,CountDirich,aux,BCFld%SizeDirich
         END IF
         
         CALL MPI_Bcast(BCFld%SizeDirich,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
+        CALL MPI_Bcast(CountDirich,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
 
-        IF (BCFld%SizeDirich.GT.Gmtry%SizeTplgy(2)) THEN
+        IF (CountDirich.NE.i) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "[ERROR] Boundary condition file doesn't has the same number of dirichlet entries as topology file\n",ierr)
-!             STOP
+            & "[ERROR] Boundary condition file has to have a natural order on dirichlet identificators\n",ierr)
+            STOP
+            ! De hecho se pueden entrar pero es mejor restringirlo para que los archivos de entrada sean organizados
         END IF
 
-        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeDirich,BCFld%Dirich(i),ierr)
+        IF (BCFld%SizeDirich.GT.Gmtry%SizeTplgy(2)) THEN
+!             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+!             & "[ERROR] Boundary condition file doesn't has the same number of dirichlet entries as topology file\n",ierr)
+!             STOP
+            ! Si entra en este condicional significa que las condiciones de frontera no son permanentes.
+        END IF
+
+        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeDirich,BCFld%Dirich(CountDirich),ierr)
         
         ALLOCATE(IndexDirich(BCFld%SizeDirich))
 
         IF (process.EQ.0) THEN
             DO j=1,BCFld%SizeDirich
-                READ(u, '(I12,F15.10)')ValI,ValR1
+                READ(u, *)ValI,ValR1
                 IndexDirich(j)=ValI-1
                 ! Dirich is saved in its negative form
-                CALL VecSetValue(BCFld%Dirich(i),j-1,-ValR1,INSERT_VALUES,ierr)
+                CALL VecSetValue(BCFld%Dirich(CountDirich),j-1,-ValR1,INSERT_VALUES,ierr)
             END DO
         END IF
         
         CALL MPI_Bcast(IndexDirich,BCFld%SizeDirich,MPI_INT,0, PETSC_COMM_WORLD,ierr)
-        CALL ISCreateGeneral(MPI_COMM_WORLD,BCFld%SizeDirich,IndexDirich,PETSC_COPY_VALUES,BCFld%DirichIS(i),ierr)
+        CALL ISCreateGeneral(MPI_COMM_WORLD,BCFld%SizeDirich,IndexDirich,PETSC_COPY_VALUES,BCFld%DirichIS(CountDirich),ierr)
 
         DEALLOCATE(IndexDirich)
 
-        CALL AOApplicationToPetscIS(AppOrd,BCFld%DirichIS(i),ierr)
-        CALL VecAssemblyBegin(BCFld%Dirich(i),ierr)
-        CALL VecAssemblyEnd(BCFld%Dirich(i),ierr)
+        CALL AOApplicationToPetscIS(AppOrd,BCFld%DirichIS(CountDirich),ierr)
+        CALL VecAssemblyBegin(BCFld%Dirich(CountDirich),ierr)
+        CALL VecAssemblyEnd(BCFld%Dirich(CountDirich),ierr)
         
         ! Source
         IF (process.EQ.0) THEN
-            READ(u,'(A25,I8,A3,I8)')Text1Source,CountSource,Text2Source,BCFld%SizeSource
-            ! Imprimir errores de lectura de texto
+            READ(u,*)aux,CountSource,aux,BCFld%SizeSource
         END IF
 
         CALL MPI_Bcast(BCFld%SizeSource,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
+        CALL MPI_Bcast(CountSource,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
 
-        IF (BCFld%SizeSource.GT.Gmtry%SizeTplgy(3)) THEN
+        IF (CountSource.NE.i) THEN
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "[ERROR] Boundary condition file doesn't has the same number of source entries as topology file\n",ierr)
-!             STOP
+            & "[ERROR] Boundary condition file has to have a natural order on source identificators\n",ierr)
+            STOP
+            ! De hecho se pueden entrar pero es mejor restringirlo para que los archivos de entrada sean organizados
         END IF
 
-        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeSource,BCFld%Source(i),ierr)
+        IF (BCFld%SizeSource.GT.Gmtry%SizeTplgy(3)) THEN
+!             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+!             & "[ERROR] Boundary condition file doesn't has the same number of dirichlet entries as topology file\n",ierr)
+!             STOP
+            ! Si entra en este condicional significa que las condiciones de frontera no son permanentes.
+        END IF
+
+        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeSource,BCFld%Source(CountSource),ierr)
 
         ALLOCATE(IndexSource(BCFld%SizeSource))
 
         IF (process.EQ.0) THEN
             DO j=1,BCFld%SizeSource
-                READ(u, '(I12,F15.10)')ValI,ValR1
+                READ(u,*)ValI,ValR1
                 IndexSource(j)=ValI-1
-                CALL VecSetValue(BCFld%Source(i),j-1,-ValR1,INSERT_VALUES,ierr)
+                CALL VecSetValue(BCFld%Source(CountSource),j-1,-ValR1,INSERT_VALUES,ierr)
             END DO
         END IF
 
         CALL MPI_Bcast(IndexSource,BCFld%SizeSource,MPI_INT,0, PETSC_COMM_WORLD,ierr)
-        CALL ISCreateGeneral(MPI_COMM_WORLD,BCFld%SizeSource,IndexSource,PETSC_COPY_VALUES,BCFld%SourceIS(i),ierr)
+        CALL ISCreateGeneral(MPI_COMM_WORLD,BCFld%SizeSource,IndexSource,PETSC_COPY_VALUES,BCFld%SourceIS(CountSource),ierr)
 
         DEALLOCATE(IndexSource)
 
-        CALL AOApplicationToPetscIS(AppOrd,BCFld%SourceIS(i),ierr)
-        CALL VecAssemblyBegin(BCFld%Source(i),ierr)
-        CALL VecAssemblyEnd(BCFld%Source(i),ierr)
+        CALL AOApplicationToPetscIS(AppOrd,BCFld%SourceIS(CountSource),ierr)
+        CALL VecAssemblyBegin(BCFld%Source(CountSource),ierr)
+        CALL VecAssemblyEnd(BCFld%Source(CountSource),ierr)
 
         ! Cauchy
         IF (process.EQ.0) THEN
-            READ(u,'(A24,I8,A3,I8)')Text1Cauchy,CountCauchy,Text2Cauchy,BCFld%SizeCauchy
-            ! Imprimir errores de lectura de texto
+            READ(u,*)aux,CountCauchy,aux,BCFld%SizeCauchy
         END IF
 
         CALL MPI_Bcast(BCFld%SizeCauchy,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
+        CALL MPI_Bcast(CountCauchy,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
+
+        IF (CountCauchy.NE.i) THEN
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+            & "[ERROR] Boundary condition file has to have a natural order on cauchy identificators\n",ierr)
+            STOP
+            ! De hecho se pueden entrar pero es mejor restringirlo para que los archivos de entrada sean organizados
+        END IF
 
         IF (BCFld%SizeCauchy.GT.Gmtry%SizeTplgy(4)) THEN
-            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "[ERROR] Boundary condition file doesn't has the same number of cauchy entries as topology file\n",ierr)
+!             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+!             & "[ERROR] Boundary condition file doesn't has the same number of dirichlet entries as topology file\n",ierr)
 !             STOP
+            ! Si entra en este condicional significa que las condiciones de frontera no son permanentes.
         END IF
-        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeCauchy,BCFld%CauchyC(i),ierr)
-        CALL VecDuplicate(BCFld%CauchyC(i),BCFld%CauchyHe(i),ierr)
+
+        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeCauchy,BCFld%CauchyC(CountCauchy),ierr)
+        CALL VecDuplicate(BCFld%CauchyC(CountCauchy),BCFld%CauchyHe(CountCauchy),ierr)
 
         ALLOCATE(IndexCauchy(BCFld%SizeCauchy))
 
-        print*,"Arreglar entrada en BC!!!!"
         IF (process.EQ.0) THEN
             DO j=1,BCFld%SizeCauchy
-                READ(u, '(I12,F10.0,F10.0)')ValI,ValR1,ValR2
+                READ(u,*)ValI,ValR1,ValR2
                 IndexCauchy(j)=ValI-1
-                ! Cauchy He is saved in its negative form
-                CALL VecSetValue(BCFld%CauchyC(i),j-1,ValR1,INSERT_VALUES,ierr)
-                CALL VecSetValue(BCFld%CauchyHe(i),j-1,-ValR2,INSERT_VALUES,ierr)
+                ! Cauchy "He" is saved in its negative form
+                CALL VecSetValue(BCFld%CauchyC(CountCauchy),j-1,ValR1,INSERT_VALUES,ierr)
+                CALL VecSetValue(BCFld%CauchyHe(CountCauchy),j-1,-ValR2,INSERT_VALUES,ierr)
             END DO
         END IF
 
         CALL MPI_Bcast(IndexCauchy,BCFld%SizeCauchy,MPI_INT,0, PETSC_COMM_WORLD,ierr)
-        CALL ISCreateGeneral(MPI_COMM_WORLD,BCFld%SizeCauchy,IndexCauchy,PETSC_COPY_VALUES,BCFld%CauchyIS(i),ierr)
+        CALL ISCreateGeneral(MPI_COMM_WORLD,BCFld%SizeCauchy,IndexCauchy,PETSC_COPY_VALUES,BCFld%CauchyIS(CountCauchy),ierr)
 
         DEALLOCATE(IndexCauchy)
 
-        CALL AOApplicationToPetscIS(AppOrd,BCFld%CauchyIS(i),ierr)
-        CALL VecAssemblyBegin(BCFld%CauchyC(i),ierr)
-        CALL VecAssemblyEnd(BCFld%CauchyC(i),ierr)
-        CALL VecAssemblyBegin(BCFld%CauchyHe(i),ierr)
-        CALL VecAssemblyEnd(BCFld%CauchyHe(i),ierr)
+        CALL AOApplicationToPetscIS(AppOrd,BCFld%CauchyIS(CountCauchy),ierr)
+        CALL VecAssemblyBegin(BCFld%CauchyC(CountCauchy),ierr)
+        CALL VecAssemblyEnd(BCFld%CauchyC(CountCauchy),ierr)
+        CALL VecAssemblyBegin(BCFld%CauchyHe(CountCauchy),ierr)
+        CALL VecAssemblyEnd(BCFld%CauchyHe(CountCauchy),ierr)
 
     END DO
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetBC Event] Boundary Conditions were satisfactorily created\n",ierr)
 
 END SUBROUTINE GetBC_1
+
+SUBROUTINE GetBC_2(Gmtry,BCFld,ierr)
+
+    USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileBC
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+
+    PetscErrorCode,INTENT(INOUT)            :: ierr
+    TYPE(Geometry),INTENT(IN)               :: Gmtry
+    TYPE(BoundaryConditions),INTENT(OUT)    :: BCFld
+
+    PetscMPIInt                             :: process
+    PetscInt                                :: u,i,j,ValI1,ValI2,ValI3,CountTimeZone,CountDirich,CountSource,CountCauchy,widthG(3)
+    PetscInt,ALLOCATABLE                    :: IndexDirich(:),IndexSource(:),IndexCauchy(:)
+    PetscReal                               :: ValR1,ValR2,DT
+    CHARACTER(LEN=200)                      :: InputFileBC,InputDir,Route
+    CHARACTER(LEN=200)                      :: aux
+    PetscBool                               :: Verbose
+    AO                                      :: AppOrd
+
+    PARAMETER(u=01)
+
+    CALL GetVerbose(Verbose,ierr)
+
+    CALL GetInputDir(InputDir,ierr)
+    CALL GetInputFileBC(InputFileBC,ierr)
+    
+    CALL DMDAGetAO(Gmtry%DataMngr,AppOrd,ierr)
+
+    CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+
+    IF (process.EQ.0) THEN
+        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileBC))
+        OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
+        READ(u,*)aux,BCFld%SizeTimeZone
+    END IF
+
+    CALL MPI_Bcast(BCFld%SizeTimeZone,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
+        
+    ! It gets the global size from the geometry data manager.
+    CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,ierr)
+
+    ALLOCATE(BCFld%TimeZone(BCFld%SizeTimeZone))
+    ALLOCATE(BCFld%Dirich(BCFld%SizeTimeZone))
+    ALLOCATE(BCFld%Source(BCFld%SizeTimeZone))
+    ALLOCATE(BCFld%CauchyC(BCFld%SizeTimeZone))
+    ALLOCATE(BCFld%CauchyHe(BCFld%SizeTimeZone))
+    ALLOCATE(BCFld%DirichIS(BCFld%SizeTimeZone))
+    ALLOCATE(BCFld%SourceIS(BCFld%SizeTimeZone))
+    ALLOCATE(BCFld%CauchyIS(BCFld%SizeTimeZone))
+
+    DO i=1,BCFld%SizeTimeZone
+        ! TIME
+        IF (process.EQ.0) THEN
+            READ(u,*)aux,CountTimeZone,aux,BCFld%TimeZone(i)%SizeTime
+        END IF
+
+        CALL MPI_Bcast(BCFld%TimeZone(i)%SizeTime,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
+        ALLOCATE(BCFld%TimeZone(i)%Time(BCFld%TimeZone(i)%SizeTime))
+
+        IF (process.EQ.0) THEN
+            READ(u,*)aux,DT
+            DO j=1,BCFld%TimeZone(i)%SizeTime
+                IF ((i.EQ.1).AND.(j.EQ.1)) THEN
+                    BCFld%TimeZone(1)%Time(1)=0.0
+                ELSEIF (j.EQ.1) THEN
+                    BCFld%TimeZone(i)%Time(1)=BCFld%TimeZone(i-1)%Time(BCFld%TimeZone(i-1)%SizeTime)+DT
+                ELSE
+                    BCFld%TimeZone(i)%Time(j)=BCFld%TimeZone(i)%Time(j-1)+DT
+                END IF
+            END DO
+        END IF
+        CALL MPI_Bcast(BCFld%TimeZone(i)%Time,BCFld%TimeZone(i)%SizeTime,MPI_DOUBLE, 0, PETSC_COMM_WORLD,ierr)
+
+        ! Dirichlet
+        IF (process.EQ.0) THEN
+            READ(u,*)aux,CountDirich,aux,BCFld%SizeDirich
+        END IF
+        
+        CALL MPI_Bcast(BCFld%SizeDirich,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
+        CALL MPI_Bcast(CountDirich,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
+
+        IF (CountDirich.NE.i) THEN
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+            & "[ERROR] Boundary condition file has to have a natural order on dirichlet identificators\n",ierr)
+            STOP
+            ! De hecho se pueden entrar pero es mejor restringirlo para que los archivos de entrada sean organizados
+        END IF
+
+        IF (BCFld%SizeDirich.GT.Gmtry%SizeTplgy(2)) THEN
+!             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+!             & "[ERROR] Boundary condition file doesn't has the same number of dirichlet entries as topology file\n",ierr)
+!             STOP
+            ! Si entra en este condicional significa que las condiciones de frontera no son permanentes.
+        END IF
+
+        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeDirich,BCFld%Dirich(CountDirich),ierr)
+        
+        ALLOCATE(IndexDirich(BCFld%SizeDirich))
+
+        IF (process.EQ.0) THEN
+            DO j=1,BCFld%SizeDirich
+                READ(u,*)ValI1,ValI2,ValI3,ValR1
+                ValI1=widthG(1)*widthG(2)*(ValI3-1)+widthG(2)*(ValI2-1)+ValI1
+                IndexDirich(j)=ValI1-1
+                ! Dirich is saved in its negative form
+                CALL VecSetValue(BCFld%Dirich(CountDirich),j-1,-ValR1,INSERT_VALUES,ierr)
+            END DO
+        END IF
+        
+        CALL MPI_Bcast(IndexDirich,BCFld%SizeDirich,MPI_INT,0, PETSC_COMM_WORLD,ierr)
+        CALL ISCreateGeneral(MPI_COMM_WORLD,BCFld%SizeDirich,IndexDirich,PETSC_COPY_VALUES,BCFld%DirichIS(CountDirich),ierr)
+
+        DEALLOCATE(IndexDirich)
+
+        CALL AOApplicationToPetscIS(AppOrd,BCFld%DirichIS(CountDirich),ierr)
+        CALL VecAssemblyBegin(BCFld%Dirich(CountDirich),ierr)
+        CALL VecAssemblyEnd(BCFld%Dirich(CountDirich),ierr)
+        
+        ! Source
+        IF (process.EQ.0) THEN
+            READ(u,*)aux,CountSource,aux,BCFld%SizeSource
+        END IF
+
+        CALL MPI_Bcast(BCFld%SizeSource,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
+        CALL MPI_Bcast(CountSource,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
+
+        IF (CountSource.NE.i) THEN
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+            & "[ERROR] Boundary condition file has to have a natural order on source identificators\n",ierr)
+            STOP
+            ! De hecho se pueden entrar pero es mejor restringirlo para que los archivos de entrada sean organizados
+        END IF
+
+        IF (BCFld%SizeSource.GT.Gmtry%SizeTplgy(3)) THEN
+!             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+!             & "[ERROR] Boundary condition file doesn't has the same number of dirichlet entries as topology file\n",ierr)
+!             STOP
+            ! Si entra en este condicional significa que las condiciones de frontera no son permanentes.
+        END IF
+
+        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeSource,BCFld%Source(CountSource),ierr)
+
+        ALLOCATE(IndexSource(BCFld%SizeSource))
+
+        IF (process.EQ.0) THEN
+            DO j=1,BCFld%SizeSource
+                READ(u,*)ValI1,ValI2,ValI3,ValR1
+                ValI1=widthG(1)*widthG(2)*(ValI3-1)+widthG(2)*(ValI2-1)+ValI1
+                IndexSource(j)=ValI1-1
+                CALL VecSetValue(BCFld%Source(CountSource),j-1,-ValR1,INSERT_VALUES,ierr)
+            END DO
+        END IF
+
+        CALL MPI_Bcast(IndexSource,BCFld%SizeSource,MPI_INT,0, PETSC_COMM_WORLD,ierr)
+        CALL ISCreateGeneral(MPI_COMM_WORLD,BCFld%SizeSource,IndexSource,PETSC_COPY_VALUES,BCFld%SourceIS(CountSource),ierr)
+
+        DEALLOCATE(IndexSource)
+
+        CALL AOApplicationToPetscIS(AppOrd,BCFld%SourceIS(CountSource),ierr)
+        CALL VecAssemblyBegin(BCFld%Source(CountSource),ierr)
+        CALL VecAssemblyEnd(BCFld%Source(CountSource),ierr)
+
+        ! Cauchy
+        IF (process.EQ.0) THEN
+            READ(u,*)aux,CountCauchy,aux,BCFld%SizeCauchy
+        END IF
+
+        CALL MPI_Bcast(BCFld%SizeCauchy,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
+        CALL MPI_Bcast(CountCauchy,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
+
+        IF (CountCauchy.NE.i) THEN
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+            & "[ERROR] Boundary condition file has to have a natural order on cauchy identificators\n",ierr)
+            STOP
+            ! De hecho se pueden entrar pero es mejor restringirlo para que los archivos de entrada sean organizados
+        END IF
+
+        IF (BCFld%SizeCauchy.GT.Gmtry%SizeTplgy(4)) THEN
+!             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+!             & "[ERROR] Boundary condition file doesn't has the same number of dirichlet entries as topology file\n",ierr)
+!             STOP
+            ! Si entra en este condicional significa que las condiciones de frontera no son permanentes.
+        END IF
+
+        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeCauchy,BCFld%CauchyC(CountCauchy),ierr)
+        CALL VecDuplicate(BCFld%CauchyC(CountCauchy),BCFld%CauchyHe(CountCauchy),ierr)
+
+        ALLOCATE(IndexCauchy(BCFld%SizeCauchy))
+
+        IF (process.EQ.0) THEN
+            DO j=1,BCFld%SizeCauchy
+                READ(u,*)ValI1,ValI2,ValI3,ValR1,ValR2
+                ValI1=widthG(1)*widthG(2)*(ValI3-1)+widthG(2)*(ValI2-1)+ValI1
+                IndexCauchy(j)=ValI1-1
+                ! Cauchy "He" is saved in its negative form
+                CALL VecSetValue(BCFld%CauchyC(CountCauchy),j-1,ValR1,INSERT_VALUES,ierr)
+                CALL VecSetValue(BCFld%CauchyHe(CountCauchy),j-1,-ValR2,INSERT_VALUES,ierr)
+            END DO
+        END IF
+
+        CALL MPI_Bcast(IndexCauchy,BCFld%SizeCauchy,MPI_INT,0, PETSC_COMM_WORLD,ierr)
+        CALL ISCreateGeneral(MPI_COMM_WORLD,BCFld%SizeCauchy,IndexCauchy,PETSC_COPY_VALUES,BCFld%CauchyIS(CountCauchy),ierr)
+
+        DEALLOCATE(IndexCauchy)
+
+        CALL AOApplicationToPetscIS(AppOrd,BCFld%CauchyIS(CountCauchy),ierr)
+        CALL VecAssemblyBegin(BCFld%CauchyC(CountCauchy),ierr)
+        CALL VecAssemblyEnd(BCFld%CauchyC(CountCauchy),ierr)
+        CALL VecAssemblyBegin(BCFld%CauchyHe(CountCauchy),ierr)
+        CALL VecAssemblyEnd(BCFld%CauchyHe(CountCauchy),ierr)
+
+    END DO
+
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetBC Event] Boundary Conditions were satisfactorily created\n",ierr)
+
+END SUBROUTINE GetBC_2
 
 SUBROUTINE DestroyBC(BCFld,ierr)
 

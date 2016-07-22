@@ -33,6 +33,8 @@ SUBROUTINE GetProrperties(Gmtry,PptFld,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
     
     CALL GetConductivity(Gmtry,PptFld,ierr)
+    ! CALL GetConductivity(Gmtry,PptFld%Cvt,ierr)
+    ! CALL GetStorage(Gmtry,PptFld%Sto,ierr)
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
@@ -88,7 +90,6 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
     CALL PetscLogFlops(EventFlops,ierr)
     CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
-
 END SUBROUTINE GetConductivity
 
 SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
@@ -110,7 +111,7 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertiesField),INTENT(INOUT) :: PptFld
 
-    PetscInt                            :: u,i,j,width(3),ValI,CvtLen
+    PetscInt                            :: u,i,j,widthG(3),ValI,CvtLen
     PetscReal                           :: ValR
     PetscMPIInt                         :: process
     Vec                                 :: CvtTypeGlobal
@@ -131,15 +132,21 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
     CALL DMCreateGlobalVector(Gmtry%DataMngr,CvtTypeGlobal,ierr)
     CALL DMCreateLocalVector(Gmtry%DataMngr,PptFld%PptType,ierr)
 
+    ! It gets the global size from the geometry data manager.
+    CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,ierr)
+
     CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
     IF (process.EQ.0) THEN
         CALL GetInputFileCvtByZones(InputFileCvtByZones,ierr)
         Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvtByZones))
         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
-        READ(u, '((I10),(I10),(I10))')width(1),width(2),width(3)
 
-        DO i=1,width(1)*width(2)*width(3)
-            READ(u, '(I10)')ValI
+        DO i=1,widthG(1)*widthG(2)*widthG(3)
+            READ(u, *)ValI
             IF (ValI.LE.0) THEN
                 CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
                     & "[ERROR] Input_file_cvt_type entry only can contain"  &
@@ -183,13 +190,13 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
             READ(u,*)
             READ(u,'(A13)')CvtKind
             IF (CvtKind.EQ."k anisotropic") THEN 
-                READ(u,'((F8.0),(F8.0),(F8.0))')PptFld%Cvt%CvtZone(i)%xx, &
+                READ(u,*)PptFld%Cvt%CvtZone(i)%xx, &
                     & PptFld%Cvt%CvtZone(i)%yy,PptFld%Cvt%CvtZone(i)%zz
                 PptFld%Cvt%CvtZone(i)%xy=0.0
                 PptFld%Cvt%CvtZone(i)%xz=0.0
                 PptFld%Cvt%CvtZone(i)%yz=0.0
             ELSE IF (CvtKind.EQ."k isotropic  ") THEN
-                READ(u,'(F15.0)')PptFld%Cvt%CvtZone(i)%xx
+                READ(u,*)PptFld%Cvt%CvtZone(i)%xx
                 PptFld%Cvt%CvtZone(i)%yy=PptFld%Cvt%CvtZone(i)%xx
                 PptFld%Cvt%CvtZone(i)%zz=PptFld%Cvt%CvtZone(i)%xx
                 PptFld%Cvt%CvtZone(i)%xy=0.0
@@ -245,9 +252,9 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,ierr)
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
-    TYPE(PropertiesField),INTENT(INOUT)   :: PptFld
+    TYPE(PropertiesField),INTENT(INOUT) :: PptFld
 
-    PetscInt                            :: u,i,width(3)
+    PetscInt                            :: u,i,widthG(3)
     PetscReal                           :: ValR
     PetscMPIInt                         :: process
     Vec                                 :: CvtCellGlobal
@@ -275,14 +282,14 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,ierr)
         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
 
         ! It gets the global size from the geometry data manager.
-        CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,width(1),width(2),&
-        & width(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+        CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
         & PETSC_NULL_INTEGER,ierr)
 
-        DO i=1,width(1)*width(2)*width(3)
-            READ(u, '(ES14.8)')ValR
+        DO i=1,widthG(1)*widthG(2)*widthG(3)
+            READ(u,*)ValR
             CALL VecSetValue(CvtCellGlobal,i-1,ValR,INSERT_VALUES,ierr)
         END DO
         CLOSE(u)
