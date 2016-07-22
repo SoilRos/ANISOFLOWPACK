@@ -382,7 +382,7 @@ SUBROUTINE GetBC_2(Gmtry,BCFld,ierr)
         IF (process.EQ.0) THEN
             DO j=1,BCFld%SizeDirich
                 READ(u,*)ValI1,ValI2,ValI3,ValR1
-                ValI1=widthG(1)*widthG(2)*(ValI3-1)+widthG(2)*(ValI2-1)+ValI1
+                ValI1=widthG(1)*widthG(2)*(ValI3-1)+widthG(1)*(ValI2-1)+ValI1
                 IndexDirich(j)=ValI1-1
                 ! Dirich is saved in its negative form
                 CALL VecSetValue(BCFld%Dirich(CountDirich),j-1,-ValR1,INSERT_VALUES,ierr)
@@ -427,7 +427,7 @@ SUBROUTINE GetBC_2(Gmtry,BCFld,ierr)
         IF (process.EQ.0) THEN
             DO j=1,BCFld%SizeSource
                 READ(u,*)ValI1,ValI2,ValI3,ValR1
-                ValI1=widthG(1)*widthG(2)*(ValI3-1)+widthG(2)*(ValI2-1)+ValI1
+                ValI1=widthG(1)*widthG(2)*(ValI3-1)+widthG(1)*(ValI2-1)+ValI1
                 IndexSource(j)=ValI1-1
                 CALL VecSetValue(BCFld%Source(CountSource),j-1,-ValR1,INSERT_VALUES,ierr)
             END DO
@@ -472,7 +472,7 @@ SUBROUTINE GetBC_2(Gmtry,BCFld,ierr)
         IF (process.EQ.0) THEN
             DO j=1,BCFld%SizeCauchy
                 READ(u,*)ValI1,ValI2,ValI3,ValR1,ValR2
-                ValI1=widthG(1)*widthG(2)*(ValI3-1)+widthG(2)*(ValI2-1)+ValI1
+                ValI1=widthG(1)*widthG(2)*(ValI3-1)+widthG(1)*(ValI2-1)+ValI1
                 IndexCauchy(j)=ValI1-1
                 ! Cauchy "He" is saved in its negative form
                 CALL VecSetValue(BCFld%CauchyC(CountCauchy),j-1,ValR1,INSERT_VALUES,ierr)

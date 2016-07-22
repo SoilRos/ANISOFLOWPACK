@@ -350,19 +350,27 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
 #include <petsc/finclude/petscdmda.h90>
 
     TYPE(Geometry),INTENT(IN)           :: Gmtry
-    TYPE(PropertiesField),INTENT(IN)      :: PptFld
+    TYPE(PropertiesField),INTENT(IN)    :: PptFld
     TYPE(Property),INTENT(INOUT)        :: Ppt
     PetscErrorCode,INTENT(INOUT)        :: ierr
 
     TYPE(InputTypeVar)                  :: InputType
-    PetscReal,POINTER                   :: TmpCvt(:,:,:)
-    PetscInt                            :: ValI(2),i,j,k
+    PetscReal,POINTER                   :: TmpCvt3D(:,:,:),TmpCvt2D(:,:)
+    PetscReal                           :: ValR(2)
+    PetscInt                            :: ValI(2),widthG(3),i,j,k
 
     CALL GetInputType(InputType,ierr)
 
     i=Ppt%Pstn%i
     j=Ppt%Pstn%j
     k=Ppt%Pstn%k
+
+    ! It gets the global size from the geometry data manager.
+    CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,ierr)
 
     Ppt%CvtBx%xx=0.0
     Ppt%CvtBx%xy=0.0
@@ -419,13 +427,20 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
 
     IF (PptFld%Cvt%DefinedByZones) THEN
         IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4).OR.(Ppt%StnclTplgy(ValI(1)).EQ.5)) THEN ! Only get properties for active blocks
-            CALL DMDAVecGetArrayreadF90(Gmtry%DataMngr,PptFld%PptType,     &
-                & TmpCvt,ierr)
-
-            ValI(1)=INT(TmpCvt(i,j,k))
+            IF (widthG(3).NE.1) THEN
+                CALL DMDAVecGetArrayreadF90(Gmtry%DataMngr,PptFld%PptType,TmpCvt3D,ierr)
+                ValI(1)=INT(TmpCvt3D(i,j,k))
+            ELSE
+                CALL DMDAVecGetArrayreadF90(Gmtry%DataMngr,PptFld%PptType,TmpCvt2D,ierr)
+                ValI(1)=INT(TmpCvt2D(i,j))
+            END IF                
 
             ! Backward on x
-            ValI(2)=INT(TmpCvt(i-1,j,k))
+            IF (widthG(3).NE.1) THEN
+                ValI(2)=INT(TmpCvt3D(i-1,j,k))
+            ELSE
+                ValI(2)=INT(TmpCvt2D(i-1,j))
+            END IF
             Ppt%CvtBx%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
             Ppt%CvtBx%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
             Ppt%CvtBx%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
@@ -435,7 +450,11 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
             CALL TargetFullTensor(Ppt%CvtBx)
 
             ! Forward on x
-            ValI(2)=INT(TmpCvt(i+1,j,k))
+            IF (widthG(3).NE.1) THEN
+                ValI(2)=INT(TmpCvt3D(i+1,j,k))
+            ELSE
+                ValI(2)=INT(TmpCvt2D(i+1,j))
+            END IF
             Ppt%CvtFx%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
             Ppt%CvtFx%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
             Ppt%CvtFx%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
@@ -445,7 +464,11 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
             CALL TargetFullTensor(Ppt%CvtFx)
 
             ! Backward on y
-            ValI(2)=INT(TmpCvt(i,j-1,k))
+            IF (widthG(3).NE.1) THEN
+                ValI(2)=INT(TmpCvt3D(i,j-1,k))
+            ELSE
+                ValI(2)=INT(TmpCvt2D(i-1,j))
+            END IF
             Ppt%CvtBy%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
             Ppt%CvtBy%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
             Ppt%CvtBy%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
@@ -455,7 +478,11 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
             CALL TargetFullTensor(Ppt%CvtBy)
 
             ! Forward on y
-            ValI(2)=INT(TmpCvt(i,j+1,k))
+            IF (widthG(3).NE.1) THEN
+                ValI(2)=INT(TmpCvt3D(i,j+1,k))
+            ELSE
+                ValI(2)=INT(TmpCvt2D(i,j+1))
+            END IF
             Ppt%CvtFy%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
             Ppt%CvtFy%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
             Ppt%CvtFy%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
@@ -465,81 +492,123 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
             CALL TargetFullTensor(Ppt%CvtFy)
 
             ! Backward on z
-            ValI(2)=INT(TmpCvt(i,j,k-1))
-            Ppt%CvtBz%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
-            Ppt%CvtBz%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
-            Ppt%CvtBz%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
-            Ppt%CvtBz%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
-            Ppt%CvtBz%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
-            Ppt%CvtBz%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
-            CALL TargetFullTensor(Ppt%CvtBz)
+            IF (widthG(3).NE.1) THEN
+                ValI(2)=INT(TmpCvt3D(i,j,k-1))
+                Ppt%CvtBz%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
+                Ppt%CvtBz%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
+                Ppt%CvtBz%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
+                Ppt%CvtBz%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
+                Ppt%CvtBz%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
+                Ppt%CvtBz%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
+                CALL TargetFullTensor(Ppt%CvtBz)
+            END IF
+
 
             ! Forward on y
-            ValI(2)=INT(TmpCvt(i,j,k+1))
-            Ppt%CvtFz%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
-            Ppt%CvtFz%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
-            Ppt%CvtFz%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
-            Ppt%CvtFz%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
-            Ppt%CvtFz%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
-            Ppt%CvtFz%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
-            CALL TargetFullTensor(Ppt%CvtFz)
+            IF (widthG(3).NE.1) THEN
+                ValI(2)=INT(TmpCvt3D(i,j,k+1))
+                Ppt%CvtFz%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
+                Ppt%CvtFz%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
+                Ppt%CvtFz%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
+                Ppt%CvtFz%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
+                Ppt%CvtFz%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
+                Ppt%CvtFz%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
+                CALL TargetFullTensor(Ppt%CvtFz)
+            END IF
 
-            CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%PptType, &
-                & TmpCvt,ierr)
+            IF (widthG(3).NE.1) THEN
+                CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%PptType,TmpCvt3D,ierr)
+            ELSE
+                CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%PptType,TmpCvt2D,ierr)
+            END IF
+
 
         END IF
     ELSE IF (Pptfld%Cvt%DefinedByCell) THEN
         IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4).OR.(Ppt%StnclTplgy(ValI(1)).EQ.5)) THEN
-            CALL DMDAVecGetArrayreadF90(Gmtry%DataMngr,PptFld%Cvt%CvtCell,     &
-                & TmpCvt,ierr)
 
-                Ppt%CvtBx%xx=Armonic(TmpCvt(i,j,k),TmpCvt(i-1,j,k))
-                Ppt%CvtBx%xy=0.0
-                Ppt%CvtBx%xz=0.0
-                Ppt%CvtBx%yy=0.0
-                Ppt%CvtBx%yz=0.0
-                Ppt%CvtBx%zz=0.0
-                CALL TargetFullTensor(Ppt%CvtBx)
+            IF (widthG(3).NE.1) THEN
+                CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%CvtCell,TmpCvt3D,ierr)
+                ValR(1)=TmpCvt3D(i,j,k)
+            ELSE
+                CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%CvtCell,TmpCvt2D,ierr)
+                ValR(1)=TmpCvt2D(i,j)
+            END IF      
 
-                Ppt%CvtFx%xx=Armonic(TmpCvt(i,j,k),TmpCvt(i+1,j,k))
-                Ppt%CvtFx%xy=0.0
-                Ppt%CvtFx%xz=0.0
-                Ppt%CvtFx%yy=0.0
-                Ppt%CvtFx%yz=0.0
-                Ppt%CvtFx%zz=0.0
-                CALL TargetFullTensor(Ppt%CvtFx)
+            IF (widthG(3).NE.1) THEN
+                ValR(2)=TmpCvt3D(i-1,j,k)
+            ELSE
+                ValR(2)=TmpCvt2D(i-1,j)
+            END IF  
+            Ppt%CvtBx%xx=Armonic(ValR(1),ValR(2))
+            Ppt%CvtBx%xy=0.0
+            Ppt%CvtBx%xz=0.0
+            Ppt%CvtBx%yy=0.0
+            Ppt%CvtBx%yz=0.0
+            Ppt%CvtBx%zz=0.0
+            CALL TargetFullTensor(Ppt%CvtBx)
 
-                Ppt%CvtBy%xx=0.0
-                Ppt%CvtBy%xy=0.0
-                Ppt%CvtBy%xz=0.0
-                Ppt%CvtBy%yy=Armonic(TmpCvt(i,j,k),TmpCvt(i,j-1,k))
-                Ppt%CvtBy%yz=0.0
-                Ppt%CvtBy%zz=0.0
-                CALL TargetFullTensor(Ppt%CvtBy)
+            IF (widthG(3).NE.1) THEN
+                ValR(2)=TmpCvt3D(i+1,j,k)
+            ELSE
+                ValR(2)=TmpCvt2D(i+1,j)
+            END IF  
+            Ppt%CvtFx%xx=Armonic(ValR(1),ValR(2))
+            Ppt%CvtFx%xy=0.0
+            Ppt%CvtFx%xz=0.0
+            Ppt%CvtFx%yy=0.0
+            Ppt%CvtFx%yz=0.0
+            Ppt%CvtFx%zz=0.0
+            CALL TargetFullTensor(Ppt%CvtFx)
 
-                Ppt%CvtFy%xx=0.0
-                Ppt%CvtFy%xy=0.0
-                Ppt%CvtFy%xz=0.0
-                Ppt%CvtFy%yy=Armonic(TmpCvt(i,j,k),TmpCvt(i,j+1,k))
-                Ppt%CvtFy%yz=0.0
-                Ppt%CvtFy%zz=0.0
-                CALL TargetFullTensor(Ppt%CvtFy)
+            IF (widthG(3).NE.1) THEN
+                ValR(2)=TmpCvt3D(i,j-1,k)
+            ELSE
+                ValR(2)=TmpCvt2D(i,j-1)
+            END IF  
+            Ppt%CvtBy%xx=0.0
+            Ppt%CvtBy%xy=0.0
+            Ppt%CvtBy%xz=0.0
+            Ppt%CvtBy%yy=Armonic(ValR(1),ValR(2))
+            Ppt%CvtBy%yz=0.0
+            Ppt%CvtBy%zz=0.0
+            CALL TargetFullTensor(Ppt%CvtBy)
 
+            IF (widthG(3).NE.1) THEN
+                ValR(2)=TmpCvt3D(i,j+1,k)
+            ELSE
+                ValR(2)=TmpCvt2D(i,j+1)
+            END IF  
+            Ppt%CvtFy%xx=0.0
+            Ppt%CvtFy%xy=0.0
+            Ppt%CvtFy%xz=0.0
+            Ppt%CvtFy%yy=Armonic(ValR(1),ValR(2))
+            Ppt%CvtFy%yz=0.0
+            Ppt%CvtFy%zz=0.0
+            CALL TargetFullTensor(Ppt%CvtFy)
+
+            IF (widthG(3).NE.1) THEN
+                ValR(2)=TmpCvt3D(i,j,k-1)
                 Ppt%CvtBz%xx=0.0
                 Ppt%CvtBz%xy=0.0
                 Ppt%CvtBz%xz=0.0
                 Ppt%CvtBz%yy=0.0
                 Ppt%CvtBz%yz=0.0
-                Ppt%CvtBz%zz=Armonic(TmpCvt(i,j,k),TmpCvt(i,j,k-1))
+                Ppt%CvtBz%zz=Armonic(ValR(1),ValR(2))
                 CALL TargetFullTensor(Ppt%CvtBz)
+            END IF  
 
+            IF (widthG(3).NE.1) THEN
+                ValR(2)=TmpCvt3D(i,j,k+1)
                 Ppt%CvtFz%xx=0.0
                 Ppt%CvtFz%xy=0.0
                 Ppt%CvtFz%xz=0.0
                 Ppt%CvtFz%yy=0.0
                 Ppt%CvtFz%yz=0.0
-                Ppt%CvtFz%zz=Armonic(TmpCvt(i,j,k),TmpCvt(i,j,k+1))
+                Ppt%CvtFz%zz=Armonic(ValR(1),ValR(2))
                 CALL TargetFullTensor(Ppt%CvtFz)
+            END IF  
+
         END IF  
     END IF
 

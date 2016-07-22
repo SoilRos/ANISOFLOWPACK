@@ -880,13 +880,20 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
     TYPE(Property),INTENT(INOUT)        :: Ppt
     PetscErrorCode,INTENT(INOUT)        :: ierr
 
-    PetscReal,POINTER                   :: TmpTplgyArray(:,:,:),xArray(:),yArray(:),zArray(:)
-    PetscInt                            :: i,j,k,xSize,ySize,zSize
+    PetscReal,POINTER                   :: TmpTplgyArray3D(:,:,:),TmpTplgyArray2D(:,:),xArray(:),yArray(:),zArray(:)
+    PetscInt                            :: i,j,k,xSize,ySize,zSize,widthG(3)
     TYPE(RunOptionsVar)                 :: RunOptions
 
     i=Ppt%Pstn%i
     j=Ppt%Pstn%j
     k=Ppt%Pstn%k
+
+    ! It gets the global size from the geometry data manager.
+    CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,ierr)
 
     CALL VecGetSize(Gmtry%x,xSize,ierr)
     CALL VecGetArrayReadF90(Gmtry%x,xArray,ierr)
@@ -904,55 +911,102 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
 
     CALL VecGetSize(Gmtry%z,zSize,ierr)
     CALL VecGetArrayReadF90(Gmtry%z,zArray,ierr)
-    Ppt%dzB=zArray(k+1)-zArray(k)
-    Ppt%dz =zArray(k+2)-zArray(k+1)
-    Ppt%dzF=zArray(k+3)-zArray(k+2)
+    IF (widthG(3).NE.1) THEN
+        Ppt%dzB=zArray(k+1)-zArray(k)
+        Ppt%dz =zArray(k+2)-zArray(k+1)
+        Ppt%dzF=zArray(k+3)-zArray(k+2)
+    ELSE
+        Ppt%dzB=0.d0
+        Ppt%dz =1.d0
+        Ppt%dzF=0.d0
+    END IF
     CALL VecRestoreArrayReadF90(Gmtry%z,zArray,ierr)
 
     ! Revisar los diferenciales de x,y,z que se usan como dividendo, si los valores son cercanos a cero puede haber problemas!!!!
 
     CALL GetRunOptions(RunOptions,ierr)
 
-    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,Gmtry%Tplgy,TmpTplgyArray,ierr)
 
-    IF (RunOptions%Scheme.EQ.1) THEN
-        ALLOCATE(Ppt%StnclTplgy(7))
-        Ppt%StnclTplgy(:)=0
-        Ppt%StnclTplgy(1)=INT(TmpTplgyArray(i  ,j  ,k-1))
-        Ppt%StnclTplgy(2)=INT(TmpTplgyArray(i  ,j-1,k  ))
-        Ppt%StnclTplgy(3)=INT(TmpTplgyArray(i-1,j  ,k  ))
-        Ppt%StnclTplgy(4)=INT(TmpTplgyArray(i  ,j  ,k  ))
-        Ppt%StnclTplgy(5)=INT(TmpTplgyArray(i+1,j  ,k  ))
-        Ppt%StnclTplgy(6)=INT(TmpTplgyArray(i  ,j+1,k  ))
-        Ppt%StnclTplgy(7)=INT(TmpTplgyArray(i  ,j  ,k+1))
-    ELSEIF (RunOptions%Scheme.EQ.2) THEN
-        ALLOCATE(Ppt%StnclTplgy(19))
-        Ppt%StnclTplgy(:)=0
-        Ppt%StnclTplgy(1)= INT(TmpTplgyArray(i  ,j-1,k-1))
-        Ppt%StnclTplgy(2)= INT(TmpTplgyArray(i-1,j  ,k-1))
-        Ppt%StnclTplgy(3)= INT(TmpTplgyArray(i  ,j  ,k-1))
-        Ppt%StnclTplgy(4)= INT(TmpTplgyArray(i+1,j  ,k-1))
-        Ppt%StnclTplgy(5)= INT(TmpTplgyArray(i  ,j+1,k-1))
-        Ppt%StnclTplgy(6)= INT(TmpTplgyArray(i-1,j-1,k  ))
-        Ppt%StnclTplgy(7)= INT(TmpTplgyArray(i  ,j-1,k  ))
-        Ppt%StnclTplgy(8)= INT(TmpTplgyArray(i+1,j-1,k  ))
-        Ppt%StnclTplgy(9)= INT(TmpTplgyArray(i-1,j  ,k  ))
-        Ppt%StnclTplgy(10)=INT(TmpTplgyArray(i  ,j  ,k  ))
-        Ppt%StnclTplgy(11)=INT(TmpTplgyArray(i+1,j  ,k  ))
-        Ppt%StnclTplgy(12)=INT(TmpTplgyArray(i-1,j+1,k  ))
-        Ppt%StnclTplgy(13)=INT(TmpTplgyArray(i  ,j+1,k  ))
-        Ppt%StnclTplgy(14)=INT(TmpTplgyArray(i+1,j+1,k  ))
-        Ppt%StnclTplgy(15)=INT(TmpTplgyArray(i  ,j-1,k+1))
-        Ppt%StnclTplgy(16)=INT(TmpTplgyArray(i-1,j  ,k+1))
-        Ppt%StnclTplgy(17)=INT(TmpTplgyArray(i  ,j  ,k+1))
-        Ppt%StnclTplgy(18)=INT(TmpTplgyArray(i+1,j  ,k+1))
-        Ppt%StnclTplgy(19)=INT(TmpTplgyArray(i  ,j+1,k+1))
+    IF (widthG(3).NE.1) THEN
+        CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,Gmtry%Tplgy,TmpTplgyArray3D,ierr)
+        IF (RunOptions%Scheme.EQ.1) THEN
+            ALLOCATE(Ppt%StnclTplgy(7))
+            Ppt%StnclTplgy(:)=0
+            Ppt%StnclTplgy(1)=INT(TmpTplgyArray3D(i  ,j  ,k-1))
+            Ppt%StnclTplgy(2)=INT(TmpTplgyArray3D(i  ,j-1,k  ))
+            Ppt%StnclTplgy(3)=INT(TmpTplgyArray3D(i-1,j  ,k  ))
+            Ppt%StnclTplgy(4)=INT(TmpTplgyArray3D(i  ,j  ,k  ))
+            Ppt%StnclTplgy(5)=INT(TmpTplgyArray3D(i+1,j  ,k  ))
+            Ppt%StnclTplgy(6)=INT(TmpTplgyArray3D(i  ,j+1,k  ))
+            Ppt%StnclTplgy(7)=INT(TmpTplgyArray3D(i  ,j  ,k+1))
+        ELSEIF (RunOptions%Scheme.EQ.2) THEN
+            ALLOCATE(Ppt%StnclTplgy(19))
+            Ppt%StnclTplgy(:)=0
+            Ppt%StnclTplgy(1)= INT(TmpTplgyArray3D(i  ,j-1,k-1))
+            Ppt%StnclTplgy(2)= INT(TmpTplgyArray3D(i-1,j  ,k-1))
+            Ppt%StnclTplgy(3)= INT(TmpTplgyArray3D(i  ,j  ,k-1))
+            Ppt%StnclTplgy(4)= INT(TmpTplgyArray3D(i+1,j  ,k-1))
+            Ppt%StnclTplgy(5)= INT(TmpTplgyArray3D(i  ,j+1,k-1))
+            Ppt%StnclTplgy(6)= INT(TmpTplgyArray3D(i-1,j-1,k  ))
+            Ppt%StnclTplgy(7)= INT(TmpTplgyArray3D(i  ,j-1,k  ))
+            Ppt%StnclTplgy(8)= INT(TmpTplgyArray3D(i+1,j-1,k  ))
+            Ppt%StnclTplgy(9)= INT(TmpTplgyArray3D(i-1,j  ,k  ))
+            Ppt%StnclTplgy(10)=INT(TmpTplgyArray3D(i  ,j  ,k  ))
+            Ppt%StnclTplgy(11)=INT(TmpTplgyArray3D(i+1,j  ,k  ))
+            Ppt%StnclTplgy(12)=INT(TmpTplgyArray3D(i-1,j+1,k  ))
+            Ppt%StnclTplgy(13)=INT(TmpTplgyArray3D(i  ,j+1,k  ))
+            Ppt%StnclTplgy(14)=INT(TmpTplgyArray3D(i+1,j+1,k  ))
+            Ppt%StnclTplgy(15)=INT(TmpTplgyArray3D(i  ,j-1,k+1))
+            Ppt%StnclTplgy(16)=INT(TmpTplgyArray3D(i-1,j  ,k+1))
+            Ppt%StnclTplgy(17)=INT(TmpTplgyArray3D(i  ,j  ,k+1))
+            Ppt%StnclTplgy(18)=INT(TmpTplgyArray3D(i+1,j  ,k+1))
+            Ppt%StnclTplgy(19)=INT(TmpTplgyArray3D(i  ,j+1,k+1))
+        ELSE
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+                & "[ERROR] Run_options_scheme command must be an integer between 1 and 2\n",ierr)
+            STOP
+        END IF
     ELSE
-        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "[ERROR] Run_options_scheme command must be an integer between 1 and 2\n",ierr)
-        STOP
+        CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,Gmtry%Tplgy,TmpTplgyArray2D,ierr)
+        IF (RunOptions%Scheme.EQ.1) THEN
+            ALLOCATE(Ppt%StnclTplgy(7))
+            Ppt%StnclTplgy(:)=0
+            Ppt%StnclTplgy(1)=INT(TmpTplgyArray2D(i  ,j  ))
+            Ppt%StnclTplgy(2)=INT(TmpTplgyArray2D(i  ,j-1))
+            Ppt%StnclTplgy(3)=INT(TmpTplgyArray2D(i-1,j  ))
+            Ppt%StnclTplgy(4)=INT(TmpTplgyArray2D(i  ,j  ))
+            Ppt%StnclTplgy(5)=INT(TmpTplgyArray2D(i+1,j  ))
+            Ppt%StnclTplgy(6)=INT(TmpTplgyArray2D(i  ,j+1))
+            Ppt%StnclTplgy(7)=INT(TmpTplgyArray2D(i  ,j  ))
+        ELSEIF (RunOptions%Scheme.EQ.2) THEN
+            ALLOCATE(Ppt%StnclTplgy(19))
+            Ppt%StnclTplgy(:)=0
+            Ppt%StnclTplgy(1)= INT(TmpTplgyArray2D(i  ,j-1))
+            Ppt%StnclTplgy(2)= INT(TmpTplgyArray2D(i-1,j  ))
+            Ppt%StnclTplgy(3)= INT(TmpTplgyArray2D(i  ,j  ))
+            Ppt%StnclTplgy(4)= INT(TmpTplgyArray2D(i+1,j  ))
+            Ppt%StnclTplgy(5)= INT(TmpTplgyArray2D(i  ,j+1))
+            Ppt%StnclTplgy(6)= INT(TmpTplgyArray2D(i-1,j-1))
+            Ppt%StnclTplgy(7)= INT(TmpTplgyArray2D(i  ,j-1))
+            Ppt%StnclTplgy(8)= INT(TmpTplgyArray2D(i+1,j-1))
+            Ppt%StnclTplgy(9)= INT(TmpTplgyArray2D(i-1,j  ))
+            Ppt%StnclTplgy(10)=INT(TmpTplgyArray2D(i  ,j  ))
+            Ppt%StnclTplgy(11)=INT(TmpTplgyArray2D(i+1,j  ))
+            Ppt%StnclTplgy(12)=INT(TmpTplgyArray2D(i-1,j+1))
+            Ppt%StnclTplgy(13)=INT(TmpTplgyArray2D(i  ,j+1))
+            Ppt%StnclTplgy(14)=INT(TmpTplgyArray2D(i+1,j+1))
+            Ppt%StnclTplgy(15)=INT(TmpTplgyArray2D(i  ,j-1))
+            Ppt%StnclTplgy(16)=INT(TmpTplgyArray2D(i-1,j  ))
+            Ppt%StnclTplgy(17)=INT(TmpTplgyArray2D(i  ,j  ))
+            Ppt%StnclTplgy(18)=INT(TmpTplgyArray2D(i+1,j  ))
+            Ppt%StnclTplgy(19)=INT(TmpTplgyArray2D(i  ,j+1))
+        ELSE
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+                & "[ERROR] Run_options_scheme command must be an integer between 1 and 2\n",ierr)
+            STOP
+        END IF
     END IF
-    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,Gmtry%Tplgy,TmpTplgyArray,ierr)
+    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,Gmtry%Tplgy,TmpTplgyArray2D,ierr)
 
 END SUBROUTINE GetLocalTopology
 

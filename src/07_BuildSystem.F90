@@ -64,8 +64,6 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
     CALL PetscLogFlops(EventFlops,ierr)
     CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
-
-
 END SUBROUTINE GetSystem
 
 SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
@@ -223,7 +221,6 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
 
     ! If the current cell is an active, source, or cauchy cell:
     IF ((Ppt%StnclTplgy(4).EQ.1).OR.(Ppt%StnclTplgy(4).EQ.3).OR.(Ppt%StnclTplgy(4).EQ.4)) THEN
-
         Stencil%idx_clmns(MatStencil_i,1) = i
         Stencil%idx_clmns(MatStencil_j,1) = j
         Stencil%idx_clmns(MatStencil_k,1) = k-1
@@ -243,8 +240,11 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_j,4) = j
         Stencil%idx_clmns(MatStencil_k,4) = k
         Stencil%Values(4)=-2*(Ppt%dy*Ppt%dz*Ppt%CvtFx%xx/(Ppt%dxF+Ppt%dx)+Ppt%dy*Ppt%dz*Ppt%CvtBx%xx/(Ppt%dxB+Ppt%dx)  &
-            & +Ppt%dx*Ppt%dz*Ppt%CvtFy%yy/(Ppt%dyF+Ppt%dy)+Ppt%dx*Ppt%dz*Ppt%CvtBy%yy/(Ppt%dyB+Ppt%dy)              &
-            & +Ppt%dx*Ppt%dy*Ppt%CvtFz%zz/(Ppt%dzF+Ppt%dz)+Ppt%dx*Ppt%dy*Ppt%CvtBz%zz/(Ppt%dzB+Ppt%dz))
+            & +Ppt%dx*Ppt%dz*Ppt%CvtFy%yy/(Ppt%dyF+Ppt%dy)+Ppt%dx*Ppt%dz*Ppt%CvtBy%yy/(Ppt%dyB+Ppt%dy))
+        IF ((Ppt%dzF.NE.zero).AND.(Ppt%dzB.NE.zero)) THEN ! Non-NaN checker. If is not NaN, then its a 3D problem
+            Stencil%Values(4)=Stencil%Values(4)-2*(Ppt%dx*Ppt%dy*Ppt%CvtFz%zz/(Ppt%dzF+Ppt%dz)+Ppt%dx*Ppt%dy*Ppt%CvtBz%zz/(Ppt%dzB+Ppt%dz))
+        END IF
+
 
         Stencil%idx_clmns(MatStencil_i,5) = i+1
         Stencil%idx_clmns(MatStencil_j,5) = j
