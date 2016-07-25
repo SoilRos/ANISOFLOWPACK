@@ -134,18 +134,20 @@ MODULE ANISOFLOW_Types
         PetscBool                               :: DefinedByZones=.FALSE.
         PetscBool                               :: DefinedByCell=.FALSE.
         ! Conductivity defined by zones:
-        TYPE(Tensor),ALLOCATABLE                :: CvtZone(:)
+        Vec                                     :: ZoneID
+        TYPE(Tensor),ALLOCATABLE                :: Zone(:)
         ! Conductivity defined on every cell:
-        Vec                                     :: CvtCell
+        Vec                                     :: Cell
     END TYPE ConductivityField
 
     TYPE SpecificStorageField
         PetscBool                               :: DefinedByZones=.FALSE.
         PetscBool                               :: DefinedByCell=.FALSE.
         ! Specific Storage defined by zones:
-        ! Vec or PetscInt(:)                :: StoZone
-        ! ! Specific Storage defined on every cell:
-        ! Vec                                     :: StoCell
+        Vec                                     :: ZoneID
+        PetscReal,ALLOCATABLE                   :: Zone(:)
+        ! Specific Storage defined on every cell:
+        Vec                                     :: Cell
     END TYPE SpecificStorageField
 
  !  - ProperyField: It's a data structure wich contains fields of differents properties.
@@ -156,7 +158,7 @@ MODULE ANISOFLOW_Types
         TYPE(ConductivityField)         :: Cvt
         TYPE(SpecificStorageField)      :: Sto
         ! Property defined by zones:
-        Vec                             :: PptType
+        Vec                             :: ZoneID
     END TYPE PropertiesField
 
  !  - TimeZoneVar: It's a data structure a zone of time to be modeled.
@@ -335,5 +337,21 @@ CONTAINS
         TargMirrorValue => Value
 
     END FUNCTION TargMirrorValue
+
+!!   - TargMirrorValue: It's a auxilar function to target a real that will be pointed later.
+!!     > IN: Value
+!!       + Values: It's a real.
+!!     > OUT: Value
+!!       + Values: It's the same input real but now as a target.
+
+    FUNCTION TargPetscVec(x)
+
+        IMPLICIT NONE
+
+        Vec,INTENT(IN),TARGET     :: x
+        Vec,POINTER               :: TargPetscVec
+        TargPetscVec => x
+
+    END FUNCTION TargPetscVec
 
 END MODULE ANISOFLOW_Types

@@ -335,6 +335,34 @@ SUBROUTINE GetInputFileTplgy(InputFileTplgy,ierr)
 
 END SUBROUTINE GetInputFileTplgy
 
+ !  - GetInputFilePptByZone: It's a routine that provides a file name to open the property  
+ !                           zones file in InputDir. 
+ !    > OUT: InputFilePptByZone, InputFilePptByZoneFlg, ierr.
+ !      + InputFilePptByZone: It's a string that specifies file name to open the property zones 
+ !                             file in InputDir.
+ !      + InputFilePptByZoneFlg: ...
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
+ !    > NOTES: The user can provide a file name using "-Input_file_ppt_by_zones" followed by 
+ !             property zones file name.
+
+SUBROUTINE GetInputFilePptByZone(InputFilePptByZone,InputFilePptByZoneFlg,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    CHARACTER(LEN=200),INTENT(OUT)  :: InputFilePptByZone
+    PetscBool,INTENT(OUT)           :: InputFilePptByZoneFlg
+
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_file_ppt_by_zones",    &
+        InputFilePptByZone,InputFilePptByZoneFlg,ierr)
+
+    InputFilePptByZone=TRIM(InputFilePptByZone)
+
+END SUBROUTINE GetInputFilePptByZone
+
+
  !  - GetInputFileCvt: It's a routine that provides a file name to open the conductivity file in 
  !                       InputDir.
  !    > OUT: InputFileCvt, ierr.
@@ -343,7 +371,6 @@ END SUBROUTINE GetInputFileTplgy
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
  !    > NOTES: The user must provide a file name using "-Input_file_cvt" followed by conductiviy
  !             file name.
-
 
 SUBROUTINE GetInputFileCvt(InputFileCvt,ierr)
 

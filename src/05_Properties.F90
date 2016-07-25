@@ -6,22 +6,25 @@ CONTAINS
 
 SUBROUTINE GetProrperties(Gmtry,PptFld,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,TargPetscVec
     USE ANISOFLOW_Interface, ONLY : GetVerbose
 
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
-    TYPE(PropertiesField),INTENT(OUT)     :: PptFld
+    TYPE(PropertiesField),INTENT(OUT)   :: PptFld
 
     CHARACTER(LEN=200)                  :: EventName,ClassName
     PetscBool                           :: Verbose
     PetscLogEvent                       :: Event
     PetscClassId                        :: ClassID
     PetscLogDouble                      :: EventFlops=0.d0
+!     Vec,POINTER                         :: CvtZoneID_tmp
 
     ClassName="Property"
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
@@ -32,9 +35,13 @@ SUBROUTINE GetProrperties(Gmtry,PptFld,ierr)
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
     
-    CALL GetConductivity(Gmtry,PptFld,ierr)
-    ! CALL GetConductivity(Gmtry,PptFld%Cvt,ierr)
+!     CALL GetPptZoneID(Gmtry,PptFld%PptZoneID,ierr)
+!     CvtZoneID_tmp => TargPetscVec(PptFld%PptZoneID)
+!     PptFld%Cvt%CvtZoneID = CvtZoneID_tmp
+!     CALL GetConductivity(Gmtry,PptFld,ierr)
+!     CALL GetConductivity(Gmtry,PptFld%Cvt,ierr)
     ! CALL GetStorage(Gmtry,PptFld%Sto,ierr)
+    STOP
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
@@ -44,575 +51,660 @@ SUBROUTINE GetProrperties(Gmtry,PptFld,ierr)
 
 END SUBROUTINE GetProrperties
 
-SUBROUTINE GetConductivity(Gmtry,PptFld,ierr)
+! SUBROUTINE GetPptZoneID(Gmtry,PptZoneID,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,InputTypeVar
-    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputType
+!     USE ANISOFLOW_Types, ONLY : Geometry
+!     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFilePptByZone
+!     USE ANISOFLOW_View, ONLY : ViewConductivity
+!     USE ANISOFLOW_Geometry, ONLY : VecApplicationToPetsc
 
-    IMPLICIT NONE
+!     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
+! #include <petsc/finclude/petscsys.h>
+! #include <petsc/finclude/petscvec.h>
+! #include <petsc/finclude/petscdm.h>
+! #include <petsc/finclude/petscdmda.h>
+! #include <petsc/finclude/petscdmda.h90>
 
-    PetscErrorCode,INTENT(INOUT)        :: ierr
-    TYPE(Geometry),INTENT(IN)           :: Gmtry
-    TYPE(PropertiesField),INTENT(INOUT)   :: PptFld
+!     PetscErrorCode,INTENT(INOUT)        :: ierr
+!     TYPE(Geometry),INTENT(IN)           :: Gmtry
+!     Vec,INTENT(OUT)                     :: PptZoneID
 
-    TYPE(InputTypeVar)                  :: InputType
-    PetscBool                           :: Verbose
-    CHARACTER(LEN=200)                  :: EventName,ClassName
-    PetscLogEvent                       :: Event
-    PetscClassId                        :: ClassID
-    PetscLogDouble                      :: EventFlops=0.d0
+!     Vec                                 :: PptZoneID_Global
+!     PetscInt                            :: widthG(3),u,ValI,i
+!     PetscMPIInt                         :: process
+!     PetscReal                           :: ValR
+!     CHARACTER(LEN=200)                  :: InputFilePptByZone,Route,ViewName,EventName,InputDir
+!     PetscBool                           :: InputFilePptByZoneFlg,Verbose
 
-    ClassName="Property"
-    CALL PetscClassIdRegister(ClassName,ClassID,ierr)
-    EventName="GetConductivity"
-    CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
-    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+!     PARAMETER(u=01)
 
-    CALL GetVerbose(Verbose,ierr)
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
+!     CALL GetVerbose(Verbose,ierr)
+
+!     CALL GetInputDir(InputDir,ierr)
+!     CALL GetInputFilePptByZone(InputFilePptByZone,InputFilePptByZoneFlg,ierr)
+
+!     IF (InputFilePptByZoneFlg) THEN
+!         CALL DMCreateGlobalVector(Gmtry%DataMngr,PptZoneID_Global,ierr)
+!         CALL DMCreateLocalVector(Gmtry%DataMngr,PptZoneID,ierr)
+
+!         CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+!             & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+!             & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+!             & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+!             & PETSC_NULL_INTEGER,ierr)
+
+!         CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+
+
+!             IF (process.EQ.0) THEN
+
+!                 Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFilePptByZone))
+!                 OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
+
+!                 DO i=1,widthG(1)*widthG(2)*widthG(3)
+!                     READ(u,*)ValI
+!                     IF (ValI.LE.0) THEN
+!                         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
+!                             & "[ERROR] Input_file_cvt_type entry only can contain"  &
+!                             & // " natural numbers\n",ierr)
+!                         STOP
+!                     END IF
+!                     ValR=REAL(ValI)
+!                     CALL VecSetValue(PptZoneID_Global,i-1,ValR,INSERT_VALUES,ierr)
+!                 END DO
+!                 CLOSE(u)
+
+!             END IF
+
+!         CALL VecAssemblyBegin(PptZoneID_Global,ierr)
+!         CALL VecAssemblyEnd(PptZoneID_Global,ierr)
+
+!         CALL VecApplicationToPetsc(Gmtry%DataMngr,PptZoneID_Global,ierr)
+
+!         ViewName="ANISOFLOW_PptZoneID"
+!         EventName="GetConductivity"
+!         ! Crear un visualizador para esto
+! !         CALL ViewConductivity(PptZoneID_Global,ViewName,EventName,ierr)
+
+!         CALL DMGlobalToLocalBegin(Gmtry%DataMngr,PptZoneID_Global,INSERT_VALUES,PptZoneID,ierr)
+!         CALL DMGlobalToLocalEnd(Gmtry%DataMngr,PptZoneID_Global,INSERT_VALUES,PptZoneID,ierr)
+
+!         CALL VecDestroy(PptZoneID_Global,ierr)
+
+!     END IF
+
+! END SUBROUTINE GetPptZoneID
+
+! SUBROUTINE GetConductivity(Gmtry,Cvt,ierr)
+
+!     USE ANISOFLOW_Types, ONLY : Geometry,ConductivityField,InputTypeVar
+!     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputType
+
+!     IMPLICIT NONE
+
+! #include <petsc/finclude/petscsys.h>
+
+!     PetscErrorCode,INTENT(INOUT)        :: ierr
+!     TYPE(Geometry),INTENT(IN)           :: Gmtry
+!     TYPE(ConductivityField),INTENT(OUT) :: Cvt
+
+!     TYPE(InputTypeVar)                  :: InputType
+!     PetscBool                           :: Verbose
+!     CHARACTER(LEN=200)                  :: EventName,ClassName
+!     PetscLogEvent                       :: Event
+!     PetscClassId                        :: ClassID
+!     PetscLogDouble                      :: EventFlops=0.d0
+
+!     ClassName="Property"
+!     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
+!     EventName="GetConductivity"
+!     CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
+!     CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+
+!     CALL GetVerbose(Verbose,ierr)
+!     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
     
-    CALL GetInputType(InputType,ierr)
+!     CALL GetInputType(InputType,ierr)
 
-    IF (InputType%Cvt.EQ.1) THEN
-        CALL GetConductivity_1(Gmtry,PptFld,ierr)
-    ELSE IF (InputType%Cvt.EQ.2) THEN
-        CALL GetConductivity_2(Gmtry,PptFld,ierr)
-    ELSE
-        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "[ERROR] Conductivity InputType wrong\n",ierr)
-        STOP
-    END IF
+!     IF (InputType%Cvt.EQ.1) THEN
+!         CALL GetConductivity_1(Gmtry,Cvt,ierr)
+!     ELSE IF (InputType%Cvt.EQ.2) THEN
+!         CALL GetConductivity_2(Gmtry,Cvt,ierr)
+!     ELSE
+!         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+!             & "[ERROR] Conductivity InputType wrong\n",ierr)
+!         STOP
+!     END IF
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
+!     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
-    CALL PetscLogFlops(EventFlops,ierr)
-    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+!     CALL PetscLogFlops(EventFlops,ierr)
+!     CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
-END SUBROUTINE GetConductivity
+! END SUBROUTINE GetConductivity
 
-SUBROUTINE GetConductivity_1(Gmtry,PptFld,ierr)
+! SUBROUTINE GetConductivity_1(Gmtry,Cvt,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,TargetFullTensor
-    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileCvt,GetInputFileCvtByZones
-    USE ANISOFLOW_View, ONLY : ViewConductivity
-    USE ANISOFLOW_Geometry, ONLY : VecApplicationToPetsc
+!     USE ANISOFLOW_Types, ONLY : Geometry,ConductivityField,TargetFullTensor
+!     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileCvt,GetInputFileCvtByZones
+!     USE ANISOFLOW_View, ONLY : ViewConductivity
+!     USE ANISOFLOW_Geometry, ONLY : VecApplicationToPetsc
     
-    IMPLICIT NONE
+!     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
+! #include <petsc/finclude/petscsys.h>
+! #include <petsc/finclude/petscvec.h>
+! #include <petsc/finclude/petscdm.h>
+! #include <petsc/finclude/petscdmda.h>
+! #include <petsc/finclude/petscdmda.h90>
 
-    PetscErrorCode,INTENT(INOUT)        :: ierr
-    TYPE(Geometry),INTENT(IN)           :: Gmtry
-    TYPE(PropertiesField),INTENT(INOUT) :: PptFld
+!     PetscErrorCode,INTENT(INOUT)        :: ierr
+!     TYPE(Geometry),INTENT(IN)           :: Gmtry
+!     TYPE(ConductivityField),INTENT(OUT) :: Cvt
 
-    PetscInt                            :: u,i,j,widthG(3),ValI,CvtLen
-    PetscReal                           :: ValR
-    PetscMPIInt                         :: process
-    Vec                                 :: CvtTypeGlobal
-    CHARACTER(LEN=200)                  :: InputDir,InputFileCvt,InputFileCvtByZones,ViewName,EventName
-    CHARACTER(LEN=200)                  :: Route
-    CHARACTER(LEN=13)                   :: CvtKind
-    PetscBool                           :: Verbose
+!     PetscInt                            :: u,i,j,widthG(3),ValI,CvtLen
+!     PetscReal                           :: ValR
+!     PetscMPIInt                         :: process
+!     Vec                                 :: CvtTypeGlobal
+!     CHARACTER(LEN=200)                  :: InputDir,InputFileCvt,InputFileCvtByZones,ViewName,EventName
+!     CHARACTER(LEN=200)                  :: Route
+!     CHARACTER(LEN=13)                   :: CvtKind
+!     PetscBool                           :: Verbose
 
-    PARAMETER(u=01)
+!     PARAMETER(u=01)
 
-    CALL GetVerbose(Verbose,ierr)
+!     CALL GetVerbose(Verbose,ierr)
 
-    CALL GetInputDir(InputDir,ierr)
-    CALL GetInputFileCvt(InputFileCvt,ierr)
+!     CALL GetInputDir(InputDir,ierr)
+!     CALL GetInputFileCvt(InputFileCvt,ierr)
 
-    PptFld%Cvt%DefinedByZones=.TRUE.
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetConductivity Event] Conductivity Field is stored as Zones by Block\n",ierr)
-    CALL DMCreateGlobalVector(Gmtry%DataMngr,CvtTypeGlobal,ierr)
-    CALL DMCreateLocalVector(Gmtry%DataMngr,PptFld%PptType,ierr)
+!     Cvt%Cvt%DefinedByZones=.TRUE.
+!     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetConductivity Event] Conductivity Field is stored as Zones by Block\n",ierr)
+!     CALL DMCreateGlobalVector(Gmtry%DataMngr,CvtTypeGlobal,ierr)
+!     CALL DMCreateLocalVector(Gmtry%DataMngr,PptFld%PptType,ierr)
 
-    ! It gets the global size from the geometry data manager.
-    CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
-        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
-        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
-        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
-        & PETSC_NULL_INTEGER,ierr)
+!     ! It gets the global size from the geometry data manager.
+!     CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+!         & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+!         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+!         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+!         & PETSC_NULL_INTEGER,ierr)
 
-    CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
-    IF (process.EQ.0) THEN
-        CALL GetInputFileCvtByZones(InputFileCvtByZones,ierr)
-        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvtByZones))
-        OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
+!     CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+!     IF (process.EQ.0) THEN
+!         CALL GetInputFileCvtByZones(InputFileCvtByZones,ierr)
+!         Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvtByZones))
+!         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
 
-        DO i=1,widthG(1)*widthG(2)*widthG(3)
-            READ(u, *)ValI
-            IF (ValI.LE.0) THEN
-                CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
-                    & "[ERROR] Input_file_cvt_type entry only can contain"  &
-                    & // " natural numbers\n",ierr)
-                STOP
-            END IF
-            ValR=REAL(ValI)
-            CALL VecSetValue(CvtTypeGlobal,i-1,ValR,INSERT_VALUES,ierr)
-        END DO
-        CLOSE(u)
-    END IF
+!         DO i=1,widthG(1)*widthG(2)*widthG(3)
+!             READ(u, *)ValI
+!             IF (ValI.LE.0) THEN
+!                 CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
+!                     & "[ERROR] Input_file_cvt_type entry only can contain"  &
+!                     & // " natural numbers\n",ierr)
+!                 STOP
+!             END IF
+!             ValR=REAL(ValI)
+!             CALL VecSetValue(CvtTypeGlobal,i-1,ValR,INSERT_VALUES,ierr)
+!         END DO
+!         CLOSE(u)
+!     END IF
 
-    CALL VecAssemblyBegin(CvtTypeGlobal,ierr)
-    CALL VecAssemblyEnd(CvtTypeGlobal,ierr)
+!     CALL VecAssemblyBegin(CvtTypeGlobal,ierr)
+!     CALL VecAssemblyEnd(CvtTypeGlobal,ierr)
 
-    CALL VecMax(CvtTypeGlobal,PETSC_NULL_INTEGER,ValR,ierr)
-    CvtLen=INT(ValR)
+!     CALL VecMax(CvtTypeGlobal,PETSC_NULL_INTEGER,ValR,ierr)
+!     CvtLen=INT(ValR)
 
-    CALL VecApplicationToPetsc(Gmtry%DataMngr,CvtTypeGlobal,ierr)
+!     CALL VecApplicationToPetsc(Gmtry%DataMngr,CvtTypeGlobal,ierr)
 
-    ViewName="ANISOFLOW_PptType"
-    EventName="GetConductivity"
-    CALL ViewConductivity(CvtTypeGlobal,ViewName,EventName,ierr)
+!     ViewName="ANISOFLOW_PptType"
+!     EventName="GetConductivity"
+!     CALL ViewConductivity(CvtTypeGlobal,ViewName,EventName,ierr)
 
-    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,CvtTypeGlobal,INSERT_VALUES,  &
-        & PptFld%PptType,ierr)
-    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,CvtTypeGlobal,INSERT_VALUES,    &
-        & PptFld%PptType,ierr)
+!     CALL DMGlobalToLocalBegin(Gmtry%DataMngr,CvtTypeGlobal,INSERT_VALUES,  &
+!         & PptFld%PptType,ierr)
+!     CALL DMGlobalToLocalEnd(Gmtry%DataMngr,CvtTypeGlobal,INSERT_VALUES,    &
+!         & PptFld%PptType,ierr)
 
-    CALL VecDestroy(CvtTypeGlobal,ierr)
+!     CALL VecDestroy(CvtTypeGlobal,ierr)
 
-    ALLOCATE(PptFld%Cvt%CvtZone(CvtLen))
+!     ALLOCATE(PptFld%Cvt%CvtZone(CvtLen))
 
-    IF (process.EQ.0) THEN
-        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvt))
-        OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
+!     IF (process.EQ.0) THEN
+!         Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvt))
+!         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
 
-        DO i=1,CvtLen
-            READ(u,*)
-            READ(u,*)
-            READ(u,*)
-            READ(u,'(A13)')CvtKind
-            IF (CvtKind.EQ."k anisotropic") THEN 
-                READ(u,*)PptFld%Cvt%CvtZone(i)%xx, &
-                    & PptFld%Cvt%CvtZone(i)%yy,PptFld%Cvt%CvtZone(i)%zz
-                PptFld%Cvt%CvtZone(i)%xy=0.0
-                PptFld%Cvt%CvtZone(i)%xz=0.0
-                PptFld%Cvt%CvtZone(i)%yz=0.0
-            ELSE IF (CvtKind.EQ."k isotropic  ") THEN
-                READ(u,*)PptFld%Cvt%CvtZone(i)%xx
-                PptFld%Cvt%CvtZone(i)%yy=PptFld%Cvt%CvtZone(i)%xx
-                PptFld%Cvt%CvtZone(i)%zz=PptFld%Cvt%CvtZone(i)%xx
-                PptFld%Cvt%CvtZone(i)%xy=0.0
-                PptFld%Cvt%CvtZone(i)%xz=0.0
-                PptFld%Cvt%CvtZone(i)%yz=0.0
-            ELSE
-                CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
-                    & "[ERROR] File of conductivity properties is invalid\n"&
-                    & ,ierr)
-                STOP            
-            END IF
-            DO j=1,24
-                READ(u,*)
-            END DO
-        END DO
-        CLOSE(u)
-    END IF
+!         DO i=1,CvtLen
+!             READ(u,*)
+!             READ(u,*)
+!             READ(u,*)
+!             READ(u,'(A13)')CvtKind
+!             IF (CvtKind.EQ."k anisotropic") THEN 
+!                 READ(u,*)PptFld%Cvt%CvtZone(i)%xx, &
+!                     & PptFld%Cvt%CvtZone(i)%yy,PptFld%Cvt%CvtZone(i)%zz
+!                 PptFld%Cvt%CvtZone(i)%xy=0.0
+!                 PptFld%Cvt%CvtZone(i)%xz=0.0
+!                 PptFld%Cvt%CvtZone(i)%yz=0.0
+!             ELSE IF (CvtKind.EQ."k isotropic  ") THEN
+!                 READ(u,*)PptFld%Cvt%CvtZone(i)%xx
+!                 PptFld%Cvt%CvtZone(i)%yy=PptFld%Cvt%CvtZone(i)%xx
+!                 PptFld%Cvt%CvtZone(i)%zz=PptFld%Cvt%CvtZone(i)%xx
+!                 PptFld%Cvt%CvtZone(i)%xy=0.0
+!                 PptFld%Cvt%CvtZone(i)%xz=0.0
+!                 PptFld%Cvt%CvtZone(i)%yz=0.0
+!             ELSE
+!                 CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
+!                     & "[ERROR] File of conductivity properties is invalid\n"&
+!                     & ,ierr)
+!                 STOP            
+!             END IF
+!             DO j=1,24
+!                 READ(u,*)
+!             END DO
+!         END DO
+!         CLOSE(u)
+!     END IF
 
-    CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%xx,CvtLen,MPI_DOUBLE, 0,         &
-        & PETSC_COMM_WORLD,ierr)
-    CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%yy,CvtLen,MPI_DOUBLE, 0,         &
-        & PETSC_COMM_WORLD,ierr)
-    CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%zz,CvtLen,MPI_DOUBLE, 0,         &
-        &PETSC_COMM_WORLD,ierr)
-    CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%xy,CvtLen,MPI_DOUBLE, 0,         &
-        &PETSC_COMM_WORLD,ierr)
-    CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%xz,CvtLen,MPI_DOUBLE, 0,         &
-        &PETSC_COMM_WORLD,ierr)
-    CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%yz,CvtLen,MPI_DOUBLE, 0,         &
-        &PETSC_COMM_WORLD,ierr)
+!     CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%xx,CvtLen,MPI_DOUBLE, 0,         &
+!         & PETSC_COMM_WORLD,ierr)
+!     CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%yy,CvtLen,MPI_DOUBLE, 0,         &
+!         & PETSC_COMM_WORLD,ierr)
+!     CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%zz,CvtLen,MPI_DOUBLE, 0,         &
+!         &PETSC_COMM_WORLD,ierr)
+!     CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%xy,CvtLen,MPI_DOUBLE, 0,         &
+!         &PETSC_COMM_WORLD,ierr)
+!     CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%xz,CvtLen,MPI_DOUBLE, 0,         &
+!         &PETSC_COMM_WORLD,ierr)
+!     CALL MPI_Bcast(PptFld%Cvt%CvtZone(:)%yz,CvtLen,MPI_DOUBLE, 0,         &
+!         &PETSC_COMM_WORLD,ierr)
 
-    DO i=1,CvtLen
-        CALL TargetFullTensor(PptFld%Cvt%CvtZone(i))
-    END DO
+!     DO i=1,CvtLen
+!         CALL TargetFullTensor(PptFld%Cvt%CvtZone(i))
+!     END DO
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetConductivity Event] Conductivity Field was satisfactorily created\n",ierr)
+!     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetConductivity Event] Conductivity Field was satisfactorily created\n",ierr)
 
-END SUBROUTINE GetConductivity_1
+! END SUBROUTINE GetConductivity_1
 
-SUBROUTINE GetConductivity_2(Gmtry,PptFld,ierr)
+! SUBROUTINE GetConductivity_2(Gmtry,PptFld,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField
-    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileCvt,GetInputFileCvtByZones
-    USE ANISOFLOW_View, ONLY : ViewConductivity
+!     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField
+!     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileCvt,GetInputFileCvtByZones
+!     USE ANISOFLOW_View, ONLY : ViewConductivity
     
-    IMPLICIT NONE
+!     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
+! #include <petsc/finclude/petscsys.h>
+! #include <petsc/finclude/petscvec.h>
+! #include <petsc/finclude/petscdm.h>
+! #include <petsc/finclude/petscdmda.h>
+! #include <petsc/finclude/petscdmda.h90>
 
-    PetscErrorCode,INTENT(INOUT)        :: ierr
-    TYPE(Geometry),INTENT(IN)           :: Gmtry
-    TYPE(PropertiesField),INTENT(INOUT) :: PptFld
+!     PetscErrorCode,INTENT(INOUT)        :: ierr
+!     TYPE(Geometry),INTENT(IN)           :: Gmtry
+!     TYPE(PropertiesField),INTENT(INOUT) :: PptFld
 
-    PetscInt                            :: u,i,widthG(3)
-    PetscReal                           :: ValR
-    PetscMPIInt                         :: process
-    Vec                                 :: CvtCellGlobal
-    CHARACTER(LEN=200)                  :: InputDir,InputFileCvt
-    CHARACTER(LEN=200)                  :: Route,ViewName,EventName
-    PetscBool                           :: Verbose
+!     PetscInt                            :: u,i,widthG(3)
+!     PetscReal                           :: ValR
+!     PetscMPIInt                         :: process
+!     Vec                                 :: CvtCellGlobal
+!     CHARACTER(LEN=200)                  :: InputDir,InputFileCvt
+!     CHARACTER(LEN=200)                  :: Route,ViewName,EventName
+!     PetscBool                           :: Verbose
 
-    PARAMETER(u=01)
+!     PARAMETER(u=01)
 
-    CALL GetVerbose(Verbose,ierr)
+!     CALL GetVerbose(Verbose,ierr)
 
-    CALL GetInputDir(InputDir,ierr)
-    CALL GetInputFileCvt(InputFileCvt,ierr)
+!     CALL GetInputDir(InputDir,ierr)
+!     CALL GetInputFileCvt(InputFileCvt,ierr)
 
-    PptFld%Cvt%DefinedByCell=.TRUE.
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Event] Conductivity Field is stored by Block\n",ierr)
+!     PptFld%Cvt%DefinedByCell=.TRUE.
+!     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Event] Conductivity Field is stored by Block\n",ierr)
 
-    CALL DMCreateGlobalVector(Gmtry%DataMngr,CvtCellGlobal,ierr)
-    CALL DMCreateLocalVector(Gmtry%DataMngr,PptFld%Cvt%CvtCell,ierr)
+!     CALL DMCreateGlobalVector(Gmtry%DataMngr,CvtCellGlobal,ierr)
+!     CALL DMCreateLocalVector(Gmtry%DataMngr,PptFld%Cvt%CvtCell,ierr)
 
-    CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+!     CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
 
-    IF (process.EQ.0) THEN
-        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvt))
-        OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
+!     IF (process.EQ.0) THEN
+!         Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvt))
+!         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
 
-        ! It gets the global size from the geometry data manager.
-        CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
-        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
-        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
-        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
-        & PETSC_NULL_INTEGER,ierr)
+!         ! It gets the global size from the geometry data manager.
+!         CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+!         & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+!         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+!         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+!         & PETSC_NULL_INTEGER,ierr)
 
-        DO i=1,widthG(1)*widthG(2)*widthG(3)
-            READ(u,*)ValR
-            CALL VecSetValue(CvtCellGlobal,i-1,ValR,INSERT_VALUES,ierr)
-        END DO
-        CLOSE(u)
-    END IF
+!         DO i=1,widthG(1)*widthG(2)*widthG(3)
+!             READ(u,*)ValR
+!             CALL VecSetValue(CvtCellGlobal,i-1,ValR,INSERT_VALUES,ierr)
+!         END DO
+!         CLOSE(u)
+!     END IF
 
-    CALL VecAssemblyBegin(CvtCellGlobal,ierr)
-    CALL VecAssemblyEnd(CvtCellGlobal,ierr)
+!     CALL VecAssemblyBegin(CvtCellGlobal,ierr)
+!     CALL VecAssemblyEnd(CvtCellGlobal,ierr)
 
-    ViewName="ANISOFLOW_Cvt"
-    EventName="GetConductivity"
-    CALL ViewConductivity(CvtCellGlobal,ViewName,EventName,ierr)
+!     ViewName="ANISOFLOW_Cvt"
+!     EventName="GetConductivity"
+!     CALL ViewConductivity(CvtCellGlobal,ViewName,EventName,ierr)
 
-    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,CvtCellGlobal,INSERT_VALUES,  &
-        & PptFld%Cvt%CvtCell,ierr)
-    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,CvtCellGlobal,INSERT_VALUES,    &
-        & PptFld%Cvt%CvtCell,ierr)
+!     CALL DMGlobalToLocalBegin(Gmtry%DataMngr,CvtCellGlobal,INSERT_VALUES,  &
+!         & PptFld%Cvt%CvtCell,ierr)
+!     CALL DMGlobalToLocalEnd(Gmtry%DataMngr,CvtCellGlobal,INSERT_VALUES,    &
+!         & PptFld%Cvt%CvtCell,ierr)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field was satisfactorily created\n",ierr)
+!     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field was satisfactorily created\n",ierr)
 
-END SUBROUTINE GetConductivity_2
+! END SUBROUTINE GetConductivity_2
 
-SUBROUTINE GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
+! SUBROUTINE GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,Property
-    USE ANISOFLOW_Geometry, ONLY : GetLocalTopology
+!     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,Property
+!     USE ANISOFLOW_Geometry, ONLY : GetLocalTopology
 
-    IMPLICIT NONE
+!     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
+! #include <petsc/finclude/petscsys.h>
 
-    TYPE(Geometry),INTENT(IN)           :: Gmtry
-    TYPE(PropertiesField),INTENT(IN)      :: PptFld
-    TYPE(Property),INTENT(OUT)          :: Ppt
-    PetscInt,INTENT(IN)                 :: i,j,k
-    PetscErrorCode,INTENT(INOUT)        :: ierr
+!     TYPE(Geometry),INTENT(IN)           :: Gmtry
+!     TYPE(PropertiesField),INTENT(IN)      :: PptFld
+!     TYPE(Property),INTENT(OUT)          :: Ppt
+!     PetscInt,INTENT(IN)                 :: i,j,k
+!     PetscErrorCode,INTENT(INOUT)        :: ierr
 
-    Ppt%Pstn%i=i
-    Ppt%Pstn%j=j
-    Ppt%Pstn%k=k
+!     Ppt%Pstn%i=i
+!     Ppt%Pstn%j=j
+!     Ppt%Pstn%k=k
 
-    CALL GetLocalTopology(Gmtry,Ppt,ierr)
-    CALL GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
-
-
-END SUBROUTINE GetLocalProperty
-
-SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
-
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,Property,TargetFullTensor,InputTypeVar
-    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputType
-
-    IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
-
-    TYPE(Geometry),INTENT(IN)           :: Gmtry
-    TYPE(PropertiesField),INTENT(IN)    :: PptFld
-    TYPE(Property),INTENT(INOUT)        :: Ppt
-    PetscErrorCode,INTENT(INOUT)        :: ierr
-
-    TYPE(InputTypeVar)                  :: InputType
-    PetscReal,POINTER                   :: TmpCvt3D(:,:,:),TmpCvt2D(:,:)
-    PetscReal                           :: ValR(2)
-    PetscInt                            :: ValI(2),widthG(3),i,j,k
-
-    CALL GetInputType(InputType,ierr)
-
-    i=Ppt%Pstn%i
-    j=Ppt%Pstn%j
-    k=Ppt%Pstn%k
-
-    ! It gets the global size from the geometry data manager.
-    CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
-        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
-        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
-        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
-        & PETSC_NULL_INTEGER,ierr)
-
-    Ppt%CvtBx%xx=0.0
-    Ppt%CvtBx%xy=0.0
-    Ppt%CvtBx%xz=0.0
-    Ppt%CvtBx%yy=0.0
-    Ppt%CvtBx%yz=0.0
-    Ppt%CvtBx%zz=0.0
-
-    Ppt%CvtFx%xx=0.0
-    Ppt%CvtFx%xy=0.0
-    Ppt%CvtFx%xz=0.0
-    Ppt%CvtFx%yy=0.0
-    Ppt%CvtFx%yz=0.0
-    Ppt%CvtFx%zz=0.0
-
-    Ppt%CvtBy%xx=0.0
-    Ppt%CvtBy%xy=0.0
-    Ppt%CvtBy%xz=0.0
-    Ppt%CvtBy%yy=0.0
-    Ppt%CvtBy%yz=0.0
-    Ppt%CvtBy%zz=0.0
-
-    Ppt%CvtFy%xx=0.0
-    Ppt%CvtFy%xy=0.0
-    Ppt%CvtFy%xz=0.0
-    Ppt%CvtFy%yy=0.0
-    Ppt%CvtFy%yz=0.0
-    Ppt%CvtFy%zz=0.0
-
-    Ppt%CvtBz%xx=0.0
-    Ppt%CvtBz%xy=0.0
-    Ppt%CvtBz%xz=0.0
-    Ppt%CvtBz%yy=0.0
-    Ppt%CvtBz%yz=0.0
-    Ppt%CvtBz%zz=0.0
-
-    Ppt%CvtFz%xx=0.0
-    Ppt%CvtFz%xy=0.0
-    Ppt%CvtFz%xz=0.0
-    Ppt%CvtFz%yy=0.0
-    Ppt%CvtFz%yz=0.0
-    Ppt%CvtFz%zz=0.0
-
-    IF (SIZE(Ppt%StnclTplgy).EQ.7) THEN          ! Stencil type star
-        ValI(1)=4
-    ELSEIF (SIZE(Ppt%StnclTplgy).EQ.19) THEN     ! Stencil type box
-        ValI(1)=10
-    ELSE 
-        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,              &
-            & "[ERROR] Property topology wasn't well defined\n"      &
-            & ,ierr)
-        STOP   
-    END IF
-
-    IF (PptFld%Cvt%DefinedByZones) THEN
-        IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4).OR.(Ppt%StnclTplgy(ValI(1)).EQ.5)) THEN ! Only get properties for active blocks
-            IF (widthG(3).NE.1) THEN
-                CALL DMDAVecGetArrayreadF90(Gmtry%DataMngr,PptFld%PptType,TmpCvt3D,ierr)
-                ValI(1)=INT(TmpCvt3D(i,j,k))
-            ELSE
-                CALL DMDAVecGetArrayreadF90(Gmtry%DataMngr,PptFld%PptType,TmpCvt2D,ierr)
-                ValI(1)=INT(TmpCvt2D(i,j))
-            END IF                
-
-            ! Backward on x
-            IF (widthG(3).NE.1) THEN
-                ValI(2)=INT(TmpCvt3D(i-1,j,k))
-            ELSE
-                ValI(2)=INT(TmpCvt2D(i-1,j))
-            END IF
-            Ppt%CvtBx%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
-            Ppt%CvtBx%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
-            Ppt%CvtBx%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
-            Ppt%CvtBx%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
-            Ppt%CvtBx%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
-            Ppt%CvtBx%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
-            CALL TargetFullTensor(Ppt%CvtBx)
-
-            ! Forward on x
-            IF (widthG(3).NE.1) THEN
-                ValI(2)=INT(TmpCvt3D(i+1,j,k))
-            ELSE
-                ValI(2)=INT(TmpCvt2D(i+1,j))
-            END IF
-            Ppt%CvtFx%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
-            Ppt%CvtFx%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
-            Ppt%CvtFx%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
-            Ppt%CvtFx%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
-            Ppt%CvtFx%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
-            Ppt%CvtFx%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
-            CALL TargetFullTensor(Ppt%CvtFx)
-
-            ! Backward on y
-            IF (widthG(3).NE.1) THEN
-                ValI(2)=INT(TmpCvt3D(i,j-1,k))
-            ELSE
-                ValI(2)=INT(TmpCvt2D(i-1,j))
-            END IF
-            Ppt%CvtBy%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
-            Ppt%CvtBy%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
-            Ppt%CvtBy%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
-            Ppt%CvtBy%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
-            Ppt%CvtBy%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
-            Ppt%CvtBy%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
-            CALL TargetFullTensor(Ppt%CvtBy)
-
-            ! Forward on y
-            IF (widthG(3).NE.1) THEN
-                ValI(2)=INT(TmpCvt3D(i,j+1,k))
-            ELSE
-                ValI(2)=INT(TmpCvt2D(i,j+1))
-            END IF
-            Ppt%CvtFy%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
-            Ppt%CvtFy%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
-            Ppt%CvtFy%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
-            Ppt%CvtFy%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
-            Ppt%CvtFy%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
-            Ppt%CvtFy%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
-            CALL TargetFullTensor(Ppt%CvtFy)
-
-            ! Backward on z
-            IF (widthG(3).NE.1) THEN
-                ValI(2)=INT(TmpCvt3D(i,j,k-1))
-                Ppt%CvtBz%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
-                Ppt%CvtBz%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
-                Ppt%CvtBz%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
-                Ppt%CvtBz%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
-                Ppt%CvtBz%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
-                Ppt%CvtBz%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
-                CALL TargetFullTensor(Ppt%CvtBz)
-            END IF
+!     CALL GetLocalTopology(Gmtry,Ppt,ierr)
+!     CALL GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
 
 
-            ! Forward on y
-            IF (widthG(3).NE.1) THEN
-                ValI(2)=INT(TmpCvt3D(i,j,k+1))
-                Ppt%CvtFz%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
-                Ppt%CvtFz%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
-                Ppt%CvtFz%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
-                Ppt%CvtFz%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
-                Ppt%CvtFz%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
-                Ppt%CvtFz%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
-                CALL TargetFullTensor(Ppt%CvtFz)
-            END IF
+! END SUBROUTINE GetLocalProperty
 
-            IF (widthG(3).NE.1) THEN
-                CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%PptType,TmpCvt3D,ierr)
-            ELSE
-                CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%PptType,TmpCvt2D,ierr)
-            END IF
+! SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
+
+!     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,Property,TargetFullTensor,InputTypeVar
+!     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputType
+
+!     IMPLICIT NONE
+
+! #include <petsc/finclude/petscsys.h>
+! #include <petsc/finclude/petscvec.h>
+! #include <petsc/finclude/petscdm.h>
+! #include <petsc/finclude/petscdmda.h>
+! #include <petsc/finclude/petscdmda.h90>
+
+!     TYPE(Geometry),INTENT(IN)           :: Gmtry
+!     TYPE(PropertiesField),INTENT(IN)    :: PptFld
+!     TYPE(Property),INTENT(INOUT)        :: Ppt
+!     PetscErrorCode,INTENT(INOUT)        :: ierr
+
+!     TYPE(InputTypeVar)                  :: InputType
+!     PetscReal,POINTER                   :: TmpCvt3D(:,:,:),TmpCvt2D(:,:)
+!     PetscReal                           :: ValR(2)
+!     PetscInt                            :: ValI(2),widthG(3),i,j,k
+
+!     CALL GetInputType(InputType,ierr)
+
+!     i=Ppt%Pstn%i
+!     j=Ppt%Pstn%j
+!     k=Ppt%Pstn%k
+
+!     ! It gets the global size from the geometry data manager.
+!     CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+!         & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+!         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+!         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+!         & PETSC_NULL_INTEGER,ierr)
+
+!     Ppt%CvtBx%xx=0.0
+!     Ppt%CvtBx%xy=0.0
+!     Ppt%CvtBx%xz=0.0
+!     Ppt%CvtBx%yy=0.0
+!     Ppt%CvtBx%yz=0.0
+!     Ppt%CvtBx%zz=0.0
+
+!     Ppt%CvtFx%xx=0.0
+!     Ppt%CvtFx%xy=0.0
+!     Ppt%CvtFx%xz=0.0
+!     Ppt%CvtFx%yy=0.0
+!     Ppt%CvtFx%yz=0.0
+!     Ppt%CvtFx%zz=0.0
+
+!     Ppt%CvtBy%xx=0.0
+!     Ppt%CvtBy%xy=0.0
+!     Ppt%CvtBy%xz=0.0
+!     Ppt%CvtBy%yy=0.0
+!     Ppt%CvtBy%yz=0.0
+!     Ppt%CvtBy%zz=0.0
+
+!     Ppt%CvtFy%xx=0.0
+!     Ppt%CvtFy%xy=0.0
+!     Ppt%CvtFy%xz=0.0
+!     Ppt%CvtFy%yy=0.0
+!     Ppt%CvtFy%yz=0.0
+!     Ppt%CvtFy%zz=0.0
+
+!     Ppt%CvtBz%xx=0.0
+!     Ppt%CvtBz%xy=0.0
+!     Ppt%CvtBz%xz=0.0
+!     Ppt%CvtBz%yy=0.0
+!     Ppt%CvtBz%yz=0.0
+!     Ppt%CvtBz%zz=0.0
+
+!     Ppt%CvtFz%xx=0.0
+!     Ppt%CvtFz%xy=0.0
+!     Ppt%CvtFz%xz=0.0
+!     Ppt%CvtFz%yy=0.0
+!     Ppt%CvtFz%yz=0.0
+!     Ppt%CvtFz%zz=0.0
+
+!     IF (SIZE(Ppt%StnclTplgy).EQ.7) THEN          ! Stencil type star
+!         ValI(1)=4
+!     ELSEIF (SIZE(Ppt%StnclTplgy).EQ.19) THEN     ! Stencil type box
+!         ValI(1)=10
+!     ELSE 
+!         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,              &
+!             & "[ERROR] Property topology wasn't well defined\n"      &
+!             & ,ierr)
+!         STOP   
+!     END IF
+
+!     IF (PptFld%Cvt%DefinedByZones) THEN
+!         IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4).OR.(Ppt%StnclTplgy(ValI(1)).EQ.5)) THEN ! Only get properties for active blocks
+!             IF (widthG(3).NE.1) THEN
+!                 CALL DMDAVecGetArrayreadF90(Gmtry%DataMngr,PptFld%PptType,TmpCvt3D,ierr)
+!                 ValI(1)=INT(TmpCvt3D(i,j,k))
+!             ELSE
+!                 CALL DMDAVecGetArrayreadF90(Gmtry%DataMngr,PptFld%PptType,TmpCvt2D,ierr)
+!                 ValI(1)=INT(TmpCvt2D(i,j))
+!             END IF                
+
+!             ! Backward on x
+!             IF (widthG(3).NE.1) THEN
+!                 ValI(2)=INT(TmpCvt3D(i-1,j,k))
+!             ELSE
+!                 ValI(2)=INT(TmpCvt2D(i-1,j))
+!             END IF
+!             Ppt%CvtBx%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
+!             Ppt%CvtBx%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
+!             Ppt%CvtBx%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
+!             Ppt%CvtBx%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
+!             Ppt%CvtBx%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
+!             Ppt%CvtBx%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
+!             CALL TargetFullTensor(Ppt%CvtBx)
+
+!             ! Forward on x
+!             IF (widthG(3).NE.1) THEN
+!                 ValI(2)=INT(TmpCvt3D(i+1,j,k))
+!             ELSE
+!                 ValI(2)=INT(TmpCvt2D(i+1,j))
+!             END IF
+!             Ppt%CvtFx%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
+!             Ppt%CvtFx%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
+!             Ppt%CvtFx%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
+!             Ppt%CvtFx%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
+!             Ppt%CvtFx%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
+!             Ppt%CvtFx%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
+!             CALL TargetFullTensor(Ppt%CvtFx)
+
+!             ! Backward on y
+!             IF (widthG(3).NE.1) THEN
+!                 ValI(2)=INT(TmpCvt3D(i,j-1,k))
+!             ELSE
+!                 ValI(2)=INT(TmpCvt2D(i-1,j))
+!             END IF
+!             Ppt%CvtBy%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
+!             Ppt%CvtBy%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
+!             Ppt%CvtBy%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
+!             Ppt%CvtBy%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
+!             Ppt%CvtBy%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
+!             Ppt%CvtBy%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
+!             CALL TargetFullTensor(Ppt%CvtBy)
+
+!             ! Forward on y
+!             IF (widthG(3).NE.1) THEN
+!                 ValI(2)=INT(TmpCvt3D(i,j+1,k))
+!             ELSE
+!                 ValI(2)=INT(TmpCvt2D(i,j+1))
+!             END IF
+!             Ppt%CvtFy%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
+!             Ppt%CvtFy%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
+!             Ppt%CvtFy%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
+!             Ppt%CvtFy%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
+!             Ppt%CvtFy%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
+!             Ppt%CvtFy%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
+!             CALL TargetFullTensor(Ppt%CvtFy)
+
+!             ! Backward on z
+!             IF (widthG(3).NE.1) THEN
+!                 ValI(2)=INT(TmpCvt3D(i,j,k-1))
+!                 Ppt%CvtBz%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
+!                 Ppt%CvtBz%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
+!                 Ppt%CvtBz%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
+!                 Ppt%CvtBz%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
+!                 Ppt%CvtBz%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
+!                 Ppt%CvtBz%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
+!                 CALL TargetFullTensor(Ppt%CvtBz)
+!             END IF
 
 
-        END IF
-    ELSE IF (Pptfld%Cvt%DefinedByCell) THEN
-        IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4).OR.(Ppt%StnclTplgy(ValI(1)).EQ.5)) THEN
+!             ! Forward on y
+!             IF (widthG(3).NE.1) THEN
+!                 ValI(2)=INT(TmpCvt3D(i,j,k+1))
+!                 Ppt%CvtFz%xx=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xx,PptFld%Cvt%CvtZone(ValI(2))%xx)
+!                 Ppt%CvtFz%yy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yy,PptFld%Cvt%CvtZone(ValI(2))%yy)
+!                 Ppt%CvtFz%zz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%zz,PptFld%Cvt%CvtZone(ValI(2))%zz)
+!                 Ppt%CvtFz%xy=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xy,PptFld%Cvt%CvtZone(ValI(2))%xy)
+!                 Ppt%CvtFz%xz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%xz,PptFld%Cvt%CvtZone(ValI(2))%xz)
+!                 Ppt%CvtFz%yz=Armonic(PptFld%Cvt%CvtZone(ValI(1))%yz,PptFld%Cvt%CvtZone(ValI(2))%yz)
+!                 CALL TargetFullTensor(Ppt%CvtFz)
+!             END IF
 
-            IF (widthG(3).NE.1) THEN
-                CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%CvtCell,TmpCvt3D,ierr)
-                ValR(1)=TmpCvt3D(i,j,k)
-            ELSE
-                CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%CvtCell,TmpCvt2D,ierr)
-                ValR(1)=TmpCvt2D(i,j)
-            END IF      
+!             IF (widthG(3).NE.1) THEN
+!                 CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%PptType,TmpCvt3D,ierr)
+!             ELSE
+!                 CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%PptType,TmpCvt2D,ierr)
+!             END IF
 
-            IF (widthG(3).NE.1) THEN
-                ValR(2)=TmpCvt3D(i-1,j,k)
-            ELSE
-                ValR(2)=TmpCvt2D(i-1,j)
-            END IF  
-            Ppt%CvtBx%xx=Armonic(ValR(1),ValR(2))
-            Ppt%CvtBx%xy=0.0
-            Ppt%CvtBx%xz=0.0
-            Ppt%CvtBx%yy=0.0
-            Ppt%CvtBx%yz=0.0
-            Ppt%CvtBx%zz=0.0
-            CALL TargetFullTensor(Ppt%CvtBx)
 
-            IF (widthG(3).NE.1) THEN
-                ValR(2)=TmpCvt3D(i+1,j,k)
-            ELSE
-                ValR(2)=TmpCvt2D(i+1,j)
-            END IF  
-            Ppt%CvtFx%xx=Armonic(ValR(1),ValR(2))
-            Ppt%CvtFx%xy=0.0
-            Ppt%CvtFx%xz=0.0
-            Ppt%CvtFx%yy=0.0
-            Ppt%CvtFx%yz=0.0
-            Ppt%CvtFx%zz=0.0
-            CALL TargetFullTensor(Ppt%CvtFx)
+!         END IF
+!     ELSE IF (Pptfld%Cvt%DefinedByCell) THEN
+!         IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4).OR.(Ppt%StnclTplgy(ValI(1)).EQ.5)) THEN
 
-            IF (widthG(3).NE.1) THEN
-                ValR(2)=TmpCvt3D(i,j-1,k)
-            ELSE
-                ValR(2)=TmpCvt2D(i,j-1)
-            END IF  
-            Ppt%CvtBy%xx=0.0
-            Ppt%CvtBy%xy=0.0
-            Ppt%CvtBy%xz=0.0
-            Ppt%CvtBy%yy=Armonic(ValR(1),ValR(2))
-            Ppt%CvtBy%yz=0.0
-            Ppt%CvtBy%zz=0.0
-            CALL TargetFullTensor(Ppt%CvtBy)
+!             IF (widthG(3).NE.1) THEN
+!                 CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%CvtCell,TmpCvt3D,ierr)
+!                 ValR(1)=TmpCvt3D(i,j,k)
+!             ELSE
+!                 CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%CvtCell,TmpCvt2D,ierr)
+!                 ValR(1)=TmpCvt2D(i,j)
+!             END IF      
 
-            IF (widthG(3).NE.1) THEN
-                ValR(2)=TmpCvt3D(i,j+1,k)
-            ELSE
-                ValR(2)=TmpCvt2D(i,j+1)
-            END IF  
-            Ppt%CvtFy%xx=0.0
-            Ppt%CvtFy%xy=0.0
-            Ppt%CvtFy%xz=0.0
-            Ppt%CvtFy%yy=Armonic(ValR(1),ValR(2))
-            Ppt%CvtFy%yz=0.0
-            Ppt%CvtFy%zz=0.0
-            CALL TargetFullTensor(Ppt%CvtFy)
+!             IF (widthG(3).NE.1) THEN
+!                 ValR(2)=TmpCvt3D(i-1,j,k)
+!             ELSE
+!                 ValR(2)=TmpCvt2D(i-1,j)
+!             END IF  
+!             Ppt%CvtBx%xx=Armonic(ValR(1),ValR(2))
+!             Ppt%CvtBx%xy=0.0
+!             Ppt%CvtBx%xz=0.0
+!             Ppt%CvtBx%yy=0.0
+!             Ppt%CvtBx%yz=0.0
+!             Ppt%CvtBx%zz=0.0
+!             CALL TargetFullTensor(Ppt%CvtBx)
 
-            IF (widthG(3).NE.1) THEN
-                ValR(2)=TmpCvt3D(i,j,k-1)
-                Ppt%CvtBz%xx=0.0
-                Ppt%CvtBz%xy=0.0
-                Ppt%CvtBz%xz=0.0
-                Ppt%CvtBz%yy=0.0
-                Ppt%CvtBz%yz=0.0
-                Ppt%CvtBz%zz=Armonic(ValR(1),ValR(2))
-                CALL TargetFullTensor(Ppt%CvtBz)
-            END IF  
+!             IF (widthG(3).NE.1) THEN
+!                 ValR(2)=TmpCvt3D(i+1,j,k)
+!             ELSE
+!                 ValR(2)=TmpCvt2D(i+1,j)
+!             END IF  
+!             Ppt%CvtFx%xx=Armonic(ValR(1),ValR(2))
+!             Ppt%CvtFx%xy=0.0
+!             Ppt%CvtFx%xz=0.0
+!             Ppt%CvtFx%yy=0.0
+!             Ppt%CvtFx%yz=0.0
+!             Ppt%CvtFx%zz=0.0
+!             CALL TargetFullTensor(Ppt%CvtFx)
 
-            IF (widthG(3).NE.1) THEN
-                ValR(2)=TmpCvt3D(i,j,k+1)
-                Ppt%CvtFz%xx=0.0
-                Ppt%CvtFz%xy=0.0
-                Ppt%CvtFz%xz=0.0
-                Ppt%CvtFz%yy=0.0
-                Ppt%CvtFz%yz=0.0
-                Ppt%CvtFz%zz=Armonic(ValR(1),ValR(2))
-                CALL TargetFullTensor(Ppt%CvtFz)
-            END IF  
+!             IF (widthG(3).NE.1) THEN
+!                 ValR(2)=TmpCvt3D(i,j-1,k)
+!             ELSE
+!                 ValR(2)=TmpCvt2D(i,j-1)
+!             END IF  
+!             Ppt%CvtBy%xx=0.0
+!             Ppt%CvtBy%xy=0.0
+!             Ppt%CvtBy%xz=0.0
+!             Ppt%CvtBy%yy=Armonic(ValR(1),ValR(2))
+!             Ppt%CvtBy%yz=0.0
+!             Ppt%CvtBy%zz=0.0
+!             CALL TargetFullTensor(Ppt%CvtBy)
 
-        END IF  
-    END IF
+!             IF (widthG(3).NE.1) THEN
+!                 ValR(2)=TmpCvt3D(i,j+1,k)
+!             ELSE
+!                 ValR(2)=TmpCvt2D(i,j+1)
+!             END IF  
+!             Ppt%CvtFy%xx=0.0
+!             Ppt%CvtFy%xy=0.0
+!             Ppt%CvtFy%xz=0.0
+!             Ppt%CvtFy%yy=Armonic(ValR(1),ValR(2))
+!             Ppt%CvtFy%yz=0.0
+!             Ppt%CvtFy%zz=0.0
+!             CALL TargetFullTensor(Ppt%CvtFy)
 
-END SUBROUTINE GetLocalConductivity
+!             IF (widthG(3).NE.1) THEN
+!                 ValR(2)=TmpCvt3D(i,j,k-1)
+!                 Ppt%CvtBz%xx=0.0
+!                 Ppt%CvtBz%xy=0.0
+!                 Ppt%CvtBz%xz=0.0
+!                 Ppt%CvtBz%yy=0.0
+!                 Ppt%CvtBz%yz=0.0
+!                 Ppt%CvtBz%zz=Armonic(ValR(1),ValR(2))
+!                 CALL TargetFullTensor(Ppt%CvtBz)
+!             END IF  
+
+!             IF (widthG(3).NE.1) THEN
+!                 ValR(2)=TmpCvt3D(i,j,k+1)
+!                 Ppt%CvtFz%xx=0.0
+!                 Ppt%CvtFz%xy=0.0
+!                 Ppt%CvtFz%xz=0.0
+!                 Ppt%CvtFz%yy=0.0
+!                 Ppt%CvtFz%yz=0.0
+!                 Ppt%CvtFz%zz=Armonic(ValR(1),ValR(2))
+!                 CALL TargetFullTensor(Ppt%CvtFz)
+!             END IF  
+
+!         END IF  
+!     END IF
+
+! END SUBROUTINE GetLocalConductivity
 
 PetscReal FUNCTION Armonic(ValR1,ValR2)
 
@@ -632,7 +724,7 @@ END FUNCTION Armonic
 SUBROUTINE DestroyProperties(PptFld,ierr)
 
     USE ANISOFLOW_Types, ONLY : PropertiesField,InputTypeVar
-    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputType
+    USE ANISOFLOW_Interface, ONLY : GetVerbose
 
     IMPLICIT NONE
 
@@ -640,9 +732,8 @@ SUBROUTINE DestroyProperties(PptFld,ierr)
 #include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
-    TYPE(PropertiesField),INTENT(INOUT)   :: PptFld
+    TYPE(PropertiesField),INTENT(INOUT) :: PptFld
 
-    TYPE(InputTypeVar)                  :: InputType
     PetscBool                           :: Verbose
     CHARACTER(LEN=200)                  :: EventName,ClassName
     PetscLogEvent                       :: Event
@@ -658,14 +749,12 @@ SUBROUTINE DestroyProperties(PptFld,ierr)
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
 
-    CALL GetInputType(InputType,ierr)
-
-    IF (PptFld%Cvt%DefinedByZones) THEN
-        IF (ALLOCATED(PptFld%Cvt%CvtZone)) DEALLOCATE(PptFld%Cvt%CvtZone)
-        CALL VecDestroy(PptFld%PptType,ierr)
-    ELSE
-        CALL VecDestroy(PptFld%Cvt%CvtCell,ierr)
-    END IF
+!     IF (PptFld%Cvt%DefinedByZones) THEN
+!         IF (ALLOCATED(PptFld%Cvt%CvtZone)) DEALLOCATE(PptFld%Cvt%CvtZone)
+!         CALL VecDestroy(PptFld%PptType,ierr)
+!     ELSE
+!         CALL VecDestroy(PptFld%Cvt%CvtCell,ierr)
+!     END IF
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     

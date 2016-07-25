@@ -8,13 +8,13 @@ np=1														# Number of processors to be used
 InputType=1													# Input files type
 InputTypeTplgy=1 											# Input toplogy file type
 InputTypeGmtry=2 											# Input gemoetry file type
-InputTypeBC=2 												# Input boundary conditions file type
+InputTypeBC=1 												# Input boundary conditions file type
 InputDir=in/ 												# Input directory
 InputFileGmtry=Blesset_Grid 								# Geometry file
 InputFileTplgy=Blesset_Tplgy 								# Topology file
 InputFileCvt=Blesset_Cvt									# Conductivity file
 InputFileCvtByZones=Blesset_CvtByZone 						# Conductivity by zones file
-InputFileBC=Blesset_BC_2 									 	# Boundary Condition file
+InputFileBC=Blesset_BC 									 	# Boundary Condition file
 
 OutputType=3 												# Output files type
 OutputDir=out/ 												# Output directory
@@ -31,7 +31,7 @@ mpiexec -n $np ./$ProgramDir$ProgramName 			\
 -Input_file_gmtry 			$InputFileGmtry 		\
 -Input_file_tplgy 			$InputFileTplgy 		\
 -Input_file_cvt 			$InputFileCvt 			\
--Input_file_cvt_by_zones 	$InputFileCvtByZones 	\
+-Input_file_ppt_by_zones 	$InputFileCvtByZones 	\
 -Input_file_bc 				$InputFileBC 			\
 -Output_type 				$OutputType 			\
 -Output_dir 				$OutputDir 				\

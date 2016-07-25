@@ -69,7 +69,7 @@ END SUBROUTINE GetSystem
 SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,Property,StencilVar
-    USE ANISOFLOW_Properties, ONLY : GetLocalProperty
+!     USE ANISOFLOW_Properties, ONLY : GetLocalProperty
     USE ANISOFLOW_Interface, ONLY : GetVerbose
 
     IMPLICIT NONE
@@ -111,7 +111,7 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
         DO j=corn(2),corn(2)+widthL(2)-1
             DO i=corn(1),corn(1)+widthL(1)-1
 
-                CALL GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
+!                 CALL GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
                 CALL GetStencil(Ppt,Stencil,ierr)
                 
                 CALL MatSetValuesStencil(A,1,Stencil%idx_rws,Stencil%Size,     &
