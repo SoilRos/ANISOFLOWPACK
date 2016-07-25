@@ -13,14 +13,15 @@ InputDir=in/ 												# Input directory
 InputFileGmtry=Blesset_Grid 								# Geometry file
 InputFileTplgy=Blesset_Tplgy 								# Topology file
 InputFileCvt=Blesset_Cvt									# Conductivity file
-InputFileCvtByZones=Blesset_CvtByZone 						# Conductivity by zones file
+InputFileSto=Blesset_Cvt									# Conductivity file
+InputFilePptByZones=Blesset_CvtByZone 						# Conductivity by zones file
 InputFileBC=Blesset_BC 									 	# Boundary Condition file
 
 OutputType=3 												# Output files type
 OutputDir=out/ 												# Output directory
 
 Scheme=2 													# Scheme type used 
-Time=0														# Transitory boolean
+Time=1														# Transitory boolean
 
 mpiexec -n $np ./$ProgramDir$ProgramName 			\
 -Input_type 				$InputType 				\
@@ -31,7 +32,8 @@ mpiexec -n $np ./$ProgramDir$ProgramName 			\
 -Input_file_gmtry 			$InputFileGmtry 		\
 -Input_file_tplgy 			$InputFileTplgy 		\
 -Input_file_cvt 			$InputFileCvt 			\
--Input_file_ppt_by_zones 	$InputFileCvtByZones 	\
+-Input_file_sto 			$InputFileSto 			\
+-Input_file_ppt_by_zones 	$InputFilePptByZones 	\
 -Input_file_bc 				$InputFileBC 			\
 -Output_type 				$OutputType 			\
 -Output_dir 				$OutputDir 				\

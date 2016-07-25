@@ -65,6 +65,7 @@ SUBROUTINE GetInputType(InputType,ierr)
             InputType%Gmtry=1
             InputType%Tplgy=1
             InputType%Cvt=1
+            InputType%Sto=1
             InputType%BC=1
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
@@ -76,6 +77,7 @@ SUBROUTINE GetInputType(InputType,ierr)
         InputType%Gmtry=1
         InputType%Tplgy=1
         InputType%Cvt=1
+        InputType%Sto=1
         InputType%BC=1
     END IF
     
@@ -83,6 +85,7 @@ SUBROUTINE GetInputType(InputType,ierr)
     CALL GetInputTypeGmtry(InputType,ierr)
     CALL GetInputTypeTplgy(InputType,ierr)
     CALL GetInputTypeCvt(InputType,ierr)
+    CALL GetInputTypeSto(InputType,ierr)
     CALL GetInputTypeBC(InputType,ierr)
 
 END SUBROUTINE GetInputType
@@ -216,12 +219,59 @@ SUBROUTINE GetInputTypeCvt(InputType,ierr)
             InputType%Cvt=InputTypeCvtTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
-                & "[ERROR] Input_type_Cvt used is invalid\n",ierr)
+                & "[ERROR] Input_type_cvt used is invalid\n",ierr)
             STOP
         END IF
     END IF
 
 END SUBROUTINE GetInputTypeCvt
+
+ !  - GetInputTypeSto: It's a routine that provides a file type to use as input specific storage.
+ !    > OUT: InputType, ierr.
+ !      + InputType: It's a collection of integers that define the type of input to be used in the
+ !                   program.
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
+ !    > NOTES: The user may provide a set of file types to be used using "-Input_type" followed by
+ !             an integer that defines the set:
+ !                  1: Set of files types where the identifier will be Gmtry=1, Tplgy=1, Cvt=1, Sto=1,
+ !                     and BC=1. See InputType definition for more information.
+ !             or use "-Input_type_Sto" followed by an integer that the file type to use as input 
+ !             specific storage:
+ !                  1: It's a pair of files that provide block conductivities by zones and another 
+ !                     one that provides an zone identifier to each cell. An example is 
+ !                     provided in "../ex/Blessent/in/matrix.mprops" and 
+ !                     "../ex/Blessent/in/tsim_USMH.asc".
+
+SUBROUTINE GetInputTypeSto(InputType,ierr)
+
+    USE ANISOFLOW_Types, ONLY : InputTypeVar
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    Type(InputTypeVar),INTENT(INOUT)    :: InputType
+
+    PetscBool                       :: InputTypeStoFlg
+    PetscInt                        :: InputTypeStoTmp
+
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_type_sto",            &
+        & InputTypeStoTmp,InputTypeStoFlg,ierr)
+
+    IF (InputTypeStoFlg) THEN
+        IF (InputTypeStoTmp.EQ.1) THEN
+            InputType%Sto=InputTypeStoTmp
+        ELSE IF (InputTypeStoTmp.EQ.2) THEN
+            InputType%Sto=InputTypeStoTmp
+        ELSE
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
+                & "[ERROR] Input_type_sto used is invalid\n",ierr)
+            STOP
+        END IF
+    END IF
+
+END SUBROUTINE GetInputTypeSto
 
  !  - GetInputTypeBC: It's a routine that provides a file type to use as input boundary condition.
  !    > OUT: InputType, ierr.
@@ -396,38 +446,92 @@ SUBROUTINE GetInputFileCvt(InputFileCvt,ierr)
 
 END SUBROUTINE GetInputFileCvt
 
- !  - GetInputFileCvtByZones: It's a routine that provides a file name to open the conductivity  
- !                            zones file in InputDir. 
- !    > OUT: InputFileCvtByZones, ierr.
- !      + InputFileCvtByZones: It's a string that specifies file name to open the conductivity zones 
+ !  - GetInputFileCvtByZone: It's a routine that provides a file name to open the property  
+ !                           zones file in InputDir. 
+ !    > OUT: InputFileCvtByZone, InputFileCvtByZoneFlg, ierr.
+ !      + InputFileCvtByZone: It's a string that specifies file name to open the property zones 
  !                             file in InputDir.
+ !      + InputFileCvtByZoneFlg: ...
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
- !    > NOTES: The user must provide a file name using "-Input_file_cvt_by_zones" followed by 
- !             conductiviy zones file name.
+ !    > NOTES: The user can provide a file name using "-Input_file_cvt_by_zones" followed by 
+ !             property zones file name.
 
-SUBROUTINE GetInputFileCvtByZones(InputFileCvtByZones,ierr)
+SUBROUTINE GetInputFileCvtByZone(InputFileCvtByZone,InputFileCvtByZoneFlg,ierr)
 
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
-    CHARACTER(LEN=200),INTENT(OUT)  :: InputFileCvtByZones
-
-    PetscBool                       :: InputFileCvtByZonesFlg
+    CHARACTER(LEN=200),INTENT(OUT)  :: InputFileCvtByZone
+    PetscBool,INTENT(OUT)           :: InputFileCvtByZoneFlg
 
     CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_file_cvt_by_zones",    &
-        InputFileCvtByZones,InputFileCvtByZonesFlg,ierr)
+        InputFileCvtByZone,InputFileCvtByZoneFlg,ierr)
 
-    IF (.NOT.InputFileCvtByZonesFlg) THEN
+    InputFileCvtByZone=TRIM(InputFileCvtByZone)
+
+END SUBROUTINE GetInputFileCvtByZone
+
+ !  - GetInputFileSto: It's a routine that provides a file name to open the Specific Storage file in 
+ !                       InputDir.
+ !    > OUT: InputFileSto, ierr.
+ !      + InputFileSto: It's a string that specifies file name to open the Specific Storage file in 
+ !                      InputDir.
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
+ !    > NOTES: The user must provide a file name using "-Input_file_sto" followed by Specific Storage
+ !             file name.
+
+SUBROUTINE GetInputFileSto(InputFileSto,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    CHARACTER(LEN=200),INTENT(OUT)  :: InputFileSto
+
+    PetscBool                       :: InputFileStoFlg
+
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_file_sto",         &
+        InputFileSto,InputFileStoFlg,ierr)
+
+    IF (.NOT.InputFileStoFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "[ERROR] Input_file_cvt_by_zones command must be used.\n",ierr)
+            & "[ERROR] Input_file_sto command must be used\n",ierr)
         STOP
     END IF
 
-    InputFileCvtByZones=TRIM(InputFileCvtByZones)
+    InputFileSto=TRIM(InputFileSto)
 
-END SUBROUTINE GetInputFileCvtByZones
+END SUBROUTINE GetInputFileSto
+
+ !  - GetInputFileStoByZone: It's a routine that provides a file name to open the property  
+ !                           zones file in InputDir. 
+ !    > OUT: InputFileStoByZone, InputFileStoByZoneFlg, ierr.
+ !      + InputFileStoByZone: It's a string that specifies file name to open the property zones 
+ !                             file in InputDir.
+ !      + InputFileStoByZoneFlg: ...
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
+ !    > NOTES: The user can provide a file name using "-Input_file_sto_by_zones" followed by 
+ !             property zones file name.
+
+SUBROUTINE GetInputFileStoByZone(InputFileStoByZone,InputFileStoByZoneFlg,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    CHARACTER(LEN=200),INTENT(OUT)  :: InputFileStoByZone
+    PetscBool,INTENT(OUT)           :: InputFileStoByZoneFlg
+
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_file_sto_by_zones",    &
+        InputFileStoByZone,InputFileStoByZoneFlg,ierr)
+
+    InputFileStoByZone=TRIM(InputFileStoByZone)
+
+END SUBROUTINE GetInputFileStoByZone
 
  !  - GetInputFileBC: It's a routine that provides a file name to open the boundary condition file
  !                    in InputDir. 

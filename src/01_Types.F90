@@ -145,8 +145,8 @@ MODULE ANISOFLOW_Types
         PetscBool                               :: DefinedByCell=.FALSE.
         ! Specific Storage defined by zones:
         Vec                                     :: ZoneID
-        PetscReal,ALLOCATABLE                   :: Zone(:)
-        ! Specific Storage defined on every cell:
+        Vec                                     :: Zone
+!         ! Specific Storage defined on every cell:
         Vec                                     :: Cell
     END TYPE SpecificStorageField
 
@@ -158,6 +158,7 @@ MODULE ANISOFLOW_Types
         TYPE(ConductivityField)         :: Cvt
         TYPE(SpecificStorageField)      :: Sto
         ! Property defined by zones:
+        PetscBool                       :: DefinedByZones=.FALSE.
         Vec                             :: ZoneID
     END TYPE PropertiesField
 
@@ -287,7 +288,7 @@ MODULE ANISOFLOW_Types
  !             example is provided in "../Blessent/in/grid_400_400.nch_nprop_list.lateral_boundary".
 
     TYPE InputTypeVar
-        PetscInt                        :: Gmtry,Tplgy,Cvt,BC
+        PetscInt                        :: Gmtry,Tplgy,Cvt,Sto,BC
     END TYPE InputTypeVar
 
  !  - OutputTypeVar: It's a collection of integer that defines the type of ouput to be used in the
@@ -299,7 +300,7 @@ MODULE ANISOFLOW_Types
  !          3: HDF5
 
     TYPE OutputTypeVar
-        PetscInt                        :: Sol=1,Tplgy=0,Cvt=0
+        PetscInt                        :: Sol=1,Tplgy=0,Cvt=0,Sto=0
     END TYPE OutputTypeVar
 
 CONTAINS

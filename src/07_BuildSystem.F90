@@ -45,7 +45,7 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
     IF ((TimeZone.EQ.1).AND.(TimeStep.EQ.1)) THEN
         CALL UpdateGmtry(Gmtry,BCFld%DirichIS(TimeZone),BCFld%SourceIS(TimeZone),BCFld%CauchyIS(TimeZone),ierr)
         CALL BuildSystem(Gmtry,PptFld,A,ierr)
-        CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr)
+        CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr) ! inicializar x
         CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
     END IF
 
@@ -69,7 +69,7 @@ END SUBROUTINE GetSystem
 SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,Property,StencilVar
-!     USE ANISOFLOW_Properties, ONLY : GetLocalProperty
+    USE ANISOFLOW_Properties, ONLY : GetLocalProperty
     USE ANISOFLOW_Interface, ONLY : GetVerbose
 
     IMPLICIT NONE
@@ -80,7 +80,7 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Geometry),INTENT(IN)               :: Gmtry
-    TYPE(PropertiesField),INTENT(IN)          :: PptFld
+    TYPE(PropertiesField),INTENT(IN)        :: PptFld
     Mat,INTENT(OUT)                         :: A
 
     PetscInt                                :: i,j,k,corn(3),widthL(3)
@@ -110,8 +110,8 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
     DO k=corn(3),corn(3)+widthL(3)-1
         DO j=corn(2),corn(2)+widthL(2)-1
             DO i=corn(1),corn(1)+widthL(1)-1
-
-!                 CALL GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
+                PRINT*,i,j,k
+                CALL GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
                 CALL GetStencil(Ppt,Stencil,ierr)
                 
                 CALL MatSetValuesStencil(A,1,Stencil%idx_rws,Stencil%Size,     &
