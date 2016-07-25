@@ -110,7 +110,6 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
     DO k=corn(3),corn(3)+widthL(3)-1
         DO j=corn(2),corn(2)+widthL(2)-1
             DO i=corn(1),corn(1)+widthL(1)-1
-                PRINT*,i,j,k
                 CALL GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
                 CALL GetStencil(Ppt,Stencil,ierr)
                 

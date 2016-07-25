@@ -133,20 +133,20 @@ MODULE ANISOFLOW_Types
     TYPE ConductivityField
         PetscBool                               :: DefinedByZones=.FALSE.
         PetscBool                               :: DefinedByCell=.FALSE.
-        ! Conductivity defined by zones:
+        ! Conductivity defined by zones (Local):
         Vec                                     :: ZoneID
         TYPE(Tensor),ALLOCATABLE                :: Zone(:)
-        ! Conductivity defined on every cell:
+        ! Conductivity defined on every cell (Local):
         Vec                                     :: Cell
     END TYPE ConductivityField
 
     TYPE SpecificStorageField
         PetscBool                               :: DefinedByZones=.FALSE.
         PetscBool                               :: DefinedByCell=.FALSE.
-        ! Specific Storage defined by zones:
+        ! Specific Storage defined by zones (Local):
         Vec                                     :: ZoneID
         Vec                                     :: Zone
-!         ! Specific Storage defined on every cell:
+        ! Specific Storage defined on every cell (Local)):
         Vec                                     :: Cell
     END TYPE SpecificStorageField
 
