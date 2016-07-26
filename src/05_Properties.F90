@@ -38,7 +38,7 @@ SUBROUTINE GetProrperties(Gmtry,PptFld,ierr)
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
     
-    CALL GetPptZoneID(Gmtry,PptFld%ZoneID,PptFld%DefinedByZones,ierr)
+    CALL GetPptZoneID(Gmtry,PptFld%ZoneID,PptFld%DefinedByPptZones,ierr)
 
     CALL GetConductivity(Gmtry,PptFld,PptFld%Cvt,ierr)
 
@@ -55,7 +55,7 @@ SUBROUTINE GetProrperties(Gmtry,PptFld,ierr)
 
 END SUBROUTINE GetProrperties
 
-SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByZones,ierr)
+SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByPptZones,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFilePptByZone
@@ -73,7 +73,7 @@ SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByZones,ierr)
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     Vec,INTENT(OUT)                     :: PptZoneID_Local
-    PetscBool,INTENT(OUT)               :: DefinedByZones
+    PetscBool,INTENT(OUT)               :: DefinedByPptZones
 
     PetscInt                            :: widthG(3),u,ValI,i
     PetscMPIInt                         :: process
@@ -139,7 +139,7 @@ SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByZones,ierr)
 
     END IF
 
-    DefinedByZones=InputFilePptByZoneFlg
+    DefinedByPptZones=InputFilePptByZoneFlg
 
 END SUBROUTINE GetPptZoneID
 
@@ -192,7 +192,7 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,Cvt,ierr)
 
 END SUBROUTINE GetConductivity
 
-SUBROUTINE GetCvtZoneID(Gmtry,PptFld,CvtZoneID_Local,DefinedByZones,ierr)
+SUBROUTINE GetCvtZoneID(Gmtry,PptFld,CvtZoneID_Local,DefinedByPptZones,DefinedByCvtZones,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,TargPetscVec
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFilePptByZone,GetInputFileCvtByZone
@@ -211,7 +211,8 @@ SUBROUTINE GetCvtZoneID(Gmtry,PptFld,CvtZoneID_Local,DefinedByZones,ierr)
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertiesField),INTENT(IN)    :: PptFld
     Vec,INTENT(OUT)                     :: CvtZoneID_Local
-    PetscBool,INTENT(OUT)               :: DefinedByZones
+    PetscBool,INTENT(OUT)               :: DefinedByPptZones
+    PetscBool,INTENT(OUT)               :: DefinedByCvtZones
 
     PetscInt                            :: widthG(3),u,ValI,i
     PetscMPIInt                         :: process
@@ -272,15 +273,15 @@ SUBROUTINE GetCvtZoneID(Gmtry,PptFld,CvtZoneID_Local,DefinedByZones,ierr)
         CALL DMGlobalToLocalEnd(Gmtry%DataMngr,CvtZoneID_Global,INSERT_VALUES,CvtZoneID_Local,ierr)
         CALL VecDestroy(CvtZoneID_Global,ierr)
 
+        DefinedByCvtZones=.TRUE.
     ELSEIF (InputFilePptByZoneFlg) THEN
         ZoneID_tmp => TargPetscVec(PptFld%ZoneID)
         CvtZoneID_Local = ZoneID_tmp
+        DefinedByPptZones=.TRUE.
     ELSE
         PRINT*,"ERROR en CvtZone"! TODO: arreglar este mensage
         STOP
     END IF
-
-    DefinedByZones=InputFileCvtByZoneFlg.OR.InputFilePptByZoneFlg
 
 END SUBROUTINE GetCvtZoneID
 
@@ -316,7 +317,7 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,Cvt,ierr)
 
     CALL GetVerbose(Verbose,ierr)
 
-    CALL GetCvtZoneID(Gmtry,PptFld,Cvt%ZoneID,Cvt%DefinedByZones,ierr)
+    CALL GetCvtZoneID(Gmtry,PptFld,Cvt%ZoneID,Cvt%DefinedByPptZones,Cvt%DefinedByCvtZones,ierr)
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputFileCvt(InputFileCvt,ierr)
 
@@ -489,9 +490,10 @@ SUBROUTINE GetStorage(Gmtry,PptFld,Sto,ierr)
     CALL GetInputType(InputType,ierr)
 
     IF (InputType%Sto.EQ.1) THEN
-        CALL GetStorage_1(Gmtry,PptFld,Sto,ierr)
+        CALL GetStorage_1(Gmtry,PptFld,Sto,ierr) ! By zone
+        CALL StorageZoneToCell(Gmtry,Sto,ierr)
     ELSE IF (InputType%Sto.EQ.2) THEN
-        CALL GetStorage_2(Gmtry,PptFld,Sto,ierr)
+        CALL GetStorage_2(Gmtry,PptFld,Sto,ierr) ! By cell
     ELSE
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Specific Storage InputType wrong\n",ierr)
@@ -505,7 +507,7 @@ SUBROUTINE GetStorage(Gmtry,PptFld,Sto,ierr)
 
 END SUBROUTINE GetStorage
 
-SUBROUTINE GetStoZoneID(Gmtry,PptFld,StoZoneID_Local,DefinedByZones,ierr)
+SUBROUTINE GetStoZoneID(Gmtry,PptFld,StoZoneID_Local,DefinedByPptZones,DefinedByStoZones,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,TargPetscVec
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFilePptByZone,GetInputFileStoByZone
@@ -524,7 +526,7 @@ SUBROUTINE GetStoZoneID(Gmtry,PptFld,StoZoneID_Local,DefinedByZones,ierr)
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertiesField),INTENT(IN)    :: PptFld
     Vec,INTENT(OUT)                     :: StoZoneID_Local
-    PetscBool,INTENT(OUT)               :: DefinedByZones
+    PetscBool,INTENT(OUT)               :: DefinedByPptZones,DefinedByStoZones
 
     PetscInt                            :: widthG(3),u,ValI,i
     PetscMPIInt                         :: process
@@ -586,15 +588,15 @@ SUBROUTINE GetStoZoneID(Gmtry,PptFld,StoZoneID_Local,DefinedByZones,ierr)
         CALL DMGlobalToLocalEnd(Gmtry%DataMngr,StoZoneID_Global,INSERT_VALUES,StoZoneID_Local,ierr)
         CALL VecDestroy(StoZoneID_Global,ierr)
 
+        DefinedByStoZones=.TRUE.
     ELSEIF (InputFilePptByZoneFlg) THEN
         ZoneID_tmp => TargPetscVec(PptFld%ZoneID)
         StoZoneID_Local = ZoneID_tmp
+        DefinedByPptZones=.TRUE.
     ELSE
         PRINT*,"ERROR en StoZone"! TODO: arreglar este mensage
         STOP
     END IF
-
-    DefinedByZones=InputFileStoByZoneFlg.OR.InputFilePptByZoneFlg
 
 END SUBROUTINE GetStoZoneID
 
@@ -631,7 +633,7 @@ SUBROUTINE GetStorage_1(Gmtry,PptFld,Sto,ierr)
 
     CALL GetVerbose(Verbose,ierr)
 
-    CALL GetStoZoneID(Gmtry,PptFld,Sto%ZoneID,Sto%DefinedByZones,ierr)
+    CALL GetStoZoneID(Gmtry,PptFld,Sto%ZoneID,Sto%DefinedByPptZones,Sto%DefinedByStoZones,ierr)
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputFileSto(InputFileSto,ierr)
 
@@ -682,6 +684,89 @@ SUBROUTINE GetStorage_1(Gmtry,PptFld,Sto,ierr)
 
 END SUBROUTINE GetStorage_1
 
+SUBROUTINE StorageZoneToCell(Gmtry,Sto,ierr)
+
+    USE ANISOFLOW_Types, ONLY : Geometry,SpecificStorageField
+    USE ANISOFLOW_Interface, !ONLY : GetVerbose,GetInputDir,GetInputFileSto
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscvec.h90>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
+#include <petsc/finclude/petscdmda.h90>
+
+    PetscErrorCode,INTENT(INOUT)                :: ierr
+    TYPE(Geometry),INTENT(IN)                   :: Gmtry
+    TYPE(SpecificStorageField),INTENT(INOUT)    :: Sto
+
+    PetscInt                :: widthL(3),widthG(3),corn(3),ValI,i,j,k
+    PetscReal,POINTER       :: TmpStoZone(:),TmpStoZoneID3D(:,:,:),TmpStoZoneID2D(:,:),TmpStoCell3D(:,:,:),TmpStoCell2D(:,:)
+
+    CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,ierr)
+
+    IF (.NOT.(Sto%DefinedByPptZones.OR.Sto%DefinedByStoZones)) THEN
+        PRINT*,"ERROR: To use StorageZoneToCell subroutine the specific storage has to be definde by zone."
+    END IF
+
+    CALL DMDAGetCorners(Gmtry%DataMngr,corn(1),corn(2),corn(3),widthL(1),widthL(2),widthL(3),ierr)
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,Sto%Cell,ierr)
+
+    IF (widthG(3).NE.1) THEN
+        CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,Sto%ZoneID,TmpStoZoneID3D,ierr)
+        CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,Sto%Cell,TmpStoCell3D,ierr)
+    ELSE
+        CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,Sto%ZoneID,TmpStoZoneID2D,ierr)
+        CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,Sto%Cell,TmpStoCell2D,ierr)
+    END IF       
+
+    CALL VecGetArrayReadF90(Sto%Zone,TmpStoZone,ierr)
+
+    DO k=corn(3),corn(3)+widthL(3)-1
+        DO j=corn(2),corn(2)+widthL(2)-1
+            DO i=corn(1),corn(1)+widthL(1)-1
+                IF (widthG(3).NE.1) THEN
+                    ValI=INT(TmpStoZoneID3D(i,j,k))
+                    TmpStoZoneID3D(i,j,k)=TmpStoZone(ValI)
+                ELSE
+                    ValI=INT(TmpStoZoneID2D(i,j))
+                    TmpStoZoneID2D(i,j)=TmpStoZone(ValI)
+                END IF
+            END DO
+        END DO
+    END DO
+
+    CALL VecRestoreArrayReadF90(Sto%Zone,TmpStoZone,ierr)
+    IF (widthG(3).NE.1) THEN
+        CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,Sto%ZoneID,TmpStoZoneID3D,ierr)
+        CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,Sto%Cell,TmpStoCell3D,ierr)
+    ELSE
+        CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,Sto%ZoneID,TmpStoZoneID2D,ierr)
+        CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,Sto%Cell,TmpStoCell2D,ierr)
+    END IF
+    
+    CALL VecDestroy(Sto%Zone,ierr)
+
+    IF (Sto%DefinedByStoZones) THEN
+        CALL VecDestroy(Sto%ZoneID,ierr)
+        Sto%DefinedByStoZones=.FALSE.
+    ELSE IF (Sto%DefinedByPptZones) THEN
+        !NULLIFY(Sto%ZoneID) ! Because I used a very tricky way to use it as a pointer, I can't nullify it as a usual pointer but it's supposed it doesn't will get in troubles the code.
+        Sto%DefinedByPptZones=.FALSE.
+    END IF
+
+    Sto%DefinedByCell=.TRUE.
+
+!     CALL VecView(Sto%Cell,PETSC_VIEWER_STDOUT_WORLD,ierr)
+
+END SUBROUTINE StorageZoneToCell
+
 SUBROUTINE GetStorage_2(Gmtry,PptFld,Sto,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,SpecificStorageField
@@ -707,7 +792,6 @@ SUBROUTINE GetStorage_2(Gmtry,PptFld,Sto,ierr)
     CHARACTER(LEN=200)                  :: InputDir,InputFileSto
     CHARACTER(LEN=200)                  :: Route!,ViewName,EventName
     PetscBool                           :: Verbose
-    Vec                                 :: Cell_Global
 
     PARAMETER(u=01)
 
@@ -719,8 +803,7 @@ SUBROUTINE GetStorage_2(Gmtry,PptFld,Sto,ierr)
     Sto%DefinedByCell=.TRUE.
 !     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Event] Storage Field is stored by Block\n",ierr)
 
-    CALL DMCreateLocalVector(Gmtry%DataMngr,Sto%Cell,ierr)
-    CALL DMCreateGlobalVector(Gmtry%DataMngr,Cell_Global,ierr)
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,Sto%Cell,ierr)
 
     CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
 
@@ -737,21 +820,17 @@ SUBROUTINE GetStorage_2(Gmtry,PptFld,Sto,ierr)
 
         DO i=1,widthG(1)*widthG(2)*widthG(3)
             READ(u,*)ValR
-            CALL VecSetValue(Cell_Global,i-1,ValR,INSERT_VALUES,ierr)
+            CALL VecSetValue(Sto%Cell,i-1,ValR,INSERT_VALUES,ierr)
         END DO
         CLOSE(u)
     END IF
 
-    CALL VecAssemblyBegin(Cell_Global,ierr)
-    CALL VecAssemblyEnd(Cell_Global,ierr)
+    CALL VecAssemblyBegin(Sto%Cell,ierr)
+    CALL VecAssemblyEnd(Sto%Cell,ierr)
 
 !     ViewName="ANISOFLOW_Sto"
 !     EventName="GetStorage"
 !     CALL ViewStorage(Sto%Cell,ViewName,EventName,ierr)
-
-    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cell_Global,INSERT_VALUES,Sto%Cell,ierr)
-    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cell_Global,INSERT_VALUES,Sto%Cell,ierr)
-    CALL VecDestroy(Cell_Global,ierr)
 
 !     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Storage Field was satisfactorily created\n",ierr)
 
@@ -871,7 +950,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
         STOP   
     END IF
 
-    IF (PptFld%Cvt%DefinedByZones) THEN
+    IF (PptFld%Cvt%DefinedByCvtZones.OR.PptFld%Cvt%DefinedByPptZones) THEN
         IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4).OR.(Ppt%StnclTplgy(ValI(1)).EQ.5)) THEN ! Only get properties for active blocks
             IF (widthG(3).NE.1) THEN
                 CALL DMDAVecGetArrayreadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt3D,ierr)

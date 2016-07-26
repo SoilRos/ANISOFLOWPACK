@@ -54,8 +54,6 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
     CALL KSPCreate(PETSC_COMM_WORLD,Solver,ierr)
     CALL GetRunOptions(RunOptions,ierr)
 
-
-
     IF (RunOptions%Time) THEN ! Transitory
 
         CALL VecDuplicate(x,diagA,ierr)

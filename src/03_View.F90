@@ -23,6 +23,7 @@ SUBROUTINE ViewSolution(x,Name,StageName,ierr)
 
     CALL GetOutputType(OutputType,ierr)
 
+    CALL PetscObjectSetName(x,"Solution",ierr)
     IF (OutputType%Sol.EQ.1) THEN
         CALL ViewVecProperty_1(x,Name,StageName,ierr)
     ELSE IF (OutputType%Sol.EQ.2) THEN
@@ -50,6 +51,7 @@ SUBROUTINE ViewTopology(x,Name,StageName,ierr)
 
     CALL GetOutputType(OutputType,ierr)
 
+    CALL PetscObjectSetName(x,"Topology",ierr)
     IF (OutputType%Tplgy.EQ.1) THEN
         CALL ViewVecProperty_1(x,Name,StageName,ierr)
     ELSE IF (OutputType%Tplgy.EQ.2) THEN
@@ -77,6 +79,7 @@ SUBROUTINE ViewConductivity(x,Name,StageName,ierr)
 
     CALL GetOutputType(OutputType,ierr)
 
+    CALL PetscObjectSetName(x,"Conductivity",ierr)
     IF (OutputType%Cvt.EQ.1) THEN
         CALL ViewVecProperty_1(x,Name,StageName,ierr)
     ELSE IF (OutputType%Cvt.EQ.2) THEN

@@ -131,7 +131,8 @@ MODULE ANISOFLOW_Types
  !      + CvtCell: Contain a tensor conductivity component by each cell. It's saved as local vector
 
     TYPE ConductivityField
-        PetscBool                               :: DefinedByZones=.FALSE.
+        PetscBool                               :: DefinedByCvtZones=.FALSE.
+        PetscBool                               :: DefinedByPptZones=.FALSE.
         PetscBool                               :: DefinedByCell=.FALSE.
         ! Conductivity defined by zones (Local):
         Vec                                     :: ZoneID
@@ -140,13 +141,20 @@ MODULE ANISOFLOW_Types
         Vec                                     :: Cell
     END TYPE ConductivityField
 
+ ! TODO: Description of SpecificStorageField
+
+ ! NOTE: The difference between Global and Local it's because Sto%ZoneID can be a pointer of Ppt%ZoneID
+ ! which has to be Local, but the Cell is needed in its Global form to avoid change from Local to 
+ ! Global on each time step. 
+
     TYPE SpecificStorageField
-        PetscBool                               :: DefinedByZones=.FALSE.
+        PetscBool                               :: DefinedByStoZones=.FALSE.
+        PetscBool                               :: DefinedByPptZones=.FALSE.
         PetscBool                               :: DefinedByCell=.FALSE.
         ! Specific Storage defined by zones (Local):
         Vec                                     :: ZoneID
         Vec                                     :: Zone
-        ! Specific Storage defined on every cell (Local)):
+        ! Specific Storage defined on every cell (Global).:
         Vec                                     :: Cell
     END TYPE SpecificStorageField
 
@@ -157,8 +165,8 @@ MODULE ANISOFLOW_Types
     TYPE PropertiesField
         TYPE(ConductivityField)         :: Cvt
         TYPE(SpecificStorageField)      :: Sto
-        ! Property defined by zones:
-        PetscBool                       :: DefinedByZones=.FALSE.
+        ! Property defined by zones (Local):
+        PetscBool                       :: DefinedByPptZones=.FALSE.
         Vec                             :: ZoneID
     END TYPE PropertiesField
 
@@ -288,7 +296,7 @@ MODULE ANISOFLOW_Types
  !             example is provided in "../Blessent/in/grid_400_400.nch_nprop_list.lateral_boundary".
 
     TYPE InputTypeVar
-        PetscInt                        :: Gmtry,Tplgy,Cvt,Sto,BC
+        PetscInt                        :: Gmtry,Tplgy,Cvt,Sto,BC,InitSol
     END TYPE InputTypeVar
 
  !  - OutputTypeVar: It's a collection of integer that defines the type of ouput to be used in the

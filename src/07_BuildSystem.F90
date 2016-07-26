@@ -45,14 +45,15 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
     IF ((TimeZone.EQ.1).AND.(TimeStep.EQ.1)) THEN
         CALL UpdateGmtry(Gmtry,BCFld%DirichIS(TimeZone),BCFld%SourceIS(TimeZone),BCFld%CauchyIS(TimeZone),ierr)
         CALL BuildSystem(Gmtry,PptFld,A,ierr)
-        CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr) ! inicializar x
+        CALL GetInitSol(Gmtry,x,ierr)
+!         CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr) ! inicializar x
         CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
     END IF
 
     IF ((RunOptions%Time).AND..NOT.((TimeZone.EQ.1).AND.(TimeStep.EQ.1))) THEN
 !         CALL UpdateGmtry(Gmtry,DirichIS,SourceIS,CauchyIS,ierr)
 !         CALL BuildSystem(Gmtry,PptFld,A,ierr)
-        CALL ApplyTimeDiff(BCFld,TimeZone,TimeStep,A,b,x,ierr)
+        CALL ApplyTimeDiff(PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
     END IF
 
     CALL ApplyDirichlet(BCFld,TimeZone,b,ierr)
@@ -130,6 +131,55 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
 
 
 END SUBROUTINE BuildSystem
+
+SUBROUTINE GetInitSol(Gmtry,x,ierr)
+
+    USE ANISOFLOW_Types, ONLY : InputTypeVar,Geometry
+    USE ANISOFLOW_Interface, ONLY : GetInputDir,GetInputTypeInitSol,GetInputFileInitSol
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscviewer.h>
+
+    PetscErrorCode,INTENT(INOUT)            :: ierr
+    TYPE(Geometry),INTENT(IN)               :: Gmtry
+    Vec,INTENT(OUT)                         :: x
+
+    PetscBool                   :: InputFileInitSolFlg
+    TYPE(InputTypeVar)          :: InputType
+    CHARACTER(LEN=200)          :: Route,InputDir,InputFileInitSol
+    PetscViewer                 :: Viewer
+   
+    CALL GetInputDir(InputDir,ierr)
+    CALL GetInputFileInitSol(InputFileInitSol,InputFileInitSolFlg,ierr)
+
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr)
+
+    IF (InputFileInitSolFlg) THEN
+        CALL GetInputTypeInitSol(InputType,ierr)
+        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileInitSol))
+        CALL PetscObjectSetName(x,"Solution",ierr)
+        IF (InputType%InitSol.EQ.1) THEN
+            CALL PetscViewerBinaryOpen(PETSC_COMM_WORLD,Route,FILE_MODE_READ,Viewer,ierr)
+            CALL VecLoad(x,Viewer,ierr)
+            CALL PetscViewerDestroy(Viewer,ierr)
+        ELSEIF (InputType%InitSol.EQ.2) THEN
+            PRINT*,"ERROR: Initial solution is not able to be opend from ASCII format, you should use binary or HDF5 formats. Initial solution was set to 0."
+        ELSEIF (InputType%InitSol.EQ.3) THEN
+            CALL PetscViewerHDF5Open(PETSC_COMM_WORLD,Route,FILE_MODE_READ,Viewer,ierr)
+            CALL VecLoad(x,Viewer,ierr)
+            CALL PetscViewerDestroy(Viewer,ierr)
+            PRINT*,"Inital solution ",InputFileInitSol," has been implemented properly."
+        ELSE 
+            PRINT*,"ERROR: InitSol is not valid. Initial solution was set to 0."
+        END IF
+    ELSE
+        PRINT*,"WARING: Initial solution was set to 0."
+    END IF
+
+END SUBROUTINE GetInitSol
 
 SUBROUTINE GetStencil(Ppt,Stencil,ierr)
 
@@ -852,9 +902,9 @@ SUBROUTINE ApplyCauchy(BCFld,TimeZone,A,b,ierr)
 
 END SUBROUTINE ApplyCauchy
 
-SUBROUTINE ApplyTimeDiff(BCFld,TimeZone,TimeStep,A,b,x,ierr)
+SUBROUTINE ApplyTimeDiff(PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
 
-    USE ANISOFLOW_Types, ONLY : BoundaryConditions
+    USE ANISOFLOW_Types, ONLY : PropertiesField,BoundaryConditions
     USE ANISOFLOW_Interface, ONLY : GetVerbose
 
     IMPLICIT NONE
@@ -864,6 +914,7 @@ SUBROUTINE ApplyTimeDiff(BCFld,TimeZone,TimeStep,A,b,x,ierr)
 #include <petsc/finclude/petscmat.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
+    TYPE(PropertiesField),INTENT(IN)        :: PptFld
     TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
     PetscInt,INTENT(IN)                     :: TimeZone,TimeStep
     Mat,INTENT(INOUT)                       :: A
@@ -881,10 +932,18 @@ SUBROUTINE ApplyTimeDiff(BCFld,TimeZone,TimeStep,A,b,x,ierr)
 
     CALL VecDuplicate(x,VecDT,ierr)
     CALL VecSet(VecDT,-one/DT,ierr)
+    CALL VecPointwiseMult(VecDT,VecDT,PptFld%Sto%Cell,ierr)
     CALL MatDiagonalSet(A,VecDT,ADD_VALUES,ierr)
+    CALL VecPointwiseMult(VecDT,VecDT,x,ierr)
+    CALL VecAXPY(b,one,x,ierr)
     CALL VecDestroy(VecDT,ierr)
 
-    CALL VecAXPY(b,-one/DT,x,ierr)
+!     CALL VecDuplicate(x,VecDT,ierr)
+!     CALL VecSet(VecDT,-one/DT,ierr)
+!     CALL MatDiagonalSet(A,VecDT,ADD_VALUES,ierr)
+!     CALL VecDestroy(VecDT,ierr)
+
+!     CALL VecAXPY(b,-one/DT,x,ierr)
 
     CALL GetVerbose(Verbose,ierr)
 

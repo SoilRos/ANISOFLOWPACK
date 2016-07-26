@@ -67,6 +67,7 @@ SUBROUTINE GetInputType(InputType,ierr)
             InputType%Cvt=1
             InputType%Sto=1
             InputType%BC=1
+            InputType%InitSol=1
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
                 & "[ERROR] Input_type used is invalid\n",ierr)
@@ -79,6 +80,7 @@ SUBROUTINE GetInputType(InputType,ierr)
         InputType%Cvt=1
         InputType%Sto=1
         InputType%BC=1
+        InputType%InitSol=1
     END IF
     
     ! Setting InputType from interface
@@ -87,6 +89,7 @@ SUBROUTINE GetInputType(InputType,ierr)
     CALL GetInputTypeCvt(InputType,ierr)
     CALL GetInputTypeSto(InputType,ierr)
     CALL GetInputTypeBC(InputType,ierr)
+    CALL GetInputTypeInitSol(InputType,ierr)
 
 END SUBROUTINE GetInputType
 
@@ -318,6 +321,54 @@ SUBROUTINE GetInputTypeBC(InputType,ierr)
     END IF
 
 END SUBROUTINE GetInputTypeBC
+
+ !  - GetInputTypeInitSol: It's a routine that provides a file type to use as input boundary condition.
+ !    > OUT: InputType, ierr.
+ !      + InputType: It's a collection of integers that define the type of input to be used in the
+ !                   program.
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
+ !    > NOTES: The user may provide a set of file types to be used using "-Input_type" followed by
+ !             an integer that defines the set:
+ !                  1: Set of files types where the identifier will be Gmtry=1, Tplgy=1, Cvt=1,
+ !                     and BC=1. See InputType definition for more information.
+ !             or use "-Input_type_bc" followed by an integer that the file type to use as input 
+ !             boundary condition:
+ !                  1: It's a file that only provide dirichlet condition and their postion on the 
+ !                     grid. An example is provided in 
+ !                     "../Blessent/in/grid_400_400.nch_nprop_list.lateral_boundary".
+
+SUBROUTINE GetInputTypeInitSol(InputType,ierr)
+
+    USE ANISOFLOW_Types, ONLY : InputTypeVar
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    Type(InputTypeVar),INTENT(INOUT)    :: InputType
+
+    PetscBool                       :: InputTypeInitSolFlg
+    PetscInt                        :: InputTypeInitSolTmp
+
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_type_init_sol",      &
+        & InputTypeInitSolTmp,InputTypeInitSolFlg,ierr)
+
+    IF (InputTypeInitSolFlg) THEN
+        IF (InputTypeInitSolTmp.EQ.1) THEN
+            InputType%InitSol=InputTypeInitSolTmp
+        ELSEIF (InputTypeInitSolTmp.EQ.2) THEN
+            InputType%InitSol=InputTypeInitSolTmp
+        ELSEIF (InputTypeInitSolTmp.EQ.3) THEN
+            InputType%InitSol=InputTypeInitSolTmp
+        ELSE
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
+                & "[ERROR] Input_type_bc used is invalid\n",ierr)
+            STOP
+        END IF
+    END IF
+
+END SUBROUTINE GetInputTypeInitSol
 
  !  - GetInputFileGmtry: It's a routine that provides a file name to open the geometry file in 
  !                       InputDir.
@@ -565,6 +616,32 @@ SUBROUTINE GetInputFileBC(InputFileBC,ierr)
     InputFileBC=TRIM(InputFileBC)
 
 END SUBROUTINE GetInputFileBC
+
+ !  - GetInputFileInitSol: It's a routine that provides a file name to open the initial solution file
+ !                    in InputDir. 
+ !    > OUT: InputFileInitSol,InputFileInitSolFlg ierr.
+ !      + InputFileInitSol: It's a string that specifies file name to open the boundary condition file in
+ !                     InputDir.
+ !      + InputFileInitSolFlg:  
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
+
+SUBROUTINE GetInputFileInitSol(InputFileInitSol,InputFileInitSolFlg,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    CHARACTER(LEN=200),INTENT(OUT)  :: InputFileInitSol
+
+    PetscBool                       :: InputFileInitSolFlg
+
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_file_init_sol",   &
+        InputFileInitSol,InputFileInitSolFlg,ierr)
+
+    InputFileInitSol=TRIM(InputFileInitSol)
+
+END SUBROUTINE GetInputFileInitSol
 
  !    
 
