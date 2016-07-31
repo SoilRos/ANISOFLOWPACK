@@ -30,7 +30,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
     Vec                                     :: diagA
     CHARACTER(LEN=200)                      :: Name,CharCount,Chari,Charj,CharMsg
 
-    PetscInt                                :: i,j,initTime,Count
+    PetscInt                                :: i,j,Count
     PetscReal                               :: zero=0.0
 
     TYPE(RunOptionsVar)                     :: RunOptions
@@ -60,24 +60,24 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
         CALL MatGetDiagonal(A,diagA,ierr)
         Count=1
         DO i=1,BCFld%SizeTimeZone
-            initTime=1
-            IF (i.EQ.1) initTime=2          ! TODO: Get initial solution
-            DO j=initTime,BCFld%TimeZone(i)%SizeTime
-
+            DO j=1,BCFld%TimeZone(i)%SizeTime
+                
                 WRITE(Chari,*)i
                 WRITE(Charj,*)j
+
                 CharMsg="["//TRIM(ADJUSTL(Chari))//":"//TRIM(ADJUSTL(Charj))//"]"
 !                 print*,CharMsg
                 IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Transitory iteration "//TRIM(CharMsg)// " inizialited\n",ierr)
-    
-                CALL GetSystem(Gmtry,PptFld,BCFld,i,j,A,b,x,ierr)
-                CALL KSPSetOperators(Solver,A,A,ierr)
-                CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,    &
-                    & PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)
-                CALL KSPSetFromOptions(Solver,ierr)
-                IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] PETSc solver monitor:\n",ierr)
-                CALL KSPSolve(Solver,b,x,ierr)
-            
+                
+                IF (i.NE.1) THEN
+                    CALL GetSystem(Gmtry,PptFld,BCFld,i,j,A,b,x,ierr)
+                    CALL KSPSetOperators(Solver,A,A,ierr)
+                    CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,    &
+                        & PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)
+                    CALL KSPSetFromOptions(Solver,ierr)
+                    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] PETSc solver monitor:\n",ierr)
+                    CALL KSPSolve(Solver,b,x,ierr)
+                END IF
                 WRITE(CharCount,*)Count
                 Name="ANISOFLOW_Sol_"//TRIM(ADJUSTL(CharCount))
                 Name=ADJUSTL(Name)

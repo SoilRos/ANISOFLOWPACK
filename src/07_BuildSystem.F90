@@ -52,7 +52,7 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
 
     IF ((RunOptions%Time).AND..NOT.((TimeZone.EQ.1).AND.(TimeStep.EQ.1))) THEN
 !         CALL UpdateGmtry(Gmtry,DirichIS,SourceIS,CauchyIS,ierr)
-!         CALL BuildSystem(Gmtry,PptFld,A,ierr)
+!         CALL UpdateSystem(Gmtry,PptFld,A,ierr) UpdateSystem
         CALL ApplyTimeDiff(PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
     END IF
 
@@ -127,8 +127,6 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
     
     CALL PetscLogFlops(EventFlops,ierr)
     CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
-
-
 
 END SUBROUTINE BuildSystem
 
@@ -934,8 +932,8 @@ SUBROUTINE ApplyTimeDiff(PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
     CALL VecSet(VecDT,-one/DT,ierr)
     CALL VecPointwiseMult(VecDT,VecDT,PptFld%Sto%Cell,ierr)
     CALL MatDiagonalSet(A,VecDT,ADD_VALUES,ierr)
-    CALL VecPointwiseMult(VecDT,VecDT,x,ierr)
-    CALL VecAXPY(b,one,x,ierr)
+    CALL VecPointwiseMult(b,VecDT,x,ierr)
+!     CALL VecAXPY(b,one,VecDT,ierr)
     CALL VecDestroy(VecDT,ierr)
 
 !     CALL VecDuplicate(x,VecDT,ierr)
