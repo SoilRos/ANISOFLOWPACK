@@ -131,8 +131,8 @@ MODULE ANISOFLOW_Types
  !      + CvtCell: Contain a tensor conductivity component by each cell. It's saved as local vector
 
     TYPE ConductivityField
-        PetscBool                               :: DefinedByCvtZones=.FALSE.
-        PetscBool                               :: DefinedByPptZones=.FALSE.
+        PetscBool                               :: DefinedByCvtZones=.FALSE.    ! It produces the segmentation fault.
+        PetscBool                               :: DefinedByPptZones=.FALSE.    ! It produces the segmentation fault.
         PetscBool                               :: DefinedByCell=.FALSE.
         ! Conductivity defined by zones (Local):
         Vec                                     :: ZoneID
@@ -148,8 +148,8 @@ MODULE ANISOFLOW_Types
  ! Global on each time step. 
 
     TYPE SpecificStorageField
-        PetscBool                               :: DefinedByStoZones=.FALSE.
-        PetscBool                               :: DefinedByPptZones=.FALSE.
+        PetscBool                               :: DefinedByStoZones=.FALSE.    ! It produces the segmentation fault.
+        PetscBool                               :: DefinedByPptZones=.FALSE.    ! It produces the segmentation fault.
         PetscBool                               :: DefinedByCell=.FALSE.
         ! Specific Storage defined by zones (Local):
         Vec                                     :: ZoneID
