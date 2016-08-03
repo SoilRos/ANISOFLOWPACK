@@ -131,9 +131,9 @@ MODULE ANISOFLOW_Types
  !      + CvtCell: Contain a tensor conductivity component by each cell. It's saved as local vector
 
     TYPE ConductivityField
-        PetscBool                               :: DefinedByCvtZones=.FALSE.    ! It produces the segmentation fault.
-        PetscBool                               :: DefinedByPptZones=.FALSE.    ! It produces the segmentation fault.
-        PetscBool                               :: DefinedByCell=.FALSE.
+        PetscInt                                :: DefinedByCvtZones=0    ! It produces the segmentation fault.
+        PetscInt                                :: DefinedByPptZones=0    ! It produces the segmentation fault.
+        PetscInt                                :: DefinedByCell=0
         ! Conductivity defined by zones (Local):
         Vec                                     :: ZoneID
         TYPE(Tensor),ALLOCATABLE                :: Zone(:)
@@ -148,9 +148,9 @@ MODULE ANISOFLOW_Types
  ! Global on each time step. 
 
     TYPE SpecificStorageField
-        PetscBool                               :: DefinedByStoZones=.FALSE.    ! It produces the segmentation fault.
-        PetscBool                               :: DefinedByPptZones=.FALSE.    ! It produces the segmentation fault.
-        PetscBool                               :: DefinedByCell=.FALSE.
+        PetscInt                                :: DefinedByStoZones=0    ! It produces the segmentation fault.
+        PetscInt                                :: DefinedByPptZones=0    ! It produces the segmentation fault.
+        PetscInt                                :: DefinedByCell=0
         ! Specific Storage defined by zones (Local):
         Vec                                     :: ZoneID
         Vec                                     :: Zone
@@ -166,7 +166,7 @@ MODULE ANISOFLOW_Types
         TYPE(ConductivityField)         :: Cvt
         TYPE(SpecificStorageField)      :: Sto
         ! Property defined by zones (Local):
-        PetscBool                       :: DefinedByPptZones=.FALSE.
+        PetscInt                        :: DefinedByPptZones=0
         Vec                             :: ZoneID
     END TYPE PropertiesField
 

@@ -73,7 +73,7 @@ SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByPptZones,ierr)
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     Vec,INTENT(OUT)                     :: PptZoneID_Local
-    PetscBool,INTENT(OUT)               :: DefinedByPptZones
+    PetscInt,INTENT(OUT)                :: DefinedByPptZones
 
     PetscInt                            :: widthG(3),u,ValI,i
     PetscMPIInt                         :: process
@@ -136,10 +136,8 @@ SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByPptZones,ierr)
         CALL DMGlobalToLocalBegin(Gmtry%DataMngr,PptZoneID_Global,INSERT_VALUES,PptZoneID_Local,ierr)
         CALL DMGlobalToLocalEnd(Gmtry%DataMngr,PptZoneID_Global,INSERT_VALUES,PptZoneID_Local,ierr)
         CALL VecDestroy(PptZoneID_Global,ierr)
-
+        DefinedByPptZones=1
     END IF
-
-    DefinedByPptZones=InputFilePptByZoneFlg
 
 END SUBROUTINE GetPptZoneID
 
@@ -211,8 +209,8 @@ SUBROUTINE GetCvtZoneID(Gmtry,PptFld,CvtZoneID_Local,DefinedByPptZones,DefinedBy
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertiesField),INTENT(IN)    :: PptFld
     Vec,INTENT(OUT)                     :: CvtZoneID_Local
-    PetscBool,INTENT(OUT)               :: DefinedByPptZones
-    PetscBool,INTENT(OUT)               :: DefinedByCvtZones
+    PetscInt,INTENT(OUT)                :: DefinedByPptZones
+    PetscInt,INTENT(OUT)                :: DefinedByCvtZones
 
     PetscInt                            :: widthG(3),u,ValI,i
     PetscMPIInt                         :: process
@@ -273,11 +271,11 @@ SUBROUTINE GetCvtZoneID(Gmtry,PptFld,CvtZoneID_Local,DefinedByPptZones,DefinedBy
         CALL DMGlobalToLocalEnd(Gmtry%DataMngr,CvtZoneID_Global,INSERT_VALUES,CvtZoneID_Local,ierr)
         CALL VecDestroy(CvtZoneID_Global,ierr)
 
-        DefinedByCvtZones=.TRUE.
+        DefinedByCvtZones=1
     ELSEIF (InputFilePptByZoneFlg) THEN
         ZoneID_tmp => TargPetscVec(PptFld%ZoneID)
         CvtZoneID_Local = ZoneID_tmp
-        DefinedByPptZones=.TRUE.
+        DefinedByPptZones=1
     ELSE
         PRINT*,"ERROR en CvtZone"! TODO: arreglar este mensage
         STOP
@@ -415,7 +413,7 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,Cvt,ierr)
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputFileCvt(InputFileCvt,ierr)
 
-    Cvt%DefinedByCell=.TRUE.
+    Cvt%DefinedByCell=1
 !     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Event] Conductivity Field is stored by Block\n",ierr)
 
     CALL DMCreateLocalVector(Gmtry%DataMngr,Cvt%Cell,ierr)
@@ -526,7 +524,7 @@ SUBROUTINE GetStoZoneID(Gmtry,PptFld,StoZoneID_Local,DefinedByPptZones,DefinedBy
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertiesField),INTENT(IN)    :: PptFld
     Vec,INTENT(OUT)                     :: StoZoneID_Local
-    PetscBool,INTENT(OUT)               :: DefinedByPptZones,DefinedByStoZones
+    PetscInt,INTENT(OUT)                :: DefinedByPptZones,DefinedByStoZones
 
     PetscInt                            :: widthG(3),u,ValI,i
     PetscMPIInt                         :: process
@@ -588,11 +586,11 @@ SUBROUTINE GetStoZoneID(Gmtry,PptFld,StoZoneID_Local,DefinedByPptZones,DefinedBy
         CALL DMGlobalToLocalEnd(Gmtry%DataMngr,StoZoneID_Global,INSERT_VALUES,StoZoneID_Local,ierr)
         CALL VecDestroy(StoZoneID_Global,ierr)
 
-        DefinedByStoZones=.TRUE.
+        DefinedByStoZones=1
     ELSEIF (InputFilePptByZoneFlg) THEN
         ZoneID_tmp => TargPetscVec(PptFld%ZoneID)
         StoZoneID_Local = ZoneID_tmp
-        DefinedByPptZones=.TRUE.
+        DefinedByPptZones=1
     ELSE
         PRINT*,"ERROR en StoZone"! TODO: arreglar este mensage
         STOP
@@ -711,7 +709,7 @@ SUBROUTINE StorageZoneToCell(Gmtry,Sto,ierr)
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
         & PETSC_NULL_INTEGER,ierr)
 
-    IF (.NOT.(Sto%DefinedByPptZones.OR.Sto%DefinedByStoZones)) THEN
+    IF ((Sto%DefinedByPptZones.EQ.0).AND.(Sto%DefinedByStoZones.EQ.0)) THEN
         PRINT*,"ERROR: To use StorageZoneToCell subroutine the specific storage has to be definde by zone."
     END IF
 
@@ -753,15 +751,15 @@ SUBROUTINE StorageZoneToCell(Gmtry,Sto,ierr)
     
     CALL VecDestroy(Sto%Zone,ierr)
 
-    IF (Sto%DefinedByStoZones) THEN
+    IF (Sto%DefinedByStoZones.EQ.1) THEN
         CALL VecDestroy(Sto%ZoneID,ierr)
-        Sto%DefinedByStoZones=.FALSE.
-    ELSE IF (Sto%DefinedByPptZones) THEN
+        Sto%DefinedByStoZones=0
+    ELSE IF (Sto%DefinedByPptZones.EQ.1) THEN
         !NULLIFY(Sto%ZoneID) ! Because I used a very tricky way to use it as a pointer, I can't nullify it as a usual pointer but it's supposed it doesn't will get in troubles the code.
-        Sto%DefinedByPptZones=.FALSE.
+        Sto%DefinedByPptZones=0
     END IF
 
-    Sto%DefinedByCell=.TRUE.
+    Sto%DefinedByCell=1
 
 !     CALL VecView(Sto%Cell,PETSC_VIEWER_STDOUT_WORLD,ierr)
 
@@ -800,7 +798,7 @@ SUBROUTINE GetStorage_2(Gmtry,PptFld,Sto,ierr)
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputFileSto(InputFileSto,ierr)
 
-    Sto%DefinedByCell=.TRUE.
+    Sto%DefinedByCell=1
 !     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Event] Storage Field is stored by Block\n",ierr)
 
     CALL DMCreateGlobalVector(Gmtry%DataMngr,Sto%Cell,ierr)
@@ -950,7 +948,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
         STOP   
     END IF
 
-    IF (PptFld%Cvt%DefinedByCvtZones.OR.PptFld%Cvt%DefinedByPptZones) THEN
+    IF ((PptFld%Cvt%DefinedByCvtZones.EQ.1).OR.(PptFld%Cvt%DefinedByPptZones.EQ.1)) THEN
         IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4).OR.(Ppt%StnclTplgy(ValI(1)).EQ.5)) THEN ! Only get properties for active blocks
             IF (widthG(3).NE.1) THEN
                 CALL DMDAVecGetArrayreadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt3D,ierr)
@@ -1047,7 +1045,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
                 CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt2D,ierr)
             END IF
         END IF
-    ELSE IF (Pptfld%Cvt%DefinedByCell) THEN
+    ELSE IF (Pptfld%Cvt%DefinedByCell.EQ.1) THEN
         IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4).OR.(Ppt%StnclTplgy(ValI(1)).EQ.5)) THEN
 
             IF (widthG(3).NE.1) THEN
