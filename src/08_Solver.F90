@@ -69,7 +69,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 !                 print*,CharMsg
                 IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Transitory iteration "//TRIM(CharMsg)// " inizialited\n",ierr)
                 
-                IF (i.NE.1) THEN
+!                 IF (i.NE.1) THEN
                     CALL GetSystem(Gmtry,PptFld,BCFld,i,j,A,b,x,ierr)
                     CALL KSPSetOperators(Solver,A,A,ierr)
                     CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,    &
@@ -77,7 +77,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
                     CALL KSPSetFromOptions(Solver,ierr)
                     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] PETSc solver monitor:\n",ierr)
                     CALL KSPSolve(Solver,b,x,ierr)
-                END IF
+!                 END IF
                 WRITE(CharCount,*)Count
                 Name="ANISOFLOW_Sol_"//TRIM(ADJUSTL(CharCount))
                 Name=ADJUSTL(Name)
@@ -100,6 +100,10 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
    
         Name="ANISOFLOW_b"
         CALL ViewSolution(b,Name,EventName,ierr)
+
+!         CALL ApplyDirichlet(BCFld,TimeZone,b,ierr)
+!         CALL ApplySource(BCFld,TimeZone,b,ierr)
+!         CALL ApplyCauchy(BCFld,TimeZone,A,b,ierr)
 
         CALL KSPSetOperators(Solver,A,A,ierr)
         CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,    &

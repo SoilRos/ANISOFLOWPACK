@@ -54,11 +54,11 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
 !         CALL UpdateGmtry(Gmtry,DirichIS,SourceIS,CauchyIS,ierr)
 !         CALL UpdateSystem(Gmtry,PptFld,A,ierr) UpdateSystem
         CALL ApplyTimeDiff(PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
+        CALL ApplyDirichlet(BCFld,TimeZone,b,ierr)
+        CALL ApplySource(BCFld,TimeZone,b,ierr)
+        CALL ApplyCauchy(BCFld,TimeZone,A,b,ierr)
     END IF
 
-    CALL ApplyDirichlet(BCFld,TimeZone,b,ierr)
-    CALL ApplySource(BCFld,TimeZone,b,ierr)
-    CALL ApplyCauchy(BCFld,TimeZone,A,b,ierr)
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
