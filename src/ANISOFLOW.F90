@@ -17,13 +17,14 @@ PROGRAM ANISOFLOW
     PetscErrorCode              :: ierr
     PetscBool                   :: Verbose
     TYPE(Geometry)              :: Gmtry
-    TYPE(PropertiesField)       :: PptFld
+
     TYPE(BoundaryConditions)    :: BCFld
     Mat                         :: A
     Vec                         :: b,x
 
     PetscLogStage               :: Stage
     CHARACTER(LEN=200)          :: StageName
+    TYPE(PropertiesField)       :: PptFld
 
 
     CALL PetscInitialize(PETSC_COMM_WORLD,ierr)
