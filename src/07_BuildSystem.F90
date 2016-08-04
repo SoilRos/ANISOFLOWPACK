@@ -42,22 +42,23 @@ SUBROUTINE GetSystem(Gmtry,PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
     
     CALL GetRunOptions(RunOptions,ierr)
 
-    IF ((TimeZone.EQ.1).AND.(TimeStep.EQ.1)) THEN
-        CALL UpdateGmtry(Gmtry,BCFld%DirichIS(TimeZone),BCFld%SourceIS(TimeZone),BCFld%CauchyIS(TimeZone),ierr)
-        CALL BuildSystem(Gmtry,PptFld,A,ierr)
-        CALL GetInitSol(Gmtry,x,ierr)
-!         CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr) ! inicializar x
-        CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
-    END IF
+    CALL BuildSystem(Gmtry,PptFld,A,ierr)
+!     IF ((TimeZone.EQ.1).AND.(TimeStep.EQ.1)) THEN
+!         CALL UpdateGmtry(Gmtry,BCFld%DirichIS(TimeZone),BCFld%SourceIS(TimeZone),BCFld%CauchyIS(TimeZone),ierr)
+!         CALL BuildSystem(Gmtry,PptFld,A,ierr)
+!         CALL GetInitSol(Gmtry,x,ierr)
+! !         CALL DMCreateGlobalVector(Gmtry%DataMngr,x,ierr) ! inicializar x
+!         CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
+!     END IF
 
-    IF ((RunOptions%Time).AND..NOT.((TimeZone.EQ.1).AND.(TimeStep.EQ.1))) THEN
-!         CALL UpdateGmtry(Gmtry,DirichIS,SourceIS,CauchyIS,ierr)
-!         CALL UpdateSystem(Gmtry,PptFld,A,ierr) UpdateSystem
-        CALL ApplyTimeDiff(PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
-        CALL ApplyDirichlet(BCFld,TimeZone,b,ierr)
-        CALL ApplySource(BCFld,TimeZone,b,ierr)
-        CALL ApplyCauchy(BCFld,TimeZone,A,b,ierr)
-    END IF
+!     IF ((RunOptions%Time).AND..NOT.((TimeZone.EQ.1).AND.(TimeStep.EQ.1))) THEN
+! !         CALL UpdateGmtry(Gmtry,DirichIS,SourceIS,CauchyIS,ierr)
+! !         CALL UpdateSystem(Gmtry,PptFld,A,ierr) UpdateSystem
+!         CALL ApplyTimeDiff(PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
+!         CALL ApplyDirichlet(BCFld,TimeZone,b,ierr)
+!         CALL ApplySource(BCFld,TimeZone,b,ierr)
+!         CALL ApplyCauchy(BCFld,TimeZone,A,b,ierr)
+!     END IF
 
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
@@ -896,7 +897,7 @@ SUBROUTINE ApplyCauchy(BCFld,TimeZone,A,b,ierr)
     CALL ISDestroy(NaturalOrder,ierr)
 
     CALL GetVerbose(Verbose,ierr)
-    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetSystem Event] Source terms properly implemented\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetSystem Event] Cauchy terms properly implemented\n",ierr)
 
 END SUBROUTINE ApplyCauchy
 
@@ -967,19 +968,18 @@ SUBROUTINE GetDT(BCFld,TimeZone,TimeStep,DT,ierr)
     PetscReal                               :: Time1,Time2
     !PetscReal,POINTER                       :: TimeArray(:)
 
-    IF ((TimeZone.EQ.1).AND.(TimeStep.EQ.1)) THEN
-        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "ERROR: It's not posible get a DT in the fisrt time.\n",ierr)
-        STOP
-    END IF
-
     Time2=BCFld%TimeZone(TimeZone)%Time(TimeStep)
-    IF (TimeStep.NE.1) Time1=BCFld%TimeZone(TimeZone)%Time(TimeStep-1)
-
-    IF (TimeStep.EQ.1) THEN
+    IF ((TimeStep.EQ.1).AND.(TimeZone.EQ.1)) THEN
+        Time1=0.d0
+    ELSEIF (TimeStep.EQ.1) THEN
         TimeZoneSize=SIZE(BCFld%TimeZone(TimeZone-1)%Time) 
         Time1=BCFld%TimeZone(TimeZone-1)%Time(TimeZoneSize)
+        Time1=0.d0
+    ELSE 
+        Time1=BCFld%TimeZone(TimeZone)%Time(TimeStep-1)
     END IF
+
+
     DT=Time2-Time1
 
 END SUBROUTINE GetDT

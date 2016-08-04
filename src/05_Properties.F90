@@ -73,7 +73,7 @@ SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByPptZones,ierr)
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     Vec,INTENT(OUT)                     :: PptZoneID_Local
-    PetscInt,INTENT(OUT)                :: DefinedByPptZones
+    PetscBool,INTENT(OUT)               :: DefinedByPptZones
 
     PetscInt                            :: widthG(3),u,ValI,i
     PetscMPIInt                         :: process
@@ -136,7 +136,7 @@ SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByPptZones,ierr)
         CALL DMGlobalToLocalBegin(Gmtry%DataMngr,PptZoneID_Global,INSERT_VALUES,PptZoneID_Local,ierr)
         CALL DMGlobalToLocalEnd(Gmtry%DataMngr,PptZoneID_Global,INSERT_VALUES,PptZoneID_Local,ierr)
         CALL VecDestroy(PptZoneID_Global,ierr)
-        DefinedByPptZones=1
+        DefinedByPptZones=.TRUE.
     END IF
 
 END SUBROUTINE GetPptZoneID

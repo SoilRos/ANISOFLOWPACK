@@ -43,5 +43,5 @@ mpiexec -n $np ./$ProgramDir$ProgramName 			\
 -Output_dir 				$OutputDir 				\
 -Run_options_scheme 		$Scheme 				\
 -Run_options_time 			$Time 					\
--log_view 					ascii:ANISOFLOW_$np.log 
-# -ksp_monitor_lg_residualnorm 1
+-log_view 					ascii:ANISOFLOW_$np.log \
+-ksp_monitor_lg_residualnorm 1

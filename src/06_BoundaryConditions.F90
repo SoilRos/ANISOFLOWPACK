@@ -108,6 +108,8 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
     ALLOCATE(BCFld%SourceIS(BCFld%SizeTimeZone))
     ALLOCATE(BCFld%CauchyIS(BCFld%SizeTimeZone))
 
+    DT=0.d0
+
     DO i=1,BCFld%SizeTimeZone
         ! TIME
         IF (process.EQ.0) THEN
@@ -121,7 +123,7 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
             READ(u,*)aux,DT
             DO j=1,BCFld%TimeZone(i)%SizeTime
                 IF ((i.EQ.1).AND.(j.EQ.1)) THEN
-                    BCFld%TimeZone(1)%Time(1)=0.0
+                    BCFld%TimeZone(1)%Time(1)=DT
                 ELSEIF (j.EQ.1) THEN
                     BCFld%TimeZone(i)%Time(1)=BCFld%TimeZone(i-1)%Time(BCFld%TimeZone(i-1)%SizeTime)+DT
                 ELSE

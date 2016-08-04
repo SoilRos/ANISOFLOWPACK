@@ -8,8 +8,9 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,BoundaryConditions,RunOptionsVar
     USE ANISOFLOW_Interface, ONLY : GetRunOptions, GetVerbose
+    USE ANISOFLOW_Geometry, ONLY : UpdateGmtry
     USE ANISOFLOW_View, ONLY : ViewSolution
-    USE ANISOFLOW_BuildSystem, ONLY : GetSystem
+    USE ANISOFLOW_BuildSystem, ONLY : GetSystem,ApplyDirichlet,ApplySource,ApplyCauchy,ApplyTimeDiff,GetInitSol
 
     IMPLICIT NONE
 
@@ -54,6 +55,9 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
     CALL KSPCreate(PETSC_COMM_WORLD,Solver,ierr)
     CALL GetRunOptions(RunOptions,ierr)
 
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
+    CALL GetInitSol(Gmtry,x,ierr)
+
     IF (RunOptions%Time) THEN ! Transitory
 
         CALL VecDuplicate(x,diagA,ierr)
@@ -68,23 +72,28 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
                 CharMsg="["//TRIM(ADJUSTL(Chari))//":"//TRIM(ADJUSTL(Charj))//"]"
 !                 print*,CharMsg
                 IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Transitory iteration "//TRIM(CharMsg)// " inizialited\n",ierr)
-                
-!                 IF (i.NE.1) THEN
-                    CALL GetSystem(Gmtry,PptFld,BCFld,i,j,A,b,x,ierr)
-                    CALL KSPSetOperators(Solver,A,A,ierr)
-                    CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,    &
-                        & PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)
-                    CALL KSPSetFromOptions(Solver,ierr)
-                    IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] PETSc solver monitor:\n",ierr)
-                    CALL KSPSolve(Solver,b,x,ierr)
-!                 END IF
+
+                CALL UpdateGmtry(Gmtry,BCFld%DirichIS(i),BCFld%SourceIS(i),BCFld%CauchyIS(i),ierr)
+        !         CALL UpdateSystem(Gmtry,PptFld,A,ierr) UpdateSystem !to new dirichlet
+                CALL VecSet(b,zero,ierr)
+!                 CALL ApplyTimeDiff(PptFld,BCFld,i,j,A,b,x,ierr)
+                CALL ApplyDirichlet(BCFld,i,b,ierr)
+                CALL ApplySource(BCFld,i,b,ierr)
+                CALL ApplyCauchy(BCFld,i,A,b,ierr)
+
+                CALL KSPSetOperators(Solver,A,A,ierr)
+                CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,    &
+                    & PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)
+                CALL KSPSetFromOptions(Solver,ierr)
+                IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] PETSc solver monitor:\n",ierr)
+                CALL KSPSolve(Solver,b,x,ierr)
+
                 WRITE(CharCount,*)Count
                 Name="ANISOFLOW_Sol_"//TRIM(ADJUSTL(CharCount))
                 Name=ADJUSTL(Name)
                 CALL ViewSolution(x,Name,EventName,ierr)
                 Count=Count+1
                 CALL MatDiagonalSet(A,diagA,INSERT_VALUES,ierr)
-                CALL VecSet(b,zero,ierr)
 
                 IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Transitory iteration "//TRIM(CharMsg)// " finalized\n",ierr)
 
@@ -101,9 +110,12 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
         Name="ANISOFLOW_b"
         CALL ViewSolution(b,Name,EventName,ierr)
 
-!         CALL ApplyDirichlet(BCFld,TimeZone,b,ierr)
-!         CALL ApplySource(BCFld,TimeZone,b,ierr)
-!         CALL ApplyCauchy(BCFld,TimeZone,A,b,ierr)
+        CALL UpdateGmtry(Gmtry,BCFld%DirichIS(1),BCFld%SourceIS(1),BCFld%CauchyIS(1),ierr)
+
+        CALL VecSet(b,zero,ierr)
+        CALL ApplyDirichlet(BCFld,1,b,ierr)
+        CALL ApplySource(BCFld,1,b,ierr)
+        CALL ApplyCauchy(BCFld,1,A,b,ierr)
 
         CALL KSPSetOperators(Solver,A,A,ierr)
         CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,    &
