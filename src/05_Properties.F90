@@ -729,10 +729,10 @@ SUBROUTINE StorageZoneToCell(Gmtry,Sto,ierr)
             DO i=corn(1),corn(1)+widthL(1)-1
                 IF (widthG(3).NE.1) THEN
                     ValI=INT(TmpStoZoneID3D(i,j,k))
-                    TmpStoZoneID3D(i,j,k)=TmpStoZone(ValI)
+                    TmpStoCell3D(i,j,k)=TmpStoZone(ValI)
                 ELSE
                     ValI=INT(TmpStoZoneID2D(i,j))
-                    TmpStoZoneID2D(i,j)=TmpStoZone(ValI)
+                    TmpStoCell2D(i,j)=TmpStoZone(ValI)
                 END IF
             END DO
         END DO

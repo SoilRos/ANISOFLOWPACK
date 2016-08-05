@@ -13122,8 +13122,7 @@ DirichletBoundaryCondition( 1 ): 13120
 268999      4.539172
 269000      4.537066
 269001      4.534512
-SourceBoundaryCondition( 1 ): 1
-3000 0.0
+SourceBoundaryCondition( 1 ): 0
 CauchyBoundaryCondition( 1 ): 0
 Timezone( 2 ): 10
 DT: 1.0
