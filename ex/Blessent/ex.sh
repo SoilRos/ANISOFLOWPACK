@@ -3,7 +3,7 @@
 ProgramDir=../../src/
 ProgramName=ANISOFLOW
 
-np=1														# Number of processors to be used
+np=2														# Number of processors to be used
 
 InputType=1													# Input files type
 InputTypeTplgy=1 											# Input toplogy file type
@@ -22,7 +22,7 @@ InputFileInitSol=ANISOFLOW_Sol.h5
 OutputType=3 												# Output files type
 OutputDir=out/ 												# Output directory
 
-Scheme=2 													# Scheme type used 
+Scheme=1 													# Scheme type used 
 Time=1														# Transitory boolean
 
 mpiexec -n $np ./$ProgramDir$ProgramName 			\

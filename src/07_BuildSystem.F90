@@ -790,6 +790,7 @@ SUBROUTINE ApplyDirichlet(BCFld,TimeZone,b,ierr)
     CALL ISCreateStride(PETSC_COMM_WORLD,DirichSize,0,1,NaturalOrder,ierr)
     CALL VecScatterCreate(BCFld%Dirich(TimeZone),NaturalOrder,b,BCFld%DirichIS(TimeZone),Scatter,ierr)
 
+
     CALL VecScatterBegin(Scatter,BCFld%Dirich(TimeZone),b,INSERT_VALUES,SCATTER_FORWARD,ierr)
     CALL VecScatterEnd(Scatter,BCFld%Dirich(TimeZone),b,INSERT_VALUES,SCATTER_FORWARD,ierr)
 
@@ -919,34 +920,51 @@ SUBROUTINE ApplyTimeDiff(PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
     Mat,INTENT(INOUT)                       :: A
     Vec,INTENT(INOUT)                       :: b,x
 
-    Vec                                     :: VecDT
-    PetscReal                               :: DT,one=1.d0
+    Vec                                     :: VecDT,VecZero
+    PetscReal                               :: DT,one=1.d0,zero=0.d0
     CHARACTER(LEN=200)                      :: CharDT
     PetscBool                               :: Verbose
+    PetscInt                                :: DirichSize
+    IS                                      :: NaturalOrder
+    VecScatter                              :: Scatter
+
 
     CALL GetVerbose(Verbose,ierr)
     CALL GetDT(BCFld,TimeZone,TimeStep,DT,ierr)
     WRITE(CharDT,*)DT
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetSystem Stage] DT: "//ADJUSTL(TRIM(CharDT))//"\n",ierr)
 
-    CALL MatGetDiagonal(A,VecDT,ierr)
-    CALL VecView(VecDT,PETSC_VIEWER_STDOUT_WORLD,ierr)
-    STOP
+!     CALL VecDuplicate(x,VecDT,ierr)
+!     CALL VecSet(VecDT,-one/DT,ierr)
+!     CALL VecPointwiseMult(VecDT,VecDT,PptFld%Sto%Cell,ierr)
+!     CALL MatDiagonalSet(A,VecDT,ADD_VALUES,ierr)
+!     CALL VecPointwiseMult(b,VecDT,x,ierr)
+!     CALL VecAXPY(b,one,VecDT,ierr)
+!     CALL VecDestroy(VecDT,ierr)
 
     CALL VecDuplicate(x,VecDT,ierr)
     CALL VecSet(VecDT,-one/DT,ierr)
-    CALL VecPointwiseMult(VecDT,VecDT,PptFld%Sto%Cell,ierr)
+
+    CALL VecGetSize(BCFld%Dirich(TimeZone),DirichSize,ierr)
+
+    ! Inserting one to maintain dirichlet BC
+    CALL VecDuplicate(BCFld%Dirich(TimeZone),VecZero,ierr)
+    CALL VecSet(VecZero,zero,ierr)
+    CALL ISCreateStride(PETSC_COMM_WORLD,DirichSize,0,1,NaturalOrder,ierr)
+    CALL VecScatterCreate(VecZero,NaturalOrder,VecDT,BCFld%DirichIS(TimeZone),Scatter,ierr)
+    CALL VecScatterBegin(Scatter,VecZero,VecDT,INSERT_VALUES,SCATTER_FORWARD,ierr)
+    CALL VecScatterEnd(Scatter,VecZero,VecDT,INSERT_VALUES,SCATTER_FORWARD,ierr)
+    CALL VecScatterDestroy(Scatter,ierr)
+    CALL ISDestroy(NaturalOrder,ierr)
     CALL MatDiagonalSet(A,VecDT,ADD_VALUES,ierr)
-    CALL VecPointwiseMult(b,VecDT,x,ierr)
-    CALL VecAXPY(b,one,VecDT,ierr)
+
+!     CALL VecView(VecDT,PETSC_VIEWER_STDOUT_WORLD,ierr)
+
     CALL VecDestroy(VecDT,ierr)
-
-!     CALL VecDuplicate(x,VecDT,ierr)
-!     CALL VecSet(VecDT,-one/DT,ierr)
-!     CALL MatDiagonalSet(A,VecDT,ADD_VALUES,ierr)
-!     CALL VecDestroy(VecDT,ierr)
-
-!     CALL VecAXPY(b,-one/DT,x,ierr)
+    CALL VecDestroy(VecZero,ierr)
+!     CALL VecView(b,PETSC_VIEWER_STDOUT_WORLD,ierr)
+    CALL VecAXPY(b,-one/DT,x,ierr)
+!     CALL VecCopy(b,x,ierr)
 
 
 

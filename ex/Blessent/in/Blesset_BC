@@ -1,5 +1,5 @@
 Timezones: 1
-Timezone( 1 ): 10
+Timezone( 1 ): 40
 DT: 1.0
 DirichletBoundaryCondition( 1 ): 13120
  1          6.704865
@@ -13124,8 +13124,8 @@ DirichletBoundaryCondition( 1 ): 13120
 269001      4.534512
 SourceBoundaryCondition( 1 ): 0
 CauchyBoundaryCondition( 1 ): 0
-Timezone( 2 ): 10
-DT: 1.0
+Timezone( 2 ): 15
+DT: 0.1
 DirichletBoundaryCondition( 2 ): 13120
  1          6.704865
  2          6.711842
@@ -26247,6 +26247,5 @@ DirichletBoundaryCondition( 2 ): 13120
 268999      4.539172
 269000      4.537066
 269001      4.534512
-SourceBoundaryCondition( 2 ): 1
-3000 32.0
+SourceBoundaryCondition( 2 ): 0
 CauchyBoundaryCondition( 2 ): 0
