@@ -1,6 +1,4 @@
-1. Implementar solución inicial en el transitorio
-2. Implementar el coeficiente de almacenamiento para el transitorio
-3. Modulo de escalamiento con el método de la china.
-4. Agregar condiciones de Cauchy
-5. Hacer el User Manual
-6. Agregar los Flops a los eventos
+1. Modulo de escalamiento con el método de la china.
+2. Hacer el User Manual
+3. Agregar los Flops a los eventos
+4. Agragar el cambio dinámico de las condiciones Dirichlet (cambia la matriz según el IS en cada tiempo)
