@@ -77,11 +77,9 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
         !         CALL UpdateSystem(Gmtry,PptFld,A,ierr) UpdateSystem !to new dirichlet
                 CALL VecSet(b,zero,ierr)
-! CALL MatView(A,PETSC_VIEWER_STDOUT_WORLD,ierr)
                 CALL ApplyTimeDiff(PptFld,BCFld,i,j,A,b,x,ierr)
                 CALL ApplyDirichlet(BCFld,i,b,ierr)
-                
-!                 CALL ApplySource(BCFld,i,b,ierr)
+                CALL ApplySource(BCFld,i,b,ierr)
 !                 CALL ApplyCauchy(BCFld,i,A,b,ierr)
 
                 CALL KSPSetOperators(Solver,A,A,ierr)
