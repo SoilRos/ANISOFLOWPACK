@@ -30,7 +30,6 @@ mpiexec -n $np ./$ProgramDir$ProgramName 			\
 -Input_type_tplgy 			$InputTypeTplgy 		\
 -Input_type_gmtry 			$InputTypeGmtry 		\
 -Input_type_bc	 			$InputTypeBC 	 		\
--Input_type_init_sol	 	$InputTypeInitSol		\
 -Input_dir 					$InputDir 				\
 -Input_file_gmtry 			$InputFileGmtry 		\
 -Input_file_tplgy 			$InputFileTplgy 		\
@@ -38,7 +37,6 @@ mpiexec -n $np ./$ProgramDir$ProgramName 			\
 -Input_file_sto 			$InputFileSto 			\
 -Input_file_ppt_by_zones 	$InputFilePptByZones 	\
 -Input_file_bc 				$InputFileBC 			\
--Input_file_init_sol		$InputFileInitSol		\
 -Output_type 				$OutputType 			\
 -Output_dir 				$OutputDir 				\
 -Run_options_scheme 		$Scheme 				\

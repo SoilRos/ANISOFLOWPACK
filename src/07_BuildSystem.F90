@@ -924,17 +924,21 @@ SUBROUTINE ApplyTimeDiff(PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
     CHARACTER(LEN=200)                      :: CharDT
     PetscBool                               :: Verbose
 
-
+    CALL GetVerbose(Verbose,ierr)
     CALL GetDT(BCFld,TimeZone,TimeStep,DT,ierr)
     WRITE(CharDT,*)DT
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetSystem Stage] DT: "//ADJUSTL(TRIM(CharDT))//"\n",ierr)
+
+    CALL MatGetDiagonal(A,VecDT,ierr)
+    CALL VecView(VecDT,PETSC_VIEWER_STDOUT_WORLD,ierr)
+    STOP
 
     CALL VecDuplicate(x,VecDT,ierr)
     CALL VecSet(VecDT,-one/DT,ierr)
     CALL VecPointwiseMult(VecDT,VecDT,PptFld%Sto%Cell,ierr)
     CALL MatDiagonalSet(A,VecDT,ADD_VALUES,ierr)
     CALL VecPointwiseMult(b,VecDT,x,ierr)
-!     CALL VecAXPY(b,one,VecDT,ierr)
+    CALL VecAXPY(b,one,VecDT,ierr)
     CALL VecDestroy(VecDT,ierr)
 
 !     CALL VecDuplicate(x,VecDT,ierr)
@@ -944,7 +948,7 @@ SUBROUTINE ApplyTimeDiff(PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
 
 !     CALL VecAXPY(b,-one/DT,x,ierr)
 
-    CALL GetVerbose(Verbose,ierr)
+
 
 END SUBROUTINE ApplyTimeDiff
 

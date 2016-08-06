@@ -76,10 +76,12 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
                 CALL UpdateGmtry(Gmtry,BCFld%DirichIS(i),BCFld%SourceIS(i),BCFld%CauchyIS(i),ierr)
         !         CALL UpdateSystem(Gmtry,PptFld,A,ierr) UpdateSystem !to new dirichlet
                 CALL VecSet(b,zero,ierr)
+
                 CALL ApplyTimeDiff(PptFld,BCFld,i,j,A,b,x,ierr)
+                STOP
                 CALL ApplyDirichlet(BCFld,i,b,ierr)
                 CALL ApplySource(BCFld,i,b,ierr)
-!                 CALL ApplyCauchy(BCFld,i,A,b,ierr)
+                CALL ApplyCauchy(BCFld,i,A,b,ierr)
 
                 CALL KSPSetOperators(Solver,A,A,ierr)
                 CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,    &
