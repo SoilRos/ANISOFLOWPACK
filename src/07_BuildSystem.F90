@@ -167,10 +167,14 @@ SUBROUTINE GetInitSol(Gmtry,x,ierr)
         ELSEIF (InputType%InitSol.EQ.2) THEN
             PRINT*,"ERROR: Initial solution is not able to be opend from ASCII format, you should use binary or HDF5 formats. Initial solution was set to 0."
         ELSEIF (InputType%InitSol.EQ.3) THEN
+#if defined(PETSC_HAVE_HDF5)
             CALL PetscViewerHDF5Open(PETSC_COMM_WORLD,Route,FILE_MODE_READ,Viewer,ierr)
             CALL VecLoad(x,Viewer,ierr)
             CALL PetscViewerDestroy(Viewer,ierr)
             PRINT*,"Inital solution ",InputFileInitSol," has been implemented properly."
+#else
+            PRINT*,"ERROR: Initial solution is not able to be opend from HDF5 format, you should use binary or install HDF5 libraries. Initial solution was set to 0."
+#endif
         ELSE 
             PRINT*,"ERROR: InitSol is not valid. Initial solution was set to 0."
         END IF
