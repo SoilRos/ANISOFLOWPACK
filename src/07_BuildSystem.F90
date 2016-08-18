@@ -164,6 +164,7 @@ SUBROUTINE GetInitSol(Gmtry,x,ierr)
             CALL PetscViewerBinaryOpen(PETSC_COMM_WORLD,Route,FILE_MODE_READ,Viewer,ierr)
             CALL VecLoad(x,Viewer,ierr)
             CALL PetscViewerDestroy(Viewer,ierr)
+            PRINT*,"Inital solution ",InputFileInitSol," has been implemented properly."
         ELSEIF (InputType%InitSol.EQ.2) THEN
             PRINT*,"ERROR: Initial solution is not able to be opend from ASCII format, you should use binary or HDF5 formats. Initial solution was set to 0."
         ELSEIF (InputType%InitSol.EQ.3) THEN
