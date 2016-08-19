@@ -27,7 +27,7 @@ PROGRAM ANISOFLOW
     TYPE(PropertiesField)       :: PptFld
 
 
-    CALL PetscInitialize(PETSC_COMM_WORLD,ierr)
+    CALL PetscInitialize(PETSC_NULL_CHARACTER,ierr)
 
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[Main Stage] Inizialited\n",ierr)
