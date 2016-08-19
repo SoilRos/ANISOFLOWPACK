@@ -90,6 +90,62 @@ SUBROUTINE ViewConductivity(x,Name,StageName,ierr)
 
 END SUBROUTINE ViewConductivity
 
+SUBROUTINE ViewStorage(x,Name,StageName,ierr)
+
+    USE ANISOFLOW_Interface
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+
+    PetscErrorCode,INTENT(INOUT)            :: ierr
+    CHARACTER(LEN=200),INTENT(IN)           :: Name,StageName
+    Vec,INTENT(IN)                          :: x
+
+    TYPE(OutputTypeVar)                      :: OutputType
+
+    CALL GetOutputType(OutputType,ierr)
+
+    CALL PetscObjectSetName(x,"SpecificStorage",ierr)
+    IF (OutputType%Sto.EQ.1) THEN
+        CALL ViewVecProperty_1(x,Name,StageName,ierr)
+    ELSE IF (OutputType%Sto.EQ.2) THEN
+        CALL ViewVecProperty_2(x,Name,StageName,ierr)
+    ELSE IF (OutputType%Sto.EQ.3) THEN
+        CALL ViewVecProperty_3(x,Name,StageName,ierr)
+    END IF
+
+END SUBROUTINE ViewStorage
+
+SUBROUTINE ViewProperty(x,Name,StageName,ierr)
+
+    USE ANISOFLOW_Interface
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+
+    PetscErrorCode,INTENT(INOUT)            :: ierr
+    CHARACTER(LEN=200),INTENT(IN)           :: Name,StageName
+    Vec,INTENT(IN)                          :: x
+
+    TYPE(OutputTypeVar)                      :: OutputType
+
+    CALL GetOutputType(OutputType,ierr)
+
+    CALL PetscObjectSetName(x,"Property",ierr)
+    IF (OutputType%Ppt.EQ.1) THEN
+        CALL ViewVecProperty_1(x,Name,StageName,ierr)
+    ELSE IF (OutputType%Ppt.EQ.2) THEN
+        CALL ViewVecProperty_2(x,Name,StageName,ierr)
+    ELSE IF (OutputType%Ppt.EQ.3) THEN
+        CALL ViewVecProperty_3(x,Name,StageName,ierr)
+    END IF
+
+END SUBROUTINE ViewProperty
+
 SUBROUTINE ViewVecProperty_1(x,Name,StageName,ierr)
 
     USE ANISOFLOW_Interface

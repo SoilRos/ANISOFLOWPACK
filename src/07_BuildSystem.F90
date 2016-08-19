@@ -991,7 +991,6 @@ SUBROUTINE GetDT(BCFld,TimeZone,TimeStep,DT,ierr)
     ELSEIF (TimeStep.EQ.1) THEN
         TimeZoneSize=SIZE(BCFld%TimeZone(TimeZone-1)%Time) 
         Time1=BCFld%TimeZone(TimeZone-1)%Time(TimeZoneSize)
-        Time1=0.d0
     ELSE 
         Time1=BCFld%TimeZone(TimeZone)%Time(TimeStep-1)
     END IF

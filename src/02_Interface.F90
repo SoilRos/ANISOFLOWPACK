@@ -685,19 +685,27 @@ SUBROUTINE GetOutputType(OutputType,ierr)
     IF (OutputTypeFlg) THEN
         IF (OutputTypeTmp.EQ.0) THEN
             OutputType%Tplgy=0
+            OutputType%Ppt=0
             OutputType%Cvt=0
+            OutputType%Sto=0
             OutputType%Sol=0
         ELSE IF (OutputTypeTmp.EQ.1) THEN
             OutputType%Tplgy=1
+            OutputType%Ppt=1
             OutputType%Cvt=1
+            OutputType%Sto=1
             OutputType%Sol=1
         ELSE IF (OutputTypeTmp.EQ.2) THEN
             OutputType%Tplgy=2
+            OutputType%Ppt=2
             OutputType%Cvt=2
+            OutputType%Sto=2
             OutputType%Sol=2
         ELSE IF (OutputTypeTmp.EQ.3) THEN
             OutputType%Tplgy=3
+            OutputType%Ppt=3
             OutputType%Cvt=3
+            OutputType%Sto=3
             OutputType%Sol=3
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
@@ -707,13 +715,17 @@ SUBROUTINE GetOutputType(OutputType,ierr)
     ELSE
         ! Presseting default OutputType
         OutputType%Tplgy=0
+        OutputType%Ppt=0
         OutputType%Cvt=0
-        OutputType%Sol=1
+        OutputType%Sto=0
+        OutputType%Sol=3
     END IF
     
     ! Setting OutputType from interface
     CALL GetOutputTypeTplgy(OutputType,ierr)
+    CALL GetOutputTypePpt(OutputType,ierr)
     CALL GetOutputTypeCvt(OutputType,ierr)
+    CALL GetOutputTypeSto(OutputType,ierr)
     CALL GetOutputTypeSol(OutputType,ierr)
 
 END SUBROUTINE GetOutputType
@@ -753,6 +765,41 @@ SUBROUTINE GetOutputTypeTplgy(OutputType,ierr)
 
 END SUBROUTINE GetOutputTypeTplgy
 
+SUBROUTINE GetOutputTypePpt(OutputType,ierr)
+
+    USE ANISOFLOW_Types, ONLY : OutputTypeVar
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    Type(OutputTypeVar),INTENT(INOUT)    :: OutputType
+
+    PetscBool                       :: OutputTypePptFlg
+    PetscInt                        :: OutputTypePptTmp
+
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Output_type_ppt",          &
+        & OutputTypePptTmp,OutputTypePptFlg,ierr)
+
+    IF (OutputTypePptFlg) THEN
+        IF (OutputTypePptTmp.EQ.0) THEN
+            OutputType%Ppt=OutputTypePptTmp
+        ELSE IF (OutputTypePptTmp.EQ.1) THEN
+            OutputType%Ppt=OutputTypePptTmp
+        ELSE IF (OutputTypePptTmp.EQ.2) THEN
+            OutputType%Ppt=OutputTypePptTmp
+        ELSE IF (OutputTypePptTmp.EQ.3) THEN
+            OutputType%Ppt=OutputTypePptTmp
+        ELSE
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
+                & "[ERROR] Output_type_ppt used is invalid\n",ierr)
+            STOP
+        END IF
+    END IF
+
+END SUBROUTINE GetOutputTypePpt
+
 SUBROUTINE GetOutputTypeCvt(OutputType,ierr)
 
     USE ANISOFLOW_Types, ONLY : OutputTypeVar
@@ -787,6 +834,41 @@ SUBROUTINE GetOutputTypeCvt(OutputType,ierr)
     END IF
 
 END SUBROUTINE GetOutputTypeCvt
+
+SUBROUTINE GetOutputTypeSto(OutputType,ierr)
+
+    USE ANISOFLOW_Types, ONLY : OutputTypeVar
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    Type(OutputTypeVar),INTENT(INOUT)    :: OutputType
+
+    PetscBool                       :: OutputTypeStoFlg
+    PetscInt                        :: OutputTypeStoTmp
+
+    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Output_type_sto",          &
+        & OutputTypeStoTmp,OutputTypeStoFlg,ierr)
+
+    IF (OutputTypeStoFlg) THEN
+        IF (OutputTypeStoTmp.EQ.0) THEN
+            OutputType%Sto=OutputTypeStoTmp
+        ELSE IF (OutputTypeStoTmp.EQ.1) THEN
+            OutputType%Sto=OutputTypeStoTmp
+        ELSE IF (OutputTypeStoTmp.EQ.2) THEN
+            OutputType%Sto=OutputTypeStoTmp
+        ELSE IF (OutputTypeStoTmp.EQ.3) THEN
+            OutputType%Sto=OutputTypeStoTmp
+        ELSE
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
+                & "[ERROR] Output_type_sto used is invalid\n",ierr)
+            STOP
+        END IF
+    END IF
+
+END SUBROUTINE GetOutputTypeSto
 
 SUBROUTINE GetOutputTypeSol(OutputType,ierr)
 

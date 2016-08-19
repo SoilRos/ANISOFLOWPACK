@@ -59,7 +59,7 @@ SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByPptZones,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFilePptByZone
-    USE ANISOFLOW_View, ONLY : ViewConductivity
+    USE ANISOFLOW_View, ONLY : ViewProperty
     USE ANISOFLOW_Geometry, ONLY : VecApplicationToPetsc
 
     IMPLICIT NONE
@@ -78,7 +78,7 @@ SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByPptZones,ierr)
     PetscInt                            :: widthG(3),u,ValI,i
     PetscMPIInt                         :: process
     PetscReal                           :: ValR
-    CHARACTER(LEN=200)                  :: InputFilePptByZone,Route,ViewName,InputDir!,EventName
+    CHARACTER(LEN=200)                  :: InputFilePptByZone,Route,ViewName,InputDir,EventName
     PetscBool                           :: InputFilePptByZoneFlg,Verbose
     Vec                                 :: PptZoneID_Global
 
@@ -129,9 +129,8 @@ SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByPptZones,ierr)
         CALL VecApplicationToPetsc(Gmtry%DataMngr,PptZoneID_Global,ierr)
 
         ViewName="ANISOFLOW_PptZoneID"
-!         EventName="GetConductivity"
-        ! Crear un visualizador para esto
-!         CALL ViewConductivity(PptZoneID,ViewName,EventName,ierr)
+        EventName="GetPptZoneID"
+        CALL ViewProperty(PptZoneID_Global,ViewName,EventName,ierr)
 
         CALL DMGlobalToLocalBegin(Gmtry%DataMngr,PptZoneID_Global,INSERT_VALUES,PptZoneID_Local,ierr)
         CALL DMGlobalToLocalEnd(Gmtry%DataMngr,PptZoneID_Global,INSERT_VALUES,PptZoneID_Local,ierr)
@@ -214,7 +213,7 @@ SUBROUTINE GetCvtZoneID(Gmtry,PptFld,CvtZoneID_Local,DefinedBy,ierr)
     PetscInt                            :: widthG(3),u,ValI,i
     PetscMPIInt                         :: process
     PetscReal                           :: ValR
-    CHARACTER(LEN=200)                  :: InputFilePptByZone,InputFileCvtByZone,Route,ViewName,InputDir!,EventName
+    CHARACTER(LEN=200)                  :: InputFilePptByZone,InputFileCvtByZone,Route,ViewName,InputDir,EventName
     PetscBool                           :: InputFilePptByZoneFlg,InputFileCvtByZoneFlg,Verbose
     Vec                                 :: CvtZoneID_Global
     Vec,POINTER                         :: ZoneID_tmp
@@ -262,9 +261,8 @@ SUBROUTINE GetCvtZoneID(Gmtry,PptFld,CvtZoneID_Local,DefinedBy,ierr)
         CALL VecApplicationToPetsc(Gmtry%DataMngr,CvtZoneID_Global,ierr)
 
         ViewName="ANISOFLOW_CvtZoneID"
-!         EventName="GetConductivity"
-        ! Crear un visualizador para esto
-!         CALL ViewConductivity(CvtZoneID,ViewName,EventName,ierr)
+        EventName="GetCvtZoneID"
+        CALL ViewConductivity(CvtZoneID_Global,ViewName,EventName,ierr)
 
         CALL DMGlobalToLocalBegin(Gmtry%DataMngr,CvtZoneID_Global,INSERT_VALUES,CvtZoneID_Local,ierr)
         CALL DMGlobalToLocalEnd(Gmtry%DataMngr,CvtZoneID_Global,INSERT_VALUES,CvtZoneID_Local,ierr)
@@ -286,7 +284,6 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,Cvt,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,ConductivityField,PropertiesField,TargetFullTensor
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileCvt
-    USE ANISOFLOW_View, ONLY : ViewConductivity
     USE ANISOFLOW_Geometry, ONLY : VecApplicationToPetsc
     
     IMPLICIT NONE
@@ -401,7 +398,7 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,Cvt,ierr)
     PetscReal                           :: ValR
     PetscMPIInt                         :: process
     CHARACTER(LEN=200)                  :: InputDir,InputFileCvt
-    CHARACTER(LEN=200)                  :: Route!,ViewName,EventName
+    CHARACTER(LEN=200)                  :: Route,ViewName,EventName
     PetscBool                           :: Verbose
     Vec                                 :: Cell_Global
 
@@ -441,9 +438,9 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,Cvt,ierr)
     CALL VecAssemblyBegin(Cell_Global,ierr)
     CALL VecAssemblyEnd(Cell_Global,ierr)
 
-!     ViewName="ANISOFLOW_Cvt"
-!     EventName="GetConductivity"
-!     CALL ViewConductivity(Cvt%Cell,ViewName,EventName,ierr)
+    ViewName="ANISOFLOW_Cvt"
+    EventName="GetConductivity"
+    CALL ViewConductivity(Cvt%Cell,ViewName,EventName,ierr)
 
     CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cell_Global,INSERT_VALUES,Cvt%Cell,ierr)
     CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cell_Global,INSERT_VALUES,Cvt%Cell,ierr)
@@ -508,7 +505,7 @@ SUBROUTINE GetStoZoneID(Gmtry,PptFld,StoZoneID_Local,DefinedBy,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,TargPetscVec
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFilePptByZone,GetInputFileStoByZone
-    USE ANISOFLOW_View, ONLY : ViewConductivity
+    USE ANISOFLOW_View, ONLY : ViewStorage
     USE ANISOFLOW_Geometry, ONLY : VecApplicationToPetsc
 
     IMPLICIT NONE
@@ -528,7 +525,7 @@ SUBROUTINE GetStoZoneID(Gmtry,PptFld,StoZoneID_Local,DefinedBy,ierr)
     PetscInt                            :: widthG(3),u,ValI,i
     PetscMPIInt                         :: process
     PetscReal                           :: ValR
-    CHARACTER(LEN=200)                  :: InputFilePptByZone,InputFileStoByZone,Route,ViewName,InputDir!,EventName
+    CHARACTER(LEN=200)                  :: InputFilePptByZone,InputFileStoByZone,Route,ViewName,InputDir,EventName
     PetscBool                           :: InputFilePptByZoneFlg,InputFileStoByZoneFlg,Verbose
     Vec,POINTER                         :: ZoneID_tmp
     Vec                                 :: StoZoneID_Global
@@ -577,9 +574,8 @@ SUBROUTINE GetStoZoneID(Gmtry,PptFld,StoZoneID_Local,DefinedBy,ierr)
         CALL VecApplicationToPetsc(Gmtry%DataMngr,StoZoneID_Local,ierr)
 
         ViewName="ANISOFLOW_StoZoneID"
-!         EventName="GetConductivity"
-        ! Crear un visualizador para esto
-!         CALL ViewConductivity(StoZoneID,ViewName,EventName,ierr)
+        EventName="GetStorage"
+        CALL ViewStorage(StoZoneID_Global,ViewName,EventName,ierr)
 
         CALL DMGlobalToLocalBegin(Gmtry%DataMngr,StoZoneID_Global,INSERT_VALUES,StoZoneID_Local,ierr)
         CALL DMGlobalToLocalEnd(Gmtry%DataMngr,StoZoneID_Global,INSERT_VALUES,StoZoneID_Local,ierr)
@@ -683,7 +679,7 @@ END SUBROUTINE GetStorage_1
 SUBROUTINE StorageZoneToCell(Gmtry,Sto,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,SpecificStorageField
-    USE ANISOFLOW_Interface, !ONLY : GetVerbose,GetInputDir,GetInputFileSto
+    USE ANISOFLOW_View, ONLY : ViewStorage
 
     IMPLICIT NONE
 
@@ -698,6 +694,7 @@ SUBROUTINE StorageZoneToCell(Gmtry,Sto,ierr)
     TYPE(Geometry),INTENT(IN)                   :: Gmtry
     TYPE(SpecificStorageField),INTENT(INOUT)    :: Sto
 
+    CHARACTER(LEN=200)      :: ViewName,EventName
     PetscInt                :: widthL(3),widthG(3),corn(3),ValI,i,j,k
     PetscReal,POINTER       :: TmpStoZone(:),TmpStoZoneID3D(:,:,:),TmpStoZoneID2D(:,:),TmpStoCell3D(:,:,:),TmpStoCell2D(:,:)
 
@@ -759,7 +756,9 @@ SUBROUTINE StorageZoneToCell(Gmtry,Sto,ierr)
 
     Sto%DefinedBy=3
 
-!     CALL VecView(Sto%Cell,PETSC_VIEWER_STDOUT_WORLD,ierr)
+    ViewName="ANISOFLOW_Sto"
+    EventName="StorageZoneToCell"
+    CALL ViewStorage(Sto%Cell,ViewName,EventName,ierr)
 
 END SUBROUTINE StorageZoneToCell
 
@@ -767,7 +766,7 @@ SUBROUTINE GetStorage_2(Gmtry,PptFld,Sto,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,SpecificStorageField
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileSto
-!     USE ANISOFLOW_View, ONLY : ViewStorage
+    USE ANISOFLOW_View, ONLY : ViewStorage
     
     IMPLICIT NONE
 
@@ -786,7 +785,7 @@ SUBROUTINE GetStorage_2(Gmtry,PptFld,Sto,ierr)
     PetscReal                           :: ValR
     PetscMPIInt                         :: process
     CHARACTER(LEN=200)                  :: InputDir,InputFileSto
-    CHARACTER(LEN=200)                  :: Route!,ViewName,EventName
+    CHARACTER(LEN=200)                  :: Route,ViewName,EventName
     PetscBool                           :: Verbose
 
     PARAMETER(u=01)
@@ -824,9 +823,9 @@ SUBROUTINE GetStorage_2(Gmtry,PptFld,Sto,ierr)
     CALL VecAssemblyBegin(Sto%Cell,ierr)
     CALL VecAssemblyEnd(Sto%Cell,ierr)
 
-!     ViewName="ANISOFLOW_Sto"
-!     EventName="GetStorage"
-!     CALL ViewStorage(Sto%Cell,ViewName,EventName,ierr)
+    ViewName="ANISOFLOW_Sto"
+    EventName="GetStorage"
+    CALL ViewStorage(Sto%Cell,ViewName,EventName,ierr)
 
 !     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Storage Field was satisfactorily created\n",ierr)
 
