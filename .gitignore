@@ -8,4 +8,6 @@
 *.info
 *.zip
 *~
+*#
+*.pvsm
 ANISOFLOW
