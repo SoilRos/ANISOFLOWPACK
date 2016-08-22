@@ -1,4 +1,4 @@
-ProgramDir=../ANISOFLOW/src/
+ProgramDir=../../src/
 ProgramName=ANISOFLOW
 
 np=2														# Number of processors to be used
