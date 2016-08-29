@@ -28,11 +28,16 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
     Vec,INTENT(INOUT)                       :: b,x
 
     KSP                                     :: Solver
+    KSPType                                 :: SolverType
+    KSPConvergedReason                      :: SolverConvergedReason
+    PC                                      :: SolverPC
+    PCType                                  :: SolverPCType
     Vec                                     :: diagA
     CHARACTER(LEN=200)                      :: Name,CharCount,Chari,Charj,CharMsg
-
-    PetscInt                                :: i,j,Count
-    PetscReal                               :: zero=0.0
+    CHARACTER(LEN=200)                      :: CharTolR,CharTolAbs,CharTolD,CharMaxIts,CharSolverConvergedReason
+    
+    PetscInt                                :: i,j,Count,MaxIts
+    PetscReal                               :: zero=0.0,TolR,TolAbs,TolD
 
     TYPE(RunOptionsVar)                     :: RunOptions
     CHARACTER(LEN=200)                      :: EventName,ClassName
@@ -58,7 +63,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
     CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
     CALL GetInitSol(Gmtry,x,ierr)
 
-    IF (RunOptions%Time) THEN ! Transitory
+    If (RunOptions%Time) THEN ! Transitory
 
         CALL VecDuplicate(x,diagA,ierr)
         CALL MatGetDiagonal(A,diagA,ierr)
@@ -83,11 +88,82 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 !                 CALL ApplyCauchy(BCFld,i,A,b,ierr)
 
                 CALL KSPSetOperators(Solver,A,A,ierr)
-                CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,    &
-                    & PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)
+                CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)
                 CALL KSPSetFromOptions(Solver,ierr)
+                
+                CALL KSPGetTolerances(Solver,TolR,TolAbs,TolD,MaxIts,ierr)
                 IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] PETSc solver monitor:\n",ierr)
+                WRITE(CharTolR,*)TolR
+                IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Relative convergence tolerance: "//TRIM(CharTolR)//"\n",ierr)
+                WRITE(CharTolAbs,*)TolAbs
+                IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Absolute convergence tolerance: "//TRIM(CharTolAbs)//"\n",ierr)
+                WRITE(CharTolD,*)TolD
+                IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Divergence tolerance: "//TRIM(CharTolD)//"\n",ierr)
+                WRITE(CharMaxIts,*)MaxIts
+                IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Maximun number of iterations: "//TRIM(CharMaxIts)//"\n",ierr)
+
+                CALL KSPGetType(Solver,SolverType,ierr)
+                IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Krylov method: "//TRIM(SolverType)//"\n",ierr)
+
+                CALL KSPGetPC(Solver,SolverPC,ierr)
+                CALL PCGetType(SolverPC,SolverPCType,ierr)
+                IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Precondition method: "//TRIM(SolverPCType)//"\n",ierr)
+                
+                CALL KSPSetUp(Solver,ierr)
                 CALL KSPSolve(Solver,b,x,ierr)
+
+                CALL KSPGetConvergedReason(Solver,SolverConvergedReason,ierr)
+                IF (SolverConvergedReason.EQ.1) THEN
+                   CharSolverConvergedReason="KSP_CONVERGED_RTOL_NORMAL"
+                ELSEIF (SolverConvergedReason.EQ.9) THEN
+                   CharSolverConvergedReason="KSP_CONVERGED_ATOL_NORMAL"
+                ELSEIF (SolverConvergedReason.EQ.2) THEN
+                   CharSolverConvergedReason="KSP_CONVERGED_RTOL"
+                ELSEIF (SolverConvergedReason.EQ.3) THEN
+                   CharSolverConvergedReason="KSP_CONVERGED_ATOL"
+                ELSEIF (SolverConvergedReason.EQ.4) THEN
+                   CharSolverConvergedReason="KSP_CONVERGED_ITS"
+                ELSEIF (SolverConvergedReason.EQ.5) THEN
+                   CharSolverConvergedReason="KSP_CONVERGED_CG_NEG_CURVE"
+                ELSEIF (SolverConvergedReason.EQ.6) THEN
+                   CharSolverConvergedReason="KSP_CONVERGED_CG_CONSTRAINED"
+                ELSEIF (SolverConvergedReason.EQ.7) THEN
+                   CharSolverConvergedReason="KSP_CONVERGED_STEP_LENGTH"
+                ELSEIF (SolverConvergedReason.EQ.8) THEN
+                   CharSolverConvergedReason="KSP_CONVERGED_HAPPY_BREAKDOWN"
+                ELSEIF (SolverConvergedReason.EQ.-2) THEN
+                   CharSolverConvergedReason="KSP_DIVERGED_NULL"
+                ELSEIF (SolverConvergedReason.EQ.-3) THEN
+                   CharSolverConvergedReason="KSP_DIVERGED_ITS"
+                ELSEIF (SolverConvergedReason.EQ.-4) THEN
+                   CharSolverConvergedReason="KSP_DIVERGED_DTOL"
+                ELSEIF (SolverConvergedReason.EQ.-5) THEN
+                   CharSolverConvergedReason="KSP_DIVERGED_BREAKDOWN"
+                ELSEIF (SolverConvergedReason.EQ.-6) THEN
+                   CharSolverConvergedReason="KSP_DIVERGED_BREAKDOWN_BICG"
+                ELSEIF (SolverConvergedReason.EQ.-7) THEN
+                   CharSolverConvergedReason="KSP_DIVERGED_NONSYMMETRIC"
+                ELSEIF (SolverConvergedReason.EQ.-8) THEN
+                   CharSolverConvergedReason="KSP_DIVERGED_INDEFINITE_PC"
+                ELSEIF (SolverConvergedReason.EQ.-9) THEN
+                   CharSolverConvergedReason="KSP_DIVERGED_NANORINF"
+                ELSEIF (SolverConvergedReason.EQ.-10) THEN
+                   CharSolverConvergedReason="KSP_DIVERGED_INDEFINITE_MAT"
+                ELSEIF (SolverConvergedReason.EQ.-11) THEN
+                   CharSolverConvergedReason="KSP_DIVERGED_PCSETUP_FAILED"
+                ELSEIF (SolverConvergedReason.EQ.0) THEN
+                   CharSolverConvergedReason="KSP_CONVERGED_ITERATING"
+                ELSE
+                   CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"Error in Concerged Reason of KSP",ierr)
+                   STOP
+                END IF
+                
+                IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Converged reason: "//TRIM(CharSolverconvergedreason)//"\n",ierr)
+                
+                IF (SolverConvergedReason.LT.0) THEN
+                  CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] ERROR: Linear solver hasn't converged\n",ierr)
+                  STOP
+                END IF
 
                 WRITE(CharCount,*)Count
                 Name="ANISOFLOW_Sol_"//TRIM(ADJUSTL(CharCount))
@@ -108,9 +184,6 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
         IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Steady solution inizialited\n",ierr)
    
-        Name="ANISOFLOW_b"
-        CALL ViewSolution(b,Name,EventName,ierr)
-
         CALL UpdateGmtry(Gmtry,BCFld%DirichIS(1),BCFld%SourceIS(1),BCFld%CauchyIS(1),ierr)
 
         CALL VecSet(b,zero,ierr)
@@ -118,11 +191,81 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
         CALL ApplySource(BCFld,1,b,ierr)
         CALL ApplyCauchy(BCFld,1,A,b,ierr)
 
+
         CALL KSPSetOperators(Solver,A,A,ierr)
         CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,    &
             & PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)
         CALL KSPSetFromOptions(Solver,ierr)
+
+        CALL KSPGetTolerances(Solver,TolR,TolAbs,TolD,MaxIts,ierr)
+        IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] PETSc solver monitor:\n",ierr)
+        WRITE(CharTolR,*)TolR
+        IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Relative convergence tolerance: "//TRIM(CharTolR)//"\n",ierr)
+        WRITE(CharTolAbs,*)TolAbs
+        IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Absolute convergence tolerance: "//TRIM(CharTolAbs)//"\n",ierr)
+        WRITE(CharTolD,*)TolD
+        IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Divergence tolerance: "//TRIM(CharTolD)//"\n",ierr)
+        WRITE(CharMaxIts,*)MaxIts
+        IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Maximun number of iterations: "//TRIM(CharMaxIts)//"\n",ierr)
+
+        CALL KSPGetType(Solver,SolverType,ierr)
+        IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Krylov method: "//TRIM(SolverType)//"\n",ierr)
+
+        CALL KSPGetPC(Solver,SolverPC,ierr)
+        CALL PCGetType(SolverPC,SolverPCType,ierr)
+        IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Precondition method: "//TRIM(SolverPCType)//"\n",ierr)
+                
+        CALL KSPSetUp(Solver,ierr)
         CALL KSPSolve(Solver,b,x,ierr)
+
+        CALL KSPGetConvergedReason(Solver,SolverConvergedReason,ierr)
+        IF (SolverConvergedReason.EQ.1) THEN
+           CharSolverConvergedReason="KSP_CONVERGED_RTOL_NORMAL"
+        ELSEIF (SolverConvergedReason.EQ.9) THEN
+           CharSolverConvergedReason="KSP_CONVERGED_ATOL_NORMAL"
+        ELSEIF (SolverConvergedReason.EQ.2) THEN
+           CharSolverConvergedReason="KSP_CONVERGED_RTOL"
+        ELSEIF (SolverConvergedReason.EQ.3) THEN
+           CharSolverConvergedReason="KSP_CONVERGED_ATOL"
+        ELSEIF (SolverConvergedReason.EQ.4) THEN
+           CharSolverConvergedReason="KSP_CONVERGED_ITS"
+        ELSEIF (SolverConvergedReason.EQ.5) THEN
+           CharSolverConvergedReason="KSP_CONVERGED_CG_NEG_CURVE"
+        ELSEIF (SolverConvergedReason.EQ.6) THEN
+           CharSolverConvergedReason="KSP_CONVERGED_CG_CONSTRAINED"
+        ELSEIF (SolverConvergedReason.EQ.7) THEN
+           CharSolverConvergedReason="KSP_CONVERGED_STEP_LENGTH"
+        ELSEIF (SolverConvergedReason.EQ.8) THEN
+           CharSolverConvergedReason="KSP_CONVERGED_HAPPY_BREAKDOWN"
+        ELSEIF (SolverConvergedReason.EQ.-2) THEN
+           CharSolverConvergedReason="KSP_DIVERGED_NULL"
+        ELSEIF (SolverConvergedReason.EQ.-3) THEN
+           CharSolverConvergedReason="KSP_DIVERGED_ITS"
+        ELSEIF (SolverConvergedReason.EQ.-4) THEN
+           CharSolverConvergedReason="KSP_DIVERGED_DTOL"
+        ELSEIF (SolverConvergedReason.EQ.-5) THEN
+           CharSolverConvergedReason="KSP_DIVERGED_BREAKDOWN"
+        ELSEIF (SolverConvergedReason.EQ.-6) THEN
+           CharSolverConvergedReason="KSP_DIVERGED_BREAKDOWN_BICG"
+        ELSEIF (SolverConvergedReason.EQ.-7) THEN
+           CharSolverConvergedReason="KSP_DIVERGED_NONSYMMETRIC"
+        ELSEIF (SolverConvergedReason.EQ.-8) THEN
+           CharSolverConvergedReason="KSP_DIVERGED_INDEFINITE_PC"
+        ELSEIF (SolverConvergedReason.EQ.-9) THEN
+           CharSolverConvergedReason="KSP_DIVERGED_NANORINF"
+        ELSEIF (SolverConvergedReason.EQ.-10) THEN
+           CharSolverConvergedReason="KSP_DIVERGED_INDEFINITE_MAT"
+        ELSEIF (SolverConvergedReason.EQ.-11) THEN
+           CharSolverConvergedReason="KSP_DIVERGED_PCSETUP_FAILED"
+        ELSEIF (SolverConvergedReason.EQ.0) THEN
+           CharSolverConvergedReason="KSP_CONVERGED_ITERATING"
+        ELSE
+           CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"Error in Concerged Reason of KSP",ierr)
+           STOP
+        END IF
+        
+        IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Converged reason: "//TRIM(CharSolverconvergedreason)//"\n",ierr)
+                
 
         Name="ANISOFLOW_Sol"
         CALL ViewSolution(x,Name,EventName,ierr)

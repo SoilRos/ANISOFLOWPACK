@@ -8,9 +8,9 @@ PROGRAM BC_GENERATOR
 
     u=100
     i=1
-    timezones=10
+    timezones=50
     dtsize=1
-    dt=5
+    dt=1
 
     sizeBC=320
     ALLOCATE(BC_index(sizeBC))
