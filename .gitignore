@@ -3,6 +3,7 @@
 *.exe
 *.h5
 *.log
+*log_term
 *.txt
 *.bin
 *.info

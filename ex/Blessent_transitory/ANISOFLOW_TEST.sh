@@ -1,3 +1,15 @@
+#!/bin/bash
+
+np_max=4
+
+#PBS -N ANISOFLOW			# nombre identificador del trabajo
+#PBS -q cola$np_max			  	 # Nombre de la cola de ejecucion
+#PBS -l nodes=1:ppn=$np_max           # nodes=1 numero de nodos a emplear
+     				  # ppn=8 numero de procesadores a emplear
+#PBS  -l walltime=10000:00:00   # tiempo maximo de ejecucion
+#PBS -o salida.OUT              # archivo de salida
+#PBS -e salida.ERR              # archivo de error
+
 ProgramDir=../../src/
 ProgramName=ANISOFLOW
 
@@ -22,7 +34,7 @@ Scheme=1 													# Scheme type used
 Time=1														# Transitory boolean
 
 
-declare -a KSP=("cg") #\
+declare -a KSP=("cg" "gmres") #\
 
 # declare -a KSP=("richardson" "chebyshev" "cg" "groppcg" "pipecg" 	\
 	# "cgne" "nash" "stcg" "gltr" "fcg" "gmres" "fgmres" "lgmres"	\
@@ -30,7 +42,7 @@ declare -a KSP=("cg") #\
 	# "bcgsl" "cgs" "tfqmr" "cr" "pipecr" "lsqr" "preonly" "qcg"	\
 	# "bicg" "minres" "symmlq" "lcd" "python" "gcr")
 
-declare -a PC=("jacobi")
+declare -a PC=("none" "jacobi" "bjacobi")
 
 # declare -a PC=("none" "jacobi" "sor" "lu" "shell" "bjacobi" 		\
 # 	"mg" "eisenstat" "ilu" "icc" "asm" "gasm" "ksp" "composite" 	\
@@ -40,90 +52,43 @@ declare -a PC=("jacobi")
 # 	"sacusp" "sacusppoly" "bicgstabcusp" "ainvcusp" "bddc"			\ 
 # 	"kaczmarz")
 
-np=2														# Number of processors to be used
-
-for np in 4 3 2 1; do
+for np in `seq 1 $np_max`; do
 	for ksptype in "${KSP[@]}"; do
 		for pctype in "${PC[@]}"; do
-			if [ "$pctype" = "ilu" ]; then
-				for level in 0 1 2; do
-					echo "***** Beginning new run *****"
-					mpiexec -n $np ./$ProgramDir$ProgramName 			\
-					-Input_type 				$InputType 				\
-					-Input_type_tplgy 			$InputTypeTplgy 		\
-					-Input_type_gmtry 			$InputTypeGmtry 		\
-					-Input_type_bc	 			$InputTypeBC 	 		\
-					-Input_type_init_sol	 	$InputTypeInitSol		\
-					-Input_dir 					$InputDir 				\
-					-Input_file_gmtry 			$InputFileGmtry 		\
-					-Input_file_tplgy 			$InputFileTplgy 		\
-					-Input_file_cvt 			$InputFileCvt 			\
-					-Input_file_sto 			$InputFileSto 			\
-					-Input_file_ppt_by_zones 	$InputFilePptByZones 	\
-					-Input_file_bc 				$InputFileBC 			\
-					-Input_file_init_sol		$InputFileInitSol		\
-					-Output_type 				$OutputType 			\
-					-Output_dir 				$OutputDir 				\
-					-Run_options_scheme 		$Scheme 				\
-					-Run_options_time 			$Time 					\
-					-ksp_type 					$ksptype 				\
-					-pc_type 					$pctype 				\
-					-pc_factor_levels 			$level					\
-					-ksp_monitor 										\
-					-ksp_monitor_lg_residualnorm 1 						\
-					-log_view 					ascii:ANISOFLOW_NP$np-KSP$ksptype-PC$pctype-LVL$level.log \
-					| tee ANISOFLOW_NP$np-KSP$ksptype-PC$pctype-LVL$level.log_term
-				done
-			else
-				echo "***** Beginning new run *****"
-				mpiexec -n $np ./$ProgramDir$ProgramName 			\
-				-Input_type 				$InputType 				\
-				-Input_type_tplgy 			$InputTypeTplgy 		\
-				-Input_type_gmtry 			$InputTypeGmtry 		\
-				-Input_type_bc	 			$InputTypeBC 	 		\
-				-Input_type_init_sol	 	$InputTypeInitSol		\
-				-Input_dir 					$InputDir 				\
-				-Input_file_gmtry 			$InputFileGmtry 		\
-				-Input_file_tplgy 			$InputFileTplgy 		\
-				-Input_file_cvt 			$InputFileCvt 			\
-				-Input_file_sto 			$InputFileSto 			\
-				-Input_file_ppt_by_zones 	$InputFilePptByZones 	\
-				-Input_file_bc 				$InputFileBC 			\
-				-Input_file_init_sol		$InputFileInitSol		\
-				-Output_type 				$OutputType 			\
-				-Output_dir 				$OutputDir 				\
-				-Run_options_scheme 		$Scheme 				\
-				-Run_options_time 			$Time 					\
-				 \ # -ksp_type 					$ksptype 				\
-				\ #-pc_type 					$pctype 				\
-				-ksp_monitor 										\
-				-ksp_monitor_lg_residualnorm 1 						\
-				-log_view 					ascii:ANISOFLOW_NP$np-KSP$ksptype-PC$pctype.log \
-				| tee ANISOFLOW_NP$np-KSP$ksptype-PC$pctype.log_term
-			fi
+			echo "*************************************************"
+			echo "*************** Beginning new run ***************"
+			echo "Options"
+			echo "np: $np"
+			echo "Solver: $ksptype"
+			echo "Preconditioner: $pctype"
+			echo "************** Initializing program *************"
+			mpiexec -n $np ./$ProgramDir$ProgramName 			\
+			-Input_type 				$InputType 				\
+			-Input_type_tplgy 			$InputTypeTplgy 		\
+			-Input_type_gmtry 			$InputTypeGmtry 		\
+			-Input_type_bc	 			$InputTypeBC 	 		\
+			-Input_type_init_sol	 	$InputTypeInitSol		\
+			-Input_dir 					$InputDir 				\
+			-Input_file_gmtry 			$InputFileGmtry 		\
+			-Input_file_tplgy 			$InputFileTplgy 		\
+			-Input_file_cvt 			$InputFileCvt 			\
+			-Input_file_sto 			$InputFileSto 			\
+			-Input_file_ppt_by_zones 	$InputFilePptByZones 	\
+			-Input_file_bc 				$InputFileBC 			\
+			-Input_file_init_sol		$InputFileInitSol		\
+			-Output_type 				$OutputType 			\
+			-Output_dir 				$OutputDir 				\
+			-Run_options_scheme 		$Scheme 				\
+			-Run_options_time 			$Time 					\
+			-ksp_type 					$ksptype 				\
+			-pc_type 					$pctype 				\
+			-ksp_initial_guess_nonzero 							\
+			-ksp_monitor 										\
+			-ksp_monitor_lg_residualnorm 1 						\
+			\ #-saws_options 										\
+			-log_view 					ascii:$OutputDir/ANISOFLOW-NP$np-KSP$ksptype-PC$pctype.log \
+			| tee $OutputDir/ANISOFLOW-NP$np-KSP$ksptype-PC$pctype.log_term
+			echo "***************** Ending program ****************"
 		done
 	done
 done
-
-
-
-# mpiexec -n $np ./$ProgramDir$ProgramName 			\
-# -Input_type 				$InputType 				\
-# -Input_type_tplgy 			$InputTypeTplgy 		\
-# -Input_type_gmtry 			$InputTypeGmtry 		\
-# -Input_type_bc	 			$InputTypeBC 	 		\
-# -Input_type_init_sol	 	$InputTypeInitSol		\
-# -Input_dir 					$InputDir 				\
-# -Input_file_gmtry 			$InputFileGmtry 		\
-# -Input_file_tplgy 			$InputFileTplgy 		\
-# -Input_file_cvt 			$InputFileCvt 			\
-# -Input_file_sto 			$InputFileSto 			\
-# -Input_file_ppt_by_zones 	$InputFilePptByZones 	\
-# -Input_file_bc 				$InputFileBC 			\
-# -Input_file_init_sol		$InputFileInitSol		\
-# -Output_type 				$OutputType 			\
-# -Output_dir 				$OutputDir 				\
-# -Run_options_scheme 		$Scheme 				\
-# -Run_options_time 			$Time 					\
-# -log_view 					ascii:ANISOFLOW_$np.log 
-#-ksp_monitor_lg_residualnorm 1
