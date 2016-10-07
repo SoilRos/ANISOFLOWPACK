@@ -12,10 +12,10 @@ MODULE ANISOFLOW_Types
  !  - Geometry: It's a data structure that manages every information needed related to geometry.
  !    > VARIABLES: Scale, DataMngr, Tplgy, pTplgy, DirichIS, CauchyIS, NeummanIS.
  !      + Scale: It's a PETSc Integer that indentify the geometry scale
- !          1: Default scale when no other scalres are not being used, fine scale otherwise. Collectice
+ !          1: Default scale when no other scales are being used, fine scale otherwise. Collective
  !          2: Upscale geometry. Collective
  !          3: Fine Block, usually an extraction of Fine-scale. Not Collective
- !      + DataMngr: It's a PETSc manager data for structured grid in 3 dimensions, providing general 
+ !      + DataMngr: It's a PETSc manager data for structured grid in 2 or 3 dimensions, providing general 
  !                  information on the grid to be managed in parallel programming.
  !      + Tplgy: It's a PETSc vector type produced by DataMngr that contains a topology identifier
  !               in each cell. It is changed over the time steps by the boundary condition file.
@@ -23,19 +23,16 @@ MODULE ANISOFLOW_Types
  !          1: Active cell.
  !          2: Dirichlet boundary condition cell.
  !          3: Source in cell Q (It's treated as active cell).
- !          4: Cauchy boundary conditio
+ !          4: Cauchy boundary condition cell.
  !      + pTplgy: It's a PETSc vector which has the a permanent form of Tplgy; Provided by the topology file.
- !      + SizeTplgy: It's a array of integers that quantify the indentifiers of each type decribed above
- !                   where inactive cells quantifier doesn't exist. It can be calculated with  the rest.
+ !      + SizeTplgy: It's an array of integers that quantify the indentifiers of each Tplgy type decribed
+ !                   where inactive cells quantifier are not counted.
  !          1: Active cell quantifier.
  !          2: Dirichlet boundary condition cell quantifier.
  !          3: Source in cell quantifier.
  !          4: Cauchy boundary condition quantifier.
  !      + x,y,z: It's a PETSc vector that contains the grid coordinates on each direction.
- !    > NOTES: The variables DirichIS, CauchyIS, NeummanIS and Source have redundant information 
- !             that are contained on Tplgy. In any case is needed to transfer the information to
- !             the system.
- !             The variable SizeTplgy doesn't have inactive cell identificator because it can be obtained
+ !    > NOTES: The variable SizeTplgy doesn't have inactive cell identificator because it can be obtained
  !             from the others.
 
     TYPE Geometry
@@ -51,9 +48,9 @@ MODULE ANISOFLOW_Types
  !    > VARIABLES: xx, yy, zz, xy, xz, yz, yx, zx, zy.
  !      + xx,yy,zz,xy,xz,yz,yx,zx,zy: Property components.
  !    > NOTES: To use this structure is first needed filling the xx, yy, zz, xy, xz, and yz 
- !               components and then use TargetFullTensor subroutine to have symmetry (xy=yx, xz=zx, and 
- !               yz=zy). This process is required over every tensor created; after that is 
- !               guaranteed the symmetry on the tensor.
+ !               components and then use TargetFullTensor subroutine to have symmetry (because is a 
+ !               continuum media: xy=yx, xz=zx, and yz=zy). This process is required over every tensor 
+ !               created; after that is guaranteed the symmetry on the tensor.
 
     TYPE Tensor
         PetscReal                       :: xx,yy,zz,xy,xz,yz
@@ -64,32 +61,33 @@ MODULE ANISOFLOW_Types
  !      + i,j,k: It's an integer that describes a global position on x, y, and z axes respectively.
 
     TYPE Position
+ !    > VARIABLES: i,j,k
         PetscInt                        :: i,j,k
     END TYPE Position
 
- !  - Property: It's a data structure that describes completely a cell on the geometry.
+ !  - Property: It's a data structure that describes completely a cell and its boundaries.
  !    > VARIABLES: Pstn, StencilType, StencilTplgy, dx, dy, dz, dxB, dyB, dzB, dxF, dyF, dzF,
  !                 CvtOnBlock, CvtBlock, CvtOnInterface, CvtBx, CvtBy, CvtBz, CvtFx, CvtFy, CvtFz.
- !      + Pstn: It's a Position structure that describes the global position on the grid.
+ !      + Pstn: It's a Position structure that describes the global position of the cell on the grid.
  !      + StencilType: It's an integer used to describe the type of the stencil used on the model.
  !          0: Not defined. (Default)
  !          1: Star stencil. Stencil based on 6 neighbors.
  !          2: Partial box stencil. Stencil based on 18 neighbors. 
- !          3: Box stencil. Stencil based on 26 neighbors.
- !      + StencilTplgy: It's an Array of integers that contains an identifier topology in each cell 
+ !      + StencilTplgy: It's an array of integers that contains topology identifiers on each cell 
  !                      of the stencil. The array is ordered numbering the cells of the stencil from 
  !                      the lowest to the highest values on the x and the y axis respectively, then 
- !                      from upper to lowest layer.
+ !                      from upper to lowest layer. Note that it can be an of 6 or 18 itegers depending
+ !                      on the StencilType.
  !          0: Inactive cell.
  !          1: Active cell.
  !          2: Dirichlet boundary condition cell.
  !          3: Source in cell Q (It's treated as active cell).
  !          4: Cauchy boundary condition
- !      + dx,dy,dz: A real that describes the size of the central cell in the directions on x, y,
- !                  and z axis.
- !      + dxB,dyB,dzB: A real that describes the size of the backward cell in the directions on x, 
- !                  y, and z axis.
- !      + dxF,dyF,dzF: A real that describes the size of the forward cell in the directions on x, 
+ !      + dx,dy,dz: It's a real that describes the size of the central cell directions on the x, y,
+ !                  and z.
+ !      + dxB,dyB,dzB: It's a real that describes the size of the backward cell directions on the x, 
+ !                  y, and z.
+ !      + dxF,dyF,dzF: It's a real that describes the size of the forward cell directions on the x, 
  !                  y, and z axis.
  !      + CvtOnBlock: It's a boolean that shows if the block has the conductivity represented 
  !                    on the block.
@@ -115,20 +113,20 @@ MODULE ANISOFLOW_Types
     END TYPE Property
 
  !  - ConductivityField: It's a data structure that stores the field of conductivities of every
- !                       block. This structure may store conductivities defined by field zones or
+ !                       block. This structure may stores conductivities defined by field zones or
  !                       where each conductivity block has a different value.
- !    > VARIABLES: DefinedByZones, DefindeByInteface, CvtZones, CvtType, xxVec, yyVec, zzVec.
- !      + DefinedByZones: It's a boolean describing if the ConductivityField is stored by zones or 
- !                        not. If the boolean is .TRUE., it's necessary save the information in 
- !                        CvtZones and CvtYpe, otherwise it's necessary save the information in 
- !                        xxVec,yyVec,zzVec
- !      + DefindeByCell: It's a boolean describing if the ConductivityField stores the
- !                       information on the center of each block. 
- !      + CvtZone: It's an Array of Tensor that contain as Tensors of conductivity as defined 
- !                 zones. This variable needs to be stored in all processors. It's saved as local vector
- !      + CvtType: It's a PETSc vector that contains an identifier for each cell, the identifier 
- !                 value correspond to a zone value.
- !      + CvtCell: Contain a tensor conductivity component by each cell. It's saved as local vector
+ !    > VARIABLES: DefinedBy, ZoneID, Zone, Cell.
+ !      + DefinedBy: It's an integer describing if the ConductivityField is stored by zones or 
+ !                   by cell. The information stored by zones can be saved directly in ZoneID within
+ !                   ConductivityField (DefinedByCvtZones) or can be pointed to the properties 
+ !                   zones identificators (DefinedByPptZones).
+ !      + ZoneID: It's a PETSc vector that contains an identifier for each cell, the identifier 
+ !                value correspond to a zone value. If DefinedBy=2, this ZoneID is pointed to 
+ !                ZoneID in PropertiesField structure. It's saved as local vector
+ !      + Zone: It's an array of Tensor that contain as Tensors of conductivities as defined 
+ !              zones. This variable has to be stored in all processors.
+ !      + Cell: It's a PETSc vector that contains the isotropic conductivity of each cell. Used when 
+ !              DefinedBy==3. TODO: Save as tensor or with several vectors to have the anisotropy.
 
     TYPE ConductivityField
         PetscInt                                :: DefinedBy=0 ! 1: DefinedByCvtZones, 2:DefinedByPptZones,3:DefinedByCell
@@ -139,11 +137,23 @@ MODULE ANISOFLOW_Types
         Vec                                     :: Cell
     END TYPE ConductivityField
 
- ! TODO: Description of SpecificStorageField
-
- ! NOTE: The difference between Global and Local it's because Sto%ZoneID can be a pointer of Ppt%ZoneID
- ! which has to be Local, but the Cell is needed in its Global form to avoid change from Local to 
- ! Global on each time step. 
+ !  - SpecificStorageField: It's a data structure that stores the field of specific storage of every
+ !                          block. This structure may stores specific storage defined by field zones or
+ !                          where each specific storage block has a different value.
+ !    > VARIABLES: DefinedBy, ZoneID, Zone, Cell.
+ !      + DefinedBy: It's an integer describing if the SpecificStorageField is stored by zones or 
+ !                   by cell. The information stored by zones can be saved directly in ZoneID within
+ !                   SpecificStorageField (DefinedByStoZones) or can be pointed to the properties 
+ !                   zones identificators (DefinedByPptZones).
+ !      + ZoneID: It's a PETSc vector that contains an identifier for each cell, the identifier 
+ !                value correspond to a zone value. If DefinedBy=2, this ZoneID is pointed to 
+ !                ZoneID in PropertiesField structure. It's saved as local vector
+ !      + Zone: It's a PETSc vector that contains the specific storages as defined 
+ !              zones. This variable has to be stored in all processors.
+ !      + Cell: It's a PETSc vector that contains the specific storage of each cell. Used when DefinedBy==3.
+ !   > NOTES: The difference between Global and Local it's because Sto%ZoneID can be a pointer of Ppt%ZoneID
+ !             which has to be Local, but Cell is needed in its Global form to avoid change from Local to 
+ !           Global on each time step. 
 
     TYPE SpecificStorageField
         PetscInt                                :: DefinedBy=0 ! 1: DefinedByStoZones, 2:DefinedByPptZones,3:DefinedByCell
@@ -155,14 +165,23 @@ MODULE ANISOFLOW_Types
     END TYPE SpecificStorageField
 
  !  - ProperyField: It's a data structure wich contains fields of differents properties.
- !    > VARIABLES: Cvt.
- !      + Cvt: It's a ConductivityField data structure wich contain a field of conductivity.
+ !    > VARIABLES: Cvt,Sto, DefinedByPptZones
+ !      + Cvt: It's a ConductivityField data structure wich contain a field of conductivities.
+ !      + Sto: It's a StorageField data structure wich contain a field of specific storages.
+ !      + DefinedByPptZones: It's a Boolean which says if the property field is stored by zones;
+ !                           in such case, the variable ZoneID will characterize each cell by zones
+ !                           This variable helps to the user to avoid defining a field zone to every
+ !                           single property.
+ !      + ZoneID: It's a PETSc vector that contains an identifier for each cell, the identifier 
+ !                value correspond to a zone value.
+ !    > NOTES: In some cases the Cvt%ZoneID and/or Sto%ZoneID will point to ZoneID of the PropertyField.
+ !             Depends on how the user wants to input his variables
 
     TYPE PropertiesField
         TYPE(ConductivityField)         :: Cvt
         TYPE(SpecificStorageField)      :: Sto
         ! Property defined by zones (Local):
-        PetscBool                       :: DefinedByPptZones=.FALSE. !Change to integer
+        PetscBool                       :: DefinedByPptZones=.FALSE.
         Vec                             :: ZoneID
     END TYPE PropertiesField
 
@@ -170,6 +189,8 @@ MODULE ANISOFLOW_Types
  !    > VARIABLES: SizeTime,Time
  !      + SizeTime: It's an Integer that says the amount of time values.
  !      + Time: It's an Array that contains the time values to be used in this Time Zone.
+ !    > NOTES: The TimeZoneVar represents one zone, such zone can has several time steps.
+ !             It's characterized because the boundary condition never changes within the zone.
 
     TYPE TimeZoneVar
         PetscInt                        :: SizeTime
@@ -181,12 +202,9 @@ MODULE ANISOFLOW_Types
  !    > VARIABLES: SizeTimeZone, SizeDirich, SizeSource, SizeCauchy, Dirich, Source, Cauchy,
  !                 TimeZone.
  !      + SizeTimeZone: It's an Integer that says the amount of time zones.
- !      + SizeDirich: It's an Integer that says the size of Dirich PETSc vector. It's the same for
- !                    every time zone.
- !      + SizeSource: It's an Integer that says the size of Neumman PETSc vector. It's the same 
- !                     for every time zone.
- !      + SizeCauchy: It's an Integer that says the size of Cauchy PETSc vector. It's the same for
- !                    every time zone.
+ !      + SizeDirich: It's an array of integers that says the size of Dirich PETSc vector for each time zone.
+ !      + SizeSource: It's an array of integers that says the size of Neumman PETSc vector for each time zone.
+ !      + SizeCauchy: It's an array of integers that says the size of Cauchy PETSc vector for each time zone.
  !      + Dirich: It's a PETSc vector with the values of the Dirichlet cells. It must have the same 
  !                size as Dirichlet identifiers defined in Geometry data structure.
  !      + Neumman: It's a PETSc vector with the values of the Neumman cells. It must have the same 
@@ -204,7 +222,8 @@ MODULE ANISOFLOW_Types
  !             created with DataMngr defined in Geometry.
 
     TYPE BoundaryConditions
-        PetscInt                        :: SizeTimeZone,SizeDirich,SizeSource,SizeCauchy
+        PetscInt                        :: SizeTimeZone
+        PetscInt,ALLOCATABLE            :: SizeDirich(:),SizeSource(:),SizeCauchy(:)
         Vec,ALLOCATABLE                 :: Dirich(:),Source(:),CauchyC(:),CauchyHe(:)
         IS,ALLOCATABLE                  :: DirichIS(:),SourceIS(:),CauchyIS(:)
         TYPE(TimeZoneVar),ALLOCATABLE   :: TimeZone(:)
