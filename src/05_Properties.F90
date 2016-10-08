@@ -834,9 +834,8 @@ END SUBROUTINE GetStorage_2
 
 SUBROUTINE GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,Property, RunOptionsVar
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,Property
     USE ANISOFLOW_Geometry, ONLY : GetLocalTopology
-    USE ANISOFLOW_Interface, ONLY : GetRunOptions
 
     IMPLICIT NONE
 
@@ -848,21 +847,9 @@ SUBROUTINE GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
     PetscInt,INTENT(IN)                 :: i,j,k
     PetscErrorCode,INTENT(INOUT)        :: ierr
 
-    TYPE(RunOptionsVar)                 :: RunOptions
-
     Ppt%Pstn%i=i
     Ppt%Pstn%j=j
     Ppt%Pstn%k=k
-
-    CALL GetRunOptions(RunOptions,ierr)
-
-    IF (RunOptions%Scheme.EQ.1) THEN
-        Ppt%CvtOnInterface=.TRUE.
-    ELSEIF (RunOptions%Scheme.EQ.2) THEN
-        Ppt%CvtOnInterface=.TRUE. ! (?)
-    ELSEIF (RunOptions%Scheme.EQ.3) THEN
-        Ppt%CvtOnInterface=.FALSE. ! (?)
-    END IF
 
     CALL GetLocalTopology(Gmtry,Ppt,ierr)
     CALL GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)

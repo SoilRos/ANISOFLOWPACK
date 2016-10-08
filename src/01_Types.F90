@@ -67,8 +67,7 @@ MODULE ANISOFLOW_Types
     END TYPE Position
 
  !  - Property: It's a data structure that describes completely a cell and its boundaries.
- !    > VARIABLES: Pstn, StencilType, StencilTplgy, dx, dy, dz, dxB, dyB, dzB, dxF, dyF, dzF,
- !                 CvtOnBlock, CvtBlock, CvtOnInterface, CvtBx, CvtBy, CvtBz, CvtFx, CvtFy, CvtFz.
+ !    > VARIABLES: Pstn, StencilType, StencilTplgy, dx, dy, dz, CvtCell.
  !      + Pstn: It's a Position structure that describes the global position of the cell on the grid.
  !      + StencilType: It's an integer used to describe the type of the stencil used on the model.
  !          0: Not defined. (Default)
@@ -84,19 +83,10 @@ MODULE ANISOFLOW_Types
  !          2: Dirichlet boundary condition cell.
  !          3: Source in cell Q (It's treated as active cell).
  !          4: Cauchy boundary condition
- !      + dx,dy,dz: It's a real that describes the size of the central cell directions on the x, y,
- !                  and z.
- !      + dxB,dyB,dzB: It's a real that describes the size of the backward cell directions on the x, 
- !                  y, and z.
- !      + dxF,dyF,dzF: It's a real that describes the size of the forward cell directions on the x, 
- !                  y, and z axis.
- !      + CvtCell: It's a Tensor of conductivities of the medium of the center of Cell.
- !      + CvtOnInterface: It's a boolean that shows if the neiboor block has the conductivity represented 
- !                        on the interfaces or by the center of each cell.
- !      + CvtBx,CvtBy,CvtBz: It's a tensor of conductivities on the interface or of the block in
- !                           backward direction of the cartesian axis respectively.
- !      + CvtFx,CvtFy,CvtFz: It's a tensor of conductivities on the interface or of the block in  
- !                           forward direction of the cartesian axes respectively.
+ !      + dx,dy,dz: It's an array of reals that describes the size of the cells directions on the x, y,
+ !                  and z. It has the same order of StencilTplgy
+ !      + CvtCell: It's an array of Tensors of conductivities that represents the conductivities of the
+ !                 center of the each block. It has the same order of StencilTplgy
  !    > NOTES: Don't use this structure to define each cell on a field of properties, it is 
  !             because this structure has a redundant data that another one already has too. 
  !             Instead, use this one as a temporal structure to have everything as you need of the 
@@ -106,9 +96,8 @@ MODULE ANISOFLOW_Types
         TYPE(Position)                  :: Pstn
         PetscInt                        :: StnclType=0
         PetscInt,ALLOCATABLE            :: StnclTplgy(:)
-        PetscReal                       :: dx,dy,dz,dxB,dxF,dyB,dyF,dzB,dzF
-        PetscBool                       :: CvtOnInterface=.FALSE.
-        TYPE(Tensor)                    :: CvtCell,CvtBx,CvtFx,CvtBy,CvtFy,CvtBz,CvtFz
+        PetscReal,ALLOCATABLE           :: dx(:),dy(:),dz(:)
+        TYPE(Tensor),ALLOCATABLE        :: CvtCell(:)
     END TYPE Property
 
  !  - ConductivityField: It's a data structure that stores the field of conductivities of every

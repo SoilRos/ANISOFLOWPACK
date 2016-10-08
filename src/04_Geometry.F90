@@ -882,6 +882,7 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
 
     PetscReal,POINTER                   :: TmpTplgyArray3D(:,:,:),TmpTplgyArray2D(:,:),xArray(:),yArray(:),zArray(:)
     PetscInt                            :: i,j,k,xSize,ySize,zSize,widthG(3)
+    PetscReal                           :: dx,dxB,dxF,dy,dyB,dyF,dz,dzB,dzF
     TYPE(RunOptionsVar)                 :: RunOptions
 
     i=Ppt%Pstn%i
@@ -897,28 +898,28 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
 
     CALL VecGetSize(Gmtry%x,xSize,ierr)
     CALL VecGetArrayReadF90(Gmtry%x,xArray,ierr)
-    Ppt%dxB=xArray(i+1)-xArray(i)
-    Ppt%dx =xArray(i+2)-xArray(i+1)
-    Ppt%dxF=xArray(i+3)-xArray(i+2)
+    dxB=xArray(i+1)-xArray(i)
+    dx =xArray(i+2)-xArray(i+1)
+    dxF=xArray(i+3)-xArray(i+2)
     CALL VecRestoreArrayReadF90(Gmtry%x,xArray,ierr)
 
     CALL VecGetSize(Gmtry%y,ySize,ierr)
     CALL VecGetArrayReadF90(Gmtry%y,yArray,ierr)
-    Ppt%dyB=yArray(j+1)-yArray(j)
-    Ppt%dy =yArray(j+2)-yArray(j+1)
-    Ppt%dyF=yArray(j+3)-yArray(j+2)
+    dyB=yArray(j+1)-yArray(j)
+    dy =yArray(j+2)-yArray(j+1)
+    dyF=yArray(j+3)-yArray(j+2)
     CALL VecRestoreArrayReadF90(Gmtry%y,yArray,ierr)
 
     CALL VecGetSize(Gmtry%z,zSize,ierr)
     CALL VecGetArrayReadF90(Gmtry%z,zArray,ierr)
     IF (widthG(3).NE.1) THEN
-        Ppt%dzB=zArray(k+1)-zArray(k)
-        Ppt%dz =zArray(k+2)-zArray(k+1)
-        Ppt%dzF=zArray(k+3)-zArray(k+2)
+        dzB=zArray(k+1)-zArray(k)
+        dz =zArray(k+2)-zArray(k+1)
+        dzF=zArray(k+3)-zArray(k+2)
     ELSE
-        Ppt%dzB=0.d0
-        Ppt%dz =1.d0
-        Ppt%dzF=0.d0
+        dzB=0.d0
+        dz =1.d0
+        dzF=0.d0
     END IF
     CALL VecRestoreArrayReadF90(Gmtry%z,zArray,ierr)
 
@@ -926,11 +927,16 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
 
     CALL GetRunOptions(RunOptions,ierr)
 
+    IF (RunOptions%Scheme.EQ.1) THEN
+        Ppt%StnclType=1
+    ELSEIF ((RunOptions%Scheme.EQ.2).OR.(RunOptions%Scheme.EQ.3)) THEN
+        Ppt%StnclType=2
+    END IF
 
     IF (widthG(3).NE.1) THEN
         CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,Gmtry%Tplgy,TmpTplgyArray3D,ierr)
-        IF (RunOptions%Scheme.EQ.1) THEN
-            ALLOCATE(Ppt%StnclTplgy(7))
+        IF (Ppt%StnclType.EQ.1) THEN
+            ALLOCATE(Ppt%StnclTplgy(7),Ppt%dx(7),Ppt%dy(7),Ppt%dz(7))
             Ppt%StnclTplgy(:)=0
             Ppt%StnclTplgy(1)=INT(TmpTplgyArray3D(i  ,j  ,k-1))
             Ppt%StnclTplgy(2)=INT(TmpTplgyArray3D(i  ,j-1,k  ))
@@ -939,8 +945,15 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
             Ppt%StnclTplgy(5)=INT(TmpTplgyArray3D(i+1,j  ,k  ))
             Ppt%StnclTplgy(6)=INT(TmpTplgyArray3D(i  ,j+1,k  ))
             Ppt%StnclTplgy(7)=INT(TmpTplgyArray3D(i  ,j  ,k+1))
-        ELSEIF (RunOptions%Scheme.EQ.2) THEN
-            ALLOCATE(Ppt%StnclTplgy(19))
+            Ppt%dx(1)=dx   ; Ppt%dy(1)=dy   ; Ppt%dz(1)=dzB
+            Ppt%dx(2)=dx   ; Ppt%dy(2)=dyB  ; Ppt%dz(2)=dz
+            Ppt%dx(3)=dxB  ; Ppt%dy(3)=dy   ; Ppt%dz(3)=dz
+            Ppt%dx(4)=dx   ; Ppt%dy(4)=dy   ; Ppt%dz(4)=dz
+            Ppt%dx(5)=dxF  ; Ppt%dy(5)=dy   ; Ppt%dz(5)=dz
+            Ppt%dx(6)=dx   ; Ppt%dy(6)=dyF  ; Ppt%dz(6)=dz
+            Ppt%dx(7)=dx   ; Ppt%dy(7)=dy   ; Ppt%dz(7)=dzF
+        ELSEIF (Ppt%StnclType.EQ.2) THEN
+            ALLOCATE(Ppt%StnclTplgy(19),Ppt%dx(19),Ppt%dy(19),Ppt%dz(19))
             Ppt%StnclTplgy(:)=0
             Ppt%StnclTplgy(1)= INT(TmpTplgyArray3D(i  ,j-1,k-1))
             Ppt%StnclTplgy(2)= INT(TmpTplgyArray3D(i-1,j  ,k-1))
@@ -961,15 +974,34 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
             Ppt%StnclTplgy(17)=INT(TmpTplgyArray3D(i  ,j  ,k+1))
             Ppt%StnclTplgy(18)=INT(TmpTplgyArray3D(i+1,j  ,k+1))
             Ppt%StnclTplgy(19)=INT(TmpTplgyArray3D(i  ,j+1,k+1))
+            Ppt%dx(1)= dx  ; Ppt%dy(1)= dyB ; Ppt%dz(1)= dzB
+            Ppt%dx(2)= dxB ; Ppt%dy(2)= dy  ; Ppt%dz(2)= dzB
+            Ppt%dx(3)= dx  ; Ppt%dy(3)= dy  ; Ppt%dz(3)= dzB
+            Ppt%dx(4)= dxF ; Ppt%dy(4)= dy  ; Ppt%dz(4)= dzB
+            Ppt%dx(5)= dx  ; Ppt%dy(5)= dyF ; Ppt%dz(5)= dzB
+            Ppt%dx(6)= dxB ; Ppt%dy(6)= dyB ; Ppt%dz(6)= dz
+            Ppt%dx(7)= dx  ; Ppt%dy(7)= dyB ; Ppt%dz(7)= dz
+            Ppt%dx(8)= dxF ; Ppt%dy(8)= dyB ; Ppt%dz(8)= dz
+            Ppt%dx(9)= dxB ; Ppt%dy(9)= dy  ; Ppt%dz(9)= dz
+            Ppt%dx(10)=dx  ; Ppt%dy(10)=dy  ; Ppt%dz(10)=dz
+            Ppt%dx(11)=dxF ; Ppt%dy(11)=dy  ; Ppt%dz(11)=dz
+            Ppt%dx(12)=dxB ; Ppt%dy(12)=dyF ; Ppt%dz(12)=dz
+            Ppt%dx(13)=dx  ; Ppt%dy(13)=dyF ; Ppt%dz(13)=dz
+            Ppt%dx(14)=dxF ; Ppt%dy(14)=dyF ; Ppt%dz(14)=dz
+            Ppt%dx(15)=dx  ; Ppt%dy(15)=dyB ; Ppt%dz(15)=dzF
+            Ppt%dx(16)=dxB ; Ppt%dy(16)=dy  ; Ppt%dz(16)=dzF
+            Ppt%dx(17)=dx  ; Ppt%dy(17)=dy  ; Ppt%dz(17)=dzF
+            Ppt%dx(18)=dxF ; Ppt%dy(18)=dy  ; Ppt%dz(18)=dzF
+            Ppt%dx(19)=dx  ; Ppt%dy(19)=dyF ; Ppt%dz(19)=dzF
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-                & "[ERROR] Run_options_scheme command must be an integer between 1 and 2\n",ierr)
+                & "[ERROR] Ppt%StnclType must be 1 or 2\n",ierr)
             STOP
         END IF
     ELSE
         CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,Gmtry%Tplgy,TmpTplgyArray2D,ierr)
-        IF (RunOptions%Scheme.EQ.1) THEN
-            ALLOCATE(Ppt%StnclTplgy(7))
+        IF (Ppt%StnclType.EQ.1) THEN
+            ALLOCATE(Ppt%StnclTplgy(7),Ppt%dx(7),Ppt%dy(7),Ppt%dz(7))
             Ppt%StnclTplgy(:)=0
             Ppt%StnclTplgy(1)=INT(TmpTplgyArray2D(i  ,j  ))
             Ppt%StnclTplgy(2)=INT(TmpTplgyArray2D(i  ,j-1))
@@ -978,7 +1010,14 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
             Ppt%StnclTplgy(5)=INT(TmpTplgyArray2D(i+1,j  ))
             Ppt%StnclTplgy(6)=INT(TmpTplgyArray2D(i  ,j+1))
             Ppt%StnclTplgy(7)=INT(TmpTplgyArray2D(i  ,j  ))
-        ELSEIF (RunOptions%Scheme.EQ.2) THEN
+            Ppt%dx(1)=dx   ; Ppt%dy(1)=dy   ; Ppt%dz(1)=dzB
+            Ppt%dx(2)=dx   ; Ppt%dy(2)=dyB  ; Ppt%dz(2)=dz
+            Ppt%dx(3)=dxB  ; Ppt%dy(3)=dy   ; Ppt%dz(3)=dz
+            Ppt%dx(4)=dx   ; Ppt%dy(4)=dy   ; Ppt%dz(4)=dz
+            Ppt%dx(5)=dxF  ; Ppt%dy(5)=dy   ; Ppt%dz(5)=dz
+            Ppt%dx(6)=dx   ; Ppt%dy(6)=dyF  ; Ppt%dz(6)=dz
+            Ppt%dx(7)=dx   ; Ppt%dy(7)=dy   ; Ppt%dz(7)=dzF
+        ELSEIF (Ppt%StnclType.EQ.2) THEN
             ALLOCATE(Ppt%StnclTplgy(19))
             Ppt%StnclTplgy(:)=0
             Ppt%StnclTplgy(1)= INT(TmpTplgyArray2D(i  ,j-1))
@@ -1000,9 +1039,28 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
             Ppt%StnclTplgy(17)=INT(TmpTplgyArray2D(i  ,j  ))
             Ppt%StnclTplgy(18)=INT(TmpTplgyArray2D(i+1,j  ))
             Ppt%StnclTplgy(19)=INT(TmpTplgyArray2D(i  ,j+1))
+            Ppt%dx(1)= dx  ; Ppt%dy(1)= dyB ; Ppt%dz(1)= dzB
+            Ppt%dx(2)= dxB ; Ppt%dy(2)= dy  ; Ppt%dz(2)= dzB
+            Ppt%dx(3)= dx  ; Ppt%dy(3)= dy  ; Ppt%dz(3)= dzB
+            Ppt%dx(4)= dxF ; Ppt%dy(4)= dy  ; Ppt%dz(4)= dzB
+            Ppt%dx(5)= dx  ; Ppt%dy(5)= dyF ; Ppt%dz(5)= dzB
+            Ppt%dx(6)= dxB ; Ppt%dy(6)= dyB ; Ppt%dz(6)= dz
+            Ppt%dx(7)= dx  ; Ppt%dy(7)= dyB ; Ppt%dz(7)= dz
+            Ppt%dx(8)= dxF ; Ppt%dy(8)= dyB ; Ppt%dz(8)= dz
+            Ppt%dx(9)= dxB ; Ppt%dy(9)= dy  ; Ppt%dz(9)= dz
+            Ppt%dx(10)=dx  ; Ppt%dy(10)=dy  ; Ppt%dz(10)=dz
+            Ppt%dx(11)=dxF ; Ppt%dy(11)=dy  ; Ppt%dz(11)=dz
+            Ppt%dx(12)=dxB ; Ppt%dy(12)=dyF ; Ppt%dz(12)=dz
+            Ppt%dx(13)=dx  ; Ppt%dy(13)=dyF ; Ppt%dz(13)=dz
+            Ppt%dx(14)=dxF ; Ppt%dy(14)=dyF ; Ppt%dz(14)=dz
+            Ppt%dx(15)=dx  ; Ppt%dy(15)=dyB ; Ppt%dz(15)=dzF
+            Ppt%dx(16)=dxB ; Ppt%dy(16)=dy  ; Ppt%dz(16)=dzF
+            Ppt%dx(17)=dx  ; Ppt%dy(17)=dy  ; Ppt%dz(17)=dzF
+            Ppt%dx(18)=dxF ; Ppt%dy(18)=dy  ; Ppt%dz(18)=dzF
+            Ppt%dx(19)=dx  ; Ppt%dy(19)=dyF ; Ppt%dz(19)=dzF
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-                & "[ERROR] Run_options_scheme command must be an integer between 1 and 2\n",ierr)
+                & "[ERROR] Ppt%StnclType must be 1 or 2\n",ierr)
             STOP
         END IF
     END IF
