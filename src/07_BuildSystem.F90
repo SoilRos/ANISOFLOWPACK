@@ -170,8 +170,6 @@ SUBROUTINE GetStencil(Ppt,Stencil,ierr)
 
 END SUBROUTINE GetStencil
 
-!FALTANTE: Subrutina que haga calculo de matriz de almacenamiento especifico
-
 SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
 
     USE ANISOFLOW_Types, ONLY : Property,StencilVar
@@ -215,6 +213,7 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_k,1) = k-1
         Stencil%idx_val(1)=2*Ppt%dx*Ppt%dy*Ppt%CvtBz%zz/(Ppt%dzB+Ppt%dz)
 
+
         Stencil%idx_clmns(MatStencil_i,2) = i
         Stencil%idx_clmns(MatStencil_j,2) = j-1
         Stencil%idx_clmns(MatStencil_k,2) = k
@@ -250,7 +249,9 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
         Stencil%idx_clmns(MatStencil_k,7) = k+1
         Stencil%idx_val(7)=2*Ppt%dx*Ppt%dy*Ppt%CvtFz%zz/(Ppt%dzF+Ppt%dz)
 
-    ELSEIF ((Ppt%StnclTplgy(4).EQ.2).OR.(Ppt%StnclTplgy(4).EQ.0)) THEN ! Dirichlet, Cauchy or inactive cell
+    ELSEIF (Ppt%StnclTplgy(4).EQ.2) THEN ! Dirichlet cell
+        Stencil%idx_val(4)=-one
+    ELSEIF (Ppt%StnclTplgy(4).EQ.0) THEN !  Inactive cell
         Stencil%idx_val(4)=-one
     END IF
 

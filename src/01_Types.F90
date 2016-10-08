@@ -9,6 +9,7 @@ MODULE ANISOFLOW_Types
 #include <petsc/finclude/petscis.h>
 #include <petsc/finclude/petscdm.h>
 
+
  !  - Geometry: It's a data structure that manages every information needed related to geometry.
  !    > VARIABLES: Scale, DataMngr, Tplgy, pTplgy, DirichIS, CauchyIS, NeummanIS.
  !      + Scale: It's a PETSc Integer that indentify the geometry scale
@@ -89,14 +90,12 @@ MODULE ANISOFLOW_Types
  !                  y, and z.
  !      + dxF,dyF,dzF: It's a real that describes the size of the forward cell directions on the x, 
  !                  y, and z axis.
- !      + CvtOnBlock: It's a boolean that shows if the block has the conductivity represented 
- !                    on the block.
- !      + CvtBlock: It's a Tensor of conductivities of the medium of the block.
- !      + CvtOnInterface: It's a boolean that shows if the block has the conductivity represented 
- !                        on the interfaces.
- !      + CvtBx,CvtBy,CvtBz: It's a tensor of conductivities on the interface of the block in
+ !      + CvtCell: It's a Tensor of conductivities of the medium of the center of Cell.
+ !      + CvtOnInterface: It's a boolean that shows if the neiboor block has the conductivity represented 
+ !                        on the interfaces or by the center of each cell.
+ !      + CvtBx,CvtBy,CvtBz: It's a tensor of conductivities on the interface or of the block in
  !                           backward direction of the cartesian axis respectively.
- !      + CvtFx,CvtFy,CvtFz: It's a tensor of conductivities on the interface of the block in  
+ !      + CvtFx,CvtFy,CvtFz: It's a tensor of conductivities on the interface or of the block in  
  !                           forward direction of the cartesian axes respectively.
  !    > NOTES: Don't use this structure to define each cell on a field of properties, it is 
  !             because this structure has a redundant data that another one already has too. 
@@ -108,8 +107,8 @@ MODULE ANISOFLOW_Types
         PetscInt                        :: StnclType=0
         PetscInt,ALLOCATABLE            :: StnclTplgy(:)
         PetscReal                       :: dx,dy,dz,dxB,dxF,dyB,dyF,dzB,dzF
-        PetscBool                       :: CvtOnInterface=.FALSE.,CvtOnBlock=.FALSE.
-        TYPE(Tensor)                    :: CvtBlock,CvtBx,CvtFx,CvtBy,CvtFy,CvtBz,CvtFz
+        PetscBool                       :: CvtOnInterface=.FALSE.
+        TYPE(Tensor)                    :: CvtCell,CvtBx,CvtFx,CvtBy,CvtFy,CvtBz,CvtFz
     END TYPE Property
 
  !  - ConductivityField: It's a data structure that stores the field of conductivities of every
@@ -387,3 +386,128 @@ CONTAINS
     END FUNCTION TargPetscVec
 
 END MODULE ANISOFLOW_Types
+
+MODULE ANISOFLOW_Operators
+
+    IMPLICIT NONE
+
+    INTERFACE ASSIGNMENT(=)
+        SUBROUTINE EqualTensors(y,x)
+            USE ANISOFLOW_Types
+            IMPLICIT NONE
+            TYPE(Tensor),INTENT(OUT)    :: y
+            TYPE(Tensor),INTENT(IN)     :: x
+        END SUBROUTINE EqualTensors
+    END INTERFACE
+
+    INTERFACE OPERATOR(.ARMONIC.)
+        PetscReal FUNCTION RealArmonic(x,y)
+            IMPLICIT NONE
+#include <petsc/finclude/petsc.h>
+            PetscReal, INTENT(IN) :: x,y
+        END FUNCTION RealArmonic
+
+        TYPE(TENSOR) FUNCTION TensorArmonic(x,y)
+            USE ANISOFLOW_Types, ONLY : Tensor, TargetFullTensor
+            IMPLICIT NONE
+#include <petsc/finclude/petsc.h>
+            TYPE(Tensor), INTENT(IN) :: x,y
+        END FUNCTION TensorArmonic
+    END INTERFACE
+
+END MODULE ANISOFLOW_Operators
+
+SUBROUTINE EqualTensors(y,x)
+
+    USE ANISOFLOW_Types, ONLY : Tensor, TargetFullTensor
+
+    IMPLICIT NONE
+
+    TYPE(Tensor),INTENT(OUT)    :: y
+    TYPE(Tensor),INTENT(IN)     :: x
+
+    y%xx=x%xx
+    y%yy=x%yy
+    y%zz=x%zz
+    y%xy=x%xy
+    y%xz=x%xz
+    y%yz=x%yz
+    CALL TargetFullTensor(y)
+
+END SUBROUTINE EqualTensors
+
+
+PetscReal FUNCTION RealArmonic(x,y)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petsc.h>
+
+    PetscReal, INTENT(IN) :: x,y
+    IF ((x==0).OR.(y==0)) THEN
+        RealArmonic=0.D0
+    ELSE
+        RealArmonic = 2.0/(1.0/x+1.0/y)
+    END IF
+
+END FUNCTION RealArmonic
+
+
+TYPE(TENSOR) FUNCTION TensorArmonic(x,y)
+
+    USE ANISOFLOW_Types, ONLY : Tensor, TargetFullTensor
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petsc.h>
+
+    TYPE(Tensor), INTENT(IN) :: x,y
+
+    IF ((x%xx==0).OR.(y%xx==0)) THEN
+        TensorArmonic%xx=0.D0
+    ELSE
+        TensorArmonic%xx = 2.0/(1.0/x%xx+1.0/y%xx)
+    END IF
+
+    IF ((x%yy==0).OR.(y%yy==0)) THEN
+        TensorArmonic%yy=0.D0
+    ELSE
+        TensorArmonic%yy = 2.0/(1.0/x%yy+1.0/y%yy)
+    END IF
+
+    IF ((x%zz==0).OR.(y%zz==0)) THEN
+        TensorArmonic%zz=0.D0
+    ELSE
+        TensorArmonic%zz = 2.0/(1.0/x%zz+1.0/y%zz)
+    END IF
+
+    IF ((x%xy==0).OR.(y%xy==0)) THEN
+        TensorArmonic%xy=0.D0
+    ELSE
+        TensorArmonic%xy = 2.0/(1.0/x%xy+1.0/y%xy)
+    END IF
+
+    IF ((x%xz==0).OR.(y%xz==0)) THEN
+        TensorArmonic%xz=0.D0
+    ELSE
+        TensorArmonic%xz = 2.0/(1.0/x%xz+1.0/y%xz)
+    END IF
+
+    IF ((x%yz==0).OR.(y%yz==0)) THEN
+        TensorArmonic%yz=0.D0
+    ELSE
+        TensorArmonic%yz = 2.0/(1.0/x%yz+1.0/y%yz)
+    END IF
+
+    CALL TargetFullTensor(TensorArmonic)
+
+END FUNCTION TensorArmonic
+
+
+
+
+
+
+
+
+
