@@ -113,10 +113,10 @@ MODULE ANISOFLOW_Types
  !                ZoneID in PropertiesField structure. It's saved as local vector
  !      + Zone: It's an array of Tensor that contain as Tensors of conductivities as defined 
  !              zones. This variable has to be stored in all processors.
-
-
- !      + Cell: It's a PETSc vector that contains the isotropic conductivity of each cell. Used when 
- !              DefinedBy==3. TODO: Save as tensor or with several vectors to have the anisotropy.
+ !      + xx,yy,zz,xy,xz,yz: It's a PETSc vector that contains the each componet conductivity of each cell. 
+ !                           Used when DefinedBy==3. It's saved as a local vector to have easy acces when 
+ !                           the program is gathering local information (with its neighbor).
+ !      + yx,zx,zy: The mirror of xy,xz,yz
 
     TYPE ConductivityField
         PetscInt                                :: DefinedBy=0 ! 1: DefinedByCvtZones, 2:DefinedByPptZones,3:DefinedByCell
@@ -378,122 +378,6 @@ CONTAINS
     END FUNCTION TargPetscVec
 
 END MODULE ANISOFLOW_Types
-
-MODULE ANISOFLOW_Operators
-
-    IMPLICIT NONE
-
-    INTERFACE ASSIGNMENT(=)
-        SUBROUTINE EqualTensors(y,x)
-            USE ANISOFLOW_Types
-            IMPLICIT NONE
-            TYPE(Tensor),INTENT(OUT)    :: y
-            TYPE(Tensor),INTENT(IN)     :: x
-        END SUBROUTINE EqualTensors
-    END INTERFACE
-
-    INTERFACE OPERATOR(.ARMONIC.)
-        PetscReal FUNCTION RealArmonic(x,y)
-            IMPLICIT NONE
-#include <petsc/finclude/petsc.h>
-            PetscReal, INTENT(IN) :: x,y
-        END FUNCTION RealArmonic
-
-        TYPE(TENSOR) FUNCTION TensorArmonic(x,y)
-            USE ANISOFLOW_Types, ONLY : Tensor, TargetFullTensor
-            IMPLICIT NONE
-#include <petsc/finclude/petsc.h>
-            TYPE(Tensor), INTENT(IN) :: x,y
-        END FUNCTION TensorArmonic
-    END INTERFACE
-
-END MODULE ANISOFLOW_Operators
-
-SUBROUTINE EqualTensors(y,x)
-
-    USE ANISOFLOW_Types, ONLY : Tensor, TargetFullTensor
-
-    IMPLICIT NONE
-
-    TYPE(Tensor),INTENT(OUT)    :: y
-    TYPE(Tensor),INTENT(IN)     :: x
-
-    y%xx=x%xx
-    y%yy=x%yy
-    y%zz=x%zz
-    y%xy=x%xy
-    y%xz=x%xz
-    y%yz=x%yz
-    CALL TargetFullTensor(y)
-
-END SUBROUTINE EqualTensors
-
-
-PetscReal FUNCTION RealArmonic(x,y)
-
-    IMPLICIT NONE
-
-#include <petsc/finclude/petsc.h>
-
-    PetscReal, INTENT(IN) :: x,y
-    IF ((x==0).OR.(y==0)) THEN
-        RealArmonic=0.D0
-    ELSE
-        RealArmonic = 2.0/(1.0/x+1.0/y)
-    END IF
-
-END FUNCTION RealArmonic
-
-
-TYPE(TENSOR) FUNCTION TensorArmonic(x,y)
-
-    USE ANISOFLOW_Types, ONLY : Tensor, TargetFullTensor
-
-    IMPLICIT NONE
-
-#include <petsc/finclude/petsc.h>
-
-    TYPE(Tensor), INTENT(IN) :: x,y
-
-    IF ((x%xx==0).OR.(y%xx==0)) THEN
-        TensorArmonic%xx=0.D0
-    ELSE
-        TensorArmonic%xx = 2.0/(1.0/x%xx+1.0/y%xx)
-    END IF
-
-    IF ((x%yy==0).OR.(y%yy==0)) THEN
-        TensorArmonic%yy=0.D0
-    ELSE
-        TensorArmonic%yy = 2.0/(1.0/x%yy+1.0/y%yy)
-    END IF
-
-    IF ((x%zz==0).OR.(y%zz==0)) THEN
-        TensorArmonic%zz=0.D0
-    ELSE
-        TensorArmonic%zz = 2.0/(1.0/x%zz+1.0/y%zz)
-    END IF
-
-    IF ((x%xy==0).OR.(y%xy==0)) THEN
-        TensorArmonic%xy=0.D0
-    ELSE
-        TensorArmonic%xy = 2.0/(1.0/x%xy+1.0/y%xy)
-    END IF
-
-    IF ((x%xz==0).OR.(y%xz==0)) THEN
-        TensorArmonic%xz=0.D0
-    ELSE
-        TensorArmonic%xz = 2.0/(1.0/x%xz+1.0/y%xz)
-    END IF
-
-    IF ((x%yz==0).OR.(y%yz==0)) THEN
-        TensorArmonic%yz=0.D0
-    ELSE
-        TensorArmonic%yz = 2.0/(1.0/x%yz+1.0/y%yz)
-    END IF
-
-    CALL TargetFullTensor(TensorArmonic)
-
-END FUNCTION TensorArmonic
 
 
 
