@@ -67,7 +67,7 @@ MODULE ANISOFLOW_Types
     END TYPE Position
 
  !  - Property: It's a data structure that describes completely a cell and its boundaries.
- !    > VARIABLES: Pstn, StencilType, StencilTplgy, dx, dy, dz, CvtCell.
+ !    > VARIABLES: Pstn, StencilType, StencilTplgy, dx, dy, dz, Cvt.
  !      + Pstn: It's a Position structure that describes the global position of the cell on the grid.
  !      + StencilType: It's an integer used to describe the type of the stencil used on the model.
  !          0: Not defined. (Default)
@@ -85,8 +85,8 @@ MODULE ANISOFLOW_Types
  !          4: Cauchy boundary condition
  !      + dx,dy,dz: It's an array of reals that describes the size of the cells directions on the x, y,
  !                  and z. It has the same order of StencilTplgy
- !      + CvtCell: It's an array of Tensors of conductivities that represents the conductivities of the
- !                 center of the each block. It has the same order of StencilTplgy
+ !      + Cvt: It's an array of Tensors of conductivities that represents the conductivities of the
+ !             center of the each block. It has the same order of StencilTplgy
  !    > NOTES: Don't use this structure to define each cell on a field of properties, it is 
  !             because this structure has a redundant data that another one already has too. 
  !             Instead, use this one as a temporal structure to have everything as you need of the 
@@ -97,7 +97,7 @@ MODULE ANISOFLOW_Types
         PetscInt                        :: StnclType=0
         PetscInt,ALLOCATABLE            :: StnclTplgy(:)
         PetscReal,ALLOCATABLE           :: dx(:),dy(:),dz(:)
-        TYPE(Tensor),ALLOCATABLE        :: CvtCell(:)
+        TYPE(Tensor),ALLOCATABLE        :: Cvt(:)
     END TYPE Property
 
  !  - ConductivityField: It's a data structure that stores the field of conductivities of every
@@ -113,6 +113,8 @@ MODULE ANISOFLOW_Types
  !                ZoneID in PropertiesField structure. It's saved as local vector
  !      + Zone: It's an array of Tensor that contain as Tensors of conductivities as defined 
  !              zones. This variable has to be stored in all processors.
+
+
  !      + Cell: It's a PETSc vector that contains the isotropic conductivity of each cell. Used when 
  !              DefinedBy==3. TODO: Save as tensor or with several vectors to have the anisotropy.
 
@@ -122,7 +124,8 @@ MODULE ANISOFLOW_Types
         Vec                                     :: ZoneID
         TYPE(Tensor),ALLOCATABLE                :: Zone(:)
         ! Conductivity defined on every cell (Local):
-        Vec                                     :: Cell
+        Vec                                     :: xx,yy,zz,xy,xz,yz
+        Vec,POINTER                             :: yx,zx,zy
     END TYPE ConductivityField
 
  !  - SpecificStorageField: It's a data structure that stores the field of specific storage of every

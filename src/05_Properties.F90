@@ -412,7 +412,7 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,Cvt,ierr)
     Cvt%DefinedBy=3
 !     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Event] Conductivity Field is stored by Block\n",ierr)
 
-    CALL DMCreateLocalVector(Gmtry%DataMngr,Cvt%Cell,ierr)
+    CALL DMCreateLocalVector(Gmtry%DataMngr,Cvt%xx,ierr)
     CALL DMCreateGlobalVector(Gmtry%DataMngr,Cell_Global,ierr)
 
     CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
@@ -440,10 +440,10 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,Cvt,ierr)
 
     ViewName="ANISOFLOW_Cvt"
     EventName="GetConductivity"
-    CALL ViewConductivity(Cvt%Cell,ViewName,EventName,ierr)
+    CALL ViewConductivity(Cvt%xx,ViewName,EventName,ierr)
 
-    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cell_Global,INSERT_VALUES,Cvt%Cell,ierr)
-    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cell_Global,INSERT_VALUES,Cvt%Cell,ierr)
+    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cell_Global,INSERT_VALUES,Cvt%xx,ierr)
+    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cell_Global,INSERT_VALUES,Cvt%xx,ierr)
     CALL VecDestroy(Cell_Global,ierr)
 
 !     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field was satisfactorily created\n",ierr)
@@ -878,8 +878,8 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
     TYPE(InputTypeVar)                  :: InputType
     PetscReal,POINTER                   :: TmpCvt3D(:,:,:),TmpCvt2D(:,:)
     TYPE(Tensor)                        :: TensorZero
-    PetscReal                           :: ValR(2)
-    PetscInt                            :: ValI(2),widthG(3),i,j,k
+    PetscInt                            :: CenterID,widthG(3),i,j,k
+    PetscInt,ALLOCATABLE                :: ValI(:)
 
     CALL GetInputType(InputType,ierr)
 
@@ -894,6 +894,19 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
         & PETSC_NULL_INTEGER,ierr)
 
+    IF (Ppt%StnclType.EQ.1) THEN          ! Stencil type star
+        ALLOCATE(Ppt%Cvt(7),ValI(7))
+        CenterID=4
+    ELSEIF (Ppt%StnclType.EQ.2) THEN      ! Stencil type box (19)
+        ALLOCATE(Ppt%Cvt(19),ValI(19))
+        CenterID=10
+    ELSE 
+        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,              &
+            & "[ERROR] Property topology wasn't well defined\n"      &
+            & ,ierr)
+        STOP   
+    END IF
+    
     TensorZero%xx=0.D0
     TensorZero%xy=0.D0
     TensorZero%xz=0.D0
@@ -901,203 +914,454 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
     TensorZero%yz=0.D0
     TensorZero%zz=0.D0
 
-    Ppt%CvtBx=TensorZero
-    Ppt%CvtFx=TensorZero
-    Ppt%CvtBy=TensorZero
-    Ppt%CvtFy=TensorZero
-    Ppt%CvtBz=TensorZero
-    Ppt%CvtFz=TensorZero
+    Ppt%Cvt(:)=TensorZero
 
-    IF (SIZE(Ppt%StnclTplgy).EQ.7) THEN          ! Stencil type star
-        ValI(1)=4
-    ELSEIF (SIZE(Ppt%StnclTplgy).EQ.19) THEN     ! Stencil type box
-        ValI(1)=10
-    ELSE 
-        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,              &
-            & "[ERROR] Property topology wasn't well defined\n"      &
-            & ,ierr)
-        STOP   
-    END IF
+    IF (Ppt%StnclType.EQ.1) THEN          ! Stencil type star
+        IF ((PptFld%Cvt%DefinedBy.EQ.1).OR.(PptFld%Cvt%DefinedBy.EQ.2)) THEN 
+            ! Defined by zones, so have to get the information from Zone(ZoneID(i))
+            IF ((Ppt%StnclTplgy(CenterID).EQ.1).OR.(Ppt%StnclTplgy(CenterID).EQ.3).OR.(Ppt%StnclTplgy(CenterID).EQ.4)) THEN 
+                ! Only get properties for active blocks
+                IF (widthG(3).NE.1) THEN ! 3D mesh
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt3D,ierr)
+                    ValI(1)=INT(TmpCvt3D(i  ,j  ,k-1))
+                    ValI(2)=INT(TmpCvt3D(i  ,j-1,k  ))
+                    ValI(3)=INT(TmpCvt3D(i-1,j  ,k  ))
+                    ValI(4)=INT(TmpCvt3D(i  ,j  ,k  ))
+                    ValI(5)=INT(TmpCvt3D(i+1,j  ,k  ))
+                    ValI(6)=INT(TmpCvt3D(i  ,j+1,k  ))
+                    ValI(7)=INT(TmpCvt3D(i  ,j  ,k+1))
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt3D,ierr)
+                    Ppt%Cvt(:)=PptFld%Cvt%Zone(ValI(:))
+                ELSE ! 2D mesh
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt2D,ierr)
+                    ValI(2)=INT(TmpCvt2D(i  ,j-1))
+                    ValI(3)=INT(TmpCvt2D(i-1,j  ))
+                    ValI(4)=INT(TmpCvt2D(i  ,j  ))
+                    ValI(5)=INT(TmpCvt2D(i+1,j  ))
+                    ValI(6)=INT(TmpCvt2D(i  ,j+1))
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt2D,ierr)
+                    Ppt%Cvt(2:6)=PptFld%Cvt%Zone(ValI(2:6))
+                END IF                
+            END IF
+        ELSE IF (Pptfld%Cvt%DefinedBy.EQ.3) THEN
+            IF ((Ppt%StnclTplgy(CenterID).EQ.1).OR.(Ppt%StnclTplgy(CenterID).EQ.3).OR.(Ppt%StnclTplgy(CenterID).EQ.4)) THEN
 
-    IF ((PptFld%Cvt%DefinedBy.EQ.1).OR.(PptFld%Cvt%DefinedBy.EQ.2)) THEN 
-        ! Defined by zones, so have to get the information from Zone(ZoneID(i))
-        IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4)) THEN 
-            ! Only get properties for active blocks
-            IF (widthG(3).NE.1) THEN
-                CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt3D,ierr)
-                ValI(1)=INT(TmpCvt3D(i,j,k))
-            ELSE
-                CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt2D,ierr)
-                ValI(1)=INT(TmpCvt2D(i,j))
-            END IF                
+                IF (widthG(3).NE.1) THEN  ! 3D mesh
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xx,TmpCvt3D,ierr)
+                    Ppt%Cvt(1)%xx=TmpCvt3D(i  ,j  ,k-1)
+                    Ppt%Cvt(2)%xx=TmpCvt3D(i  ,j-1,k  )
+                    Ppt%Cvt(3)%xx=TmpCvt3D(i-1,j  ,k  )
+                    Ppt%Cvt(4)%xx=TmpCvt3D(i  ,j  ,k  )
+                    Ppt%Cvt(5)%xx=TmpCvt3D(i+1,j  ,k  )
+                    Ppt%Cvt(6)%xx=TmpCvt3D(i  ,j+1,k  )
+                    Ppt%Cvt(7)%xx=TmpCvt3D(i  ,j  ,k+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xx,TmpCvt3D,ierr)
 
-            ! Backward on x
-            IF (widthG(3).NE.1) THEN
-                ValI(2)=INT(TmpCvt3D(i-1,j,k))
-            ELSE
-                ValI(2)=INT(TmpCvt2D(i-1,j))
-            END IF
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yy,TmpCvt3D,ierr)
+                    Ppt%Cvt(1)%yy=TmpCvt3D(i  ,j  ,k-1)
+                    Ppt%Cvt(2)%yy=TmpCvt3D(i  ,j-1,k  )
+                    Ppt%Cvt(3)%yy=TmpCvt3D(i-1,j  ,k  )
+                    Ppt%Cvt(4)%yy=TmpCvt3D(i  ,j  ,k  )
+                    Ppt%Cvt(5)%yy=TmpCvt3D(i+1,j  ,k  )
+                    Ppt%Cvt(6)%yy=TmpCvt3D(i  ,j+1,k  )
+                    Ppt%Cvt(7)%yy=TmpCvt3D(i  ,j  ,k+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yy,TmpCvt3D,ierr)
 
-            IF (Ppt%CvtOnInterface) THEN
-                Ppt%CvtBx=PptFld%Cvt%Zone(ValI(1)).ARMONIC.PptFld%Cvt%Zone(ValI(2))
-            ELSE
-                Ppt%CvtBx=PptFld%Cvt%Zone(ValI(2))
-            END IF
-            
-            ! Forward on x
-            IF (widthG(3).NE.1) THEN
-                ValI(2)=INT(TmpCvt3D(i+1,j,k))
-            ELSE
-                ValI(2)=INT(TmpCvt2D(i+1,j))
-            END IF
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%zz,TmpCvt3D,ierr)
+                    Ppt%Cvt(1)%zz=TmpCvt3D(i  ,j  ,k-1)
+                    Ppt%Cvt(2)%zz=TmpCvt3D(i  ,j-1,k  )
+                    Ppt%Cvt(3)%zz=TmpCvt3D(i-1,j  ,k  )
+                    Ppt%Cvt(4)%zz=TmpCvt3D(i  ,j  ,k  )
+                    Ppt%Cvt(5)%zz=TmpCvt3D(i+1,j  ,k  )
+                    Ppt%Cvt(6)%zz=TmpCvt3D(i  ,j+1,k  )
+                    Ppt%Cvt(7)%zz=TmpCvt3D(i  ,j  ,k+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%zz,TmpCvt3D,ierr)
 
-            IF (Ppt%CvtOnInterface) THEN
-                Ppt%CvtFx=PptFld%Cvt%Zone(ValI(1)).ARMONIC.PptFld%Cvt%Zone(ValI(2))
-            ELSE
-                Ppt%CvtFx=PptFld%Cvt%Zone(ValI(2))
-            END IF
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xy,TmpCvt3D,ierr)
+                    Ppt%Cvt(1)%xy=TmpCvt3D(i  ,j  ,k-1)
+                    Ppt%Cvt(2)%xy=TmpCvt3D(i  ,j-1,k  )
+                    Ppt%Cvt(3)%xy=TmpCvt3D(i-1,j  ,k  )
+                    Ppt%Cvt(4)%xy=TmpCvt3D(i  ,j  ,k  )
+                    Ppt%Cvt(5)%xy=TmpCvt3D(i+1,j  ,k  )
+                    Ppt%Cvt(6)%xy=TmpCvt3D(i  ,j+1,k  )
+                    Ppt%Cvt(7)%xy=TmpCvt3D(i  ,j  ,k+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xy,TmpCvt3D,ierr)
 
-            ! Backward on y
-            IF (widthG(3).NE.1) THEN
-                ValI(2)=INT(TmpCvt3D(i,j-1,k))
-            ELSE
-                ValI(2)=INT(TmpCvt2D(i-1,j))
-            END IF
-            IF (Ppt%CvtOnInterface) THEN
-                Ppt%CvtBy=PptFld%Cvt%Zone(ValI(1)).ARMONIC.PptFld%Cvt%Zone(ValI(2))
-            ELSE
-                Ppt%CvtBy=PptFld%Cvt%Zone(ValI(2))
-            END IF
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xz,TmpCvt3D,ierr)
+                    Ppt%Cvt(1)%xz=TmpCvt3D(i  ,j  ,k-1)
+                    Ppt%Cvt(2)%xz=TmpCvt3D(i  ,j-1,k  )
+                    Ppt%Cvt(3)%xz=TmpCvt3D(i-1,j  ,k  )
+                    Ppt%Cvt(4)%xz=TmpCvt3D(i  ,j  ,k  )
+                    Ppt%Cvt(5)%xz=TmpCvt3D(i+1,j  ,k  )
+                    Ppt%Cvt(6)%xz=TmpCvt3D(i  ,j+1,k  )
+                    Ppt%Cvt(7)%xz=TmpCvt3D(i  ,j  ,k+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xz,TmpCvt3D,ierr)
 
-            ! Forward on y
-            IF (widthG(3).NE.1) THEN
-                ValI(2)=INT(TmpCvt3D(i,j+1,k))
-            ELSE
-                ValI(2)=INT(TmpCvt2D(i,j+1))
-            END IF
-            IF (Ppt%CvtOnInterface) THEN
-                Ppt%CvtFy=PptFld%Cvt%Zone(ValI(1)).ARMONIC.PptFld%Cvt%Zone(ValI(2))
-            ELSE
-                Ppt%CvtFy=PptFld%Cvt%Zone(ValI(2))
-            END IF
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yz,TmpCvt3D,ierr)
+                    Ppt%Cvt(1)%yz=TmpCvt3D(i  ,j  ,k-1)
+                    Ppt%Cvt(2)%yz=TmpCvt3D(i  ,j-1,k  )
+                    Ppt%Cvt(3)%yz=TmpCvt3D(i-1,j  ,k  )
+                    Ppt%Cvt(4)%yz=TmpCvt3D(i  ,j  ,k  )
+                    Ppt%Cvt(5)%yz=TmpCvt3D(i+1,j  ,k  )
+                    Ppt%Cvt(6)%yz=TmpCvt3D(i  ,j+1,k  )
+                    Ppt%Cvt(7)%yz=TmpCvt3D(i  ,j  ,k+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yz,TmpCvt3D,ierr)
 
-            ! Backward on z
-            IF (widthG(3).NE.1) THEN
-                ValI(2)=INT(TmpCvt3D(i,j,k-1))
-                IF (Ppt%CvtOnInterface) THEN
-                    Ppt%CvtBz=PptFld%Cvt%Zone(ValI(1)).ARMONIC.PptFld%Cvt%Zone(ValI(2))
-                ELSE
-                    Ppt%CvtBz=PptFld%Cvt%Zone(ValI(2))
-                END IF
-            END IF
+                    CALL TargetFullTensor(Ppt%Cvt(1))
+                    CALL TargetFullTensor(Ppt%Cvt(2))
+                    CALL TargetFullTensor(Ppt%Cvt(3))
+                    CALL TargetFullTensor(Ppt%Cvt(4))
+                    CALL TargetFullTensor(Ppt%Cvt(5))
+                    CALL TargetFullTensor(Ppt%Cvt(6))
+                    CALL TargetFullTensor(Ppt%Cvt(7))
 
-            ! Forward on y
-            IF (widthG(3).NE.1) THEN
-                IF (Ppt%CvtOnInterface) THEN
-                    Ppt%CvtFz=PptFld%Cvt%Zone(ValI(1)).ARMONIC.PptFld%Cvt%Zone(ValI(2))
-                ELSE
-                    Ppt%CvtFz=PptFld%Cvt%Zone(ValI(2))
-                END IF
-            END IF
+                ELSE ! 2D mesh
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xx,TmpCvt2D,ierr)
+                    Ppt%Cvt(2)%xx=TmpCvt2D(i  ,j-1)
+                    Ppt%Cvt(3)%xx=TmpCvt2D(i-1,j  )
+                    Ppt%Cvt(4)%xx=TmpCvt2D(i  ,j  )
+                    Ppt%Cvt(5)%xx=TmpCvt2D(i+1,j  )
+                    Ppt%Cvt(6)%xx=TmpCvt2D(i  ,j+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xx,TmpCvt2D,ierr)
 
-            IF (widthG(3).NE.1) THEN
-                CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt3D,ierr)
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yy,TmpCvt2D,ierr)
+                    Ppt%Cvt(2)%yy=TmpCvt2D(i  ,j-1)
+                    Ppt%Cvt(3)%yy=TmpCvt2D(i-1,j  )
+                    Ppt%Cvt(4)%yy=TmpCvt2D(i  ,j  )
+                    Ppt%Cvt(5)%yy=TmpCvt2D(i+1,j  )
+                    Ppt%Cvt(6)%yy=TmpCvt2D(i  ,j+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yy,TmpCvt2D,ierr)
+
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%zz,TmpCvt2D,ierr)
+                    Ppt%Cvt(2)%zz=TmpCvt2D(i  ,j-1)
+                    Ppt%Cvt(3)%zz=TmpCvt2D(i-1,j  )
+                    Ppt%Cvt(4)%zz=TmpCvt2D(i  ,j  )
+                    Ppt%Cvt(5)%zz=TmpCvt2D(i+1,j  )
+                    Ppt%Cvt(6)%zz=TmpCvt2D(i  ,j+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%zz,TmpCvt2D,ierr)
+
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xy,TmpCvt2D,ierr)
+                    Ppt%Cvt(2)%xy=TmpCvt2D(i  ,j-1)
+                    Ppt%Cvt(3)%xy=TmpCvt2D(i-1,j  )
+                    Ppt%Cvt(4)%xy=TmpCvt2D(i  ,j  )
+                    Ppt%Cvt(5)%xy=TmpCvt2D(i+1,j  )
+                    Ppt%Cvt(6)%xy=TmpCvt2D(i  ,j+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xy,TmpCvt2D,ierr)
+
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xz,TmpCvt2D,ierr)
+                    Ppt%Cvt(2)%xz=TmpCvt2D(i  ,j-1)
+                    Ppt%Cvt(3)%xz=TmpCvt2D(i-1,j  )
+                    Ppt%Cvt(4)%xz=TmpCvt2D(i  ,j  )
+                    Ppt%Cvt(5)%xz=TmpCvt2D(i+1,j  )
+                    Ppt%Cvt(6)%xz=TmpCvt2D(i  ,j+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xz,TmpCvt2D,ierr)
+
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yz,TmpCvt2D,ierr)
+                    Ppt%Cvt(2)%yz=TmpCvt2D(i  ,j-1)
+                    Ppt%Cvt(3)%yz=TmpCvt2D(i-1,j  )
+                    Ppt%Cvt(4)%yz=TmpCvt2D(i  ,j  )
+                    Ppt%Cvt(5)%yz=TmpCvt2D(i+1,j  )
+                    Ppt%Cvt(6)%yz=TmpCvt2D(i  ,j+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yz,TmpCvt2D,ierr)
+
+                    CALL TargetFullTensor(Ppt%Cvt(2))
+                    CALL TargetFullTensor(Ppt%Cvt(3))
+                    CALL TargetFullTensor(Ppt%Cvt(4))
+                    CALL TargetFullTensor(Ppt%Cvt(5))
+                    CALL TargetFullTensor(Ppt%Cvt(6))
+
+                END IF      
             ELSE
-                CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt2D,ierr)
-            END IF
+                PRINT*,"ERROR: The properties has to be defined by cell or by zone"
+            END IF  
         END IF
-    ELSE IF (Pptfld%Cvt%DefinedBy.EQ.3) THEN
-        IF ((Ppt%StnclTplgy(ValI(1)).EQ.1).OR.(Ppt%StnclTplgy(ValI(1)).EQ.3).OR.(Ppt%StnclTplgy(ValI(1)).EQ.4)) THEN
-
-            IF (widthG(3).NE.1) THEN
-                CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%Cell,TmpCvt3D,ierr)
-                ValR(1)=TmpCvt3D(i,j,k)
-            ELSE
-                CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%Cell,TmpCvt2D,ierr)
-                ValR(1)=TmpCvt2D(i,j)
-            END IF      
-
-            IF (widthG(3).NE.1) THEN
-                ValR(2)=TmpCvt3D(i-1,j,k)
-            ELSE
-                ValR(2)=TmpCvt2D(i-1,j)
-            END IF  
-            Ppt%CvtBx%xx=Armonic(ValR(1),ValR(2))
-            Ppt%CvtBx%xy=0.D0
-            Ppt%CvtBx%xz=0.D0
-            Ppt%CvtBx%yy=0.D0
-            Ppt%CvtBx%yz=0.D0
-            Ppt%CvtBx%zz=0.D0
-            CALL TargetFullTensor(Ppt%CvtBx)
-
-            IF (widthG(3).NE.1) THEN
-                ValR(2)=TmpCvt3D(i+1,j,k)
-            ELSE
-                ValR(2)=TmpCvt2D(i+1,j)
-            END IF  
-            Ppt%CvtFx%xx=Armonic(ValR(1),ValR(2))
-            Ppt%CvtFx%xy=0.D0
-            Ppt%CvtFx%xz=0.D0
-            Ppt%CvtFx%yy=0.D0
-            Ppt%CvtFx%yz=0.D0
-            Ppt%CvtFx%zz=0.D0
-            CALL TargetFullTensor(Ppt%CvtFx)
-
-            IF (widthG(3).NE.1) THEN
-                ValR(2)=TmpCvt3D(i,j-1,k)
-            ELSE
-                ValR(2)=TmpCvt2D(i,j-1)
-            END IF  
-            Ppt%CvtBy%xx=0.D0
-            Ppt%CvtBy%xy=0.D0
-            Ppt%CvtBy%xz=0.D0
-            Ppt%CvtBy%yy=Armonic(ValR(1),ValR(2))
-            Ppt%CvtBy%yz=0.D0
-            Ppt%CvtBy%zz=0.D0
-            CALL TargetFullTensor(Ppt%CvtBy)
-
-            IF (widthG(3).NE.1) THEN
-                ValR(2)=TmpCvt3D(i,j+1,k)
-            ELSE
-                ValR(2)=TmpCvt2D(i,j+1)
-            END IF  
-            Ppt%CvtFy%xx=0.D0
-            Ppt%CvtFy%xy=0.D0
-            Ppt%CvtFy%xz=0.D0
-            Ppt%CvtFy%yy=Armonic(ValR(1),ValR(2))
-            Ppt%CvtFy%yz=0.D0
-            Ppt%CvtFy%zz=0.D0
-            CALL TargetFullTensor(Ppt%CvtFy)
-
-            IF (widthG(3).NE.1) THEN
-                ValR(2)=TmpCvt3D(i,j,k-1)
-                Ppt%CvtBz%xx=0.D0
-                Ppt%CvtBz%xy=0.D0
-                Ppt%CvtBz%xz=0.D0
-                Ppt%CvtBz%yy=0.D0
-                Ppt%CvtBz%yz=0.D0
-                Ppt%CvtBz%zz=Armonic(ValR(1),ValR(2))
-                CALL TargetFullTensor(Ppt%CvtBz)
-            END IF  
-
-            IF (widthG(3).NE.1) THEN
-                ValR(2)=TmpCvt3D(i,j,k+1)
-                Ppt%CvtFz%xx=0.D0
-                Ppt%CvtFz%xy=0.D0
-                Ppt%CvtFz%xz=0.D0
-                Ppt%CvtFz%yy=0.D0
-                Ppt%CvtFz%yz=0.D0
-                Ppt%CvtFz%zz=Armonic(ValR(1),ValR(2))
-                CALL TargetFullTensor(Ppt%CvtFz)
-            END IF  
-            IF (widthG(3).NE.1) THEN
-                CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%Cell,TmpCvt3D,ierr)
-            ELSE
-                CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%Cell,TmpCvt2D,ierr)
+    ELSEIF (Ppt%StnclType.EQ.2) THEN          ! Stencil type box (19)
+        IF ((PptFld%Cvt%DefinedBy.EQ.1).OR.(PptFld%Cvt%DefinedBy.EQ.2)) THEN 
+            ! Defined by zones, so have to get the information from Zone(ZoneID(i))
+            IF ((Ppt%StnclTplgy(CenterID).EQ.1).OR.(Ppt%StnclTplgy(CenterID).EQ.3).OR.(Ppt%StnclTplgy(CenterID).EQ.4)) THEN 
+                ! Only get properties for active blocks
+                IF (widthG(3).NE.1) THEN ! 3D mesh
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt3D,ierr)
+                    ValI(1)= INT(TmpCvt3D(i  ,j-1,k-1))
+                    ValI(2)= INT(TmpCvt3D(i-1,j  ,k-1))
+                    ValI(3)= INT(TmpCvt3D(i  ,j  ,k-1))
+                    ValI(4)= INT(TmpCvt3D(i+1,j  ,k-1))
+                    ValI(5)= INT(TmpCvt3D(i  ,j+1,k-1))
+                    ValI(6)= INT(TmpCvt3D(i-1,j-1,k  ))
+                    ValI(7)= INT(TmpCvt3D(i  ,j-1,k  ))
+                    ValI(8)= INT(TmpCvt3D(i+1,j-1,k  ))
+                    ValI(9)= INT(TmpCvt3D(i-1,j  ,k  ))
+                    ValI(10)=INT(TmpCvt3D(i  ,j  ,k  ))
+                    ValI(11)=INT(TmpCvt3D(i+1,j  ,k  ))
+                    ValI(12)=INT(TmpCvt3D(i-1,j+1,k  ))
+                    ValI(13)=INT(TmpCvt3D(i  ,j+1,k  ))
+                    ValI(14)=INT(TmpCvt3D(i+1,j+1,k  ))
+                    ValI(15)=INT(TmpCvt3D(i  ,j-1,k+1))
+                    ValI(16)=INT(TmpCvt3D(i-1,j  ,k+1))
+                    ValI(17)=INT(TmpCvt3D(i  ,j  ,k+1))
+                    ValI(18)=INT(TmpCvt3D(i+1,j  ,k+1))
+                    ValI(19)=INT(TmpCvt3D(i  ,j+1,k+1))
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt3D,ierr)
+                    Ppt%Cvt(:)=PptFld%Cvt%Zone(ValI(:))
+                ELSE ! 2D mesh
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt2D,ierr)
+                    ValI(6)= INT(TmpCvt2D(i-1,j-1))
+                    ValI(7)= INT(TmpCvt2D(i  ,j-1))
+                    ValI(8)= INT(TmpCvt2D(i+1,j-1))
+                    ValI(9)= INT(TmpCvt2D(i-1,j  ))
+                    ValI(10)=INT(TmpCvt2D(i  ,j  ))
+                    ValI(11)=INT(TmpCvt2D(i+1,j  ))
+                    ValI(12)=INT(TmpCvt2D(i-1,j+1))
+                    ValI(13)=INT(TmpCvt2D(i  ,j+1))
+                    ValI(14)=INT(TmpCvt2D(i+1,j+1))
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt2D,ierr)
+                    Ppt%Cvt(6:14)=PptFld%Cvt%Zone(ValI(6:14))
+                END IF                
             END IF
-        ELSE
-            PRINT*,"ERROR: The properties has to be defined by cell or by zone"
-        END IF  
+        ELSE IF (Pptfld%Cvt%DefinedBy.EQ.3) THEN
+            IF ((Ppt%StnclTplgy(CenterID).EQ.1).OR.(Ppt%StnclTplgy(CenterID).EQ.3).OR.(Ppt%StnclTplgy(CenterID).EQ.4)) THEN
+
+                IF (widthG(3).NE.1) THEN  ! 3D mesh
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xx,TmpCvt3D,ierr)
+                    Ppt%Cvt(1)%xx= TmpCvt3D(i  ,j-1,k-1)
+                    Ppt%Cvt(2)%xx= TmpCvt3D(i-1,j  ,k-1)
+                    Ppt%Cvt(3)%xx= TmpCvt3D(i  ,j  ,k-1)
+                    Ppt%Cvt(4)%xx= TmpCvt3D(i+1,j  ,k-1)
+                    Ppt%Cvt(5)%xx= TmpCvt3D(i  ,j+1,k-1)
+                    Ppt%Cvt(6)%xx= TmpCvt3D(i-1,j-1,k  )
+                    Ppt%Cvt(7)%xx= TmpCvt3D(i  ,j-1,k  )
+                    Ppt%Cvt(8)%xx= TmpCvt3D(i+1,j-1,k  )
+                    Ppt%Cvt(9)%xx= TmpCvt3D(i-1,j  ,k  )
+                    Ppt%Cvt(10)%xx=TmpCvt3D(i  ,j  ,k  )
+                    Ppt%Cvt(11)%xx=TmpCvt3D(i+1,j  ,k  )
+                    Ppt%Cvt(12)%xx=TmpCvt3D(i-1,j+1,k  )
+                    Ppt%Cvt(13)%xx=TmpCvt3D(i  ,j+1,k  )
+                    Ppt%Cvt(14)%xx=TmpCvt3D(i+1,j+1,k  )
+                    Ppt%Cvt(15)%xx=TmpCvt3D(i  ,j-1,k+1)
+                    Ppt%Cvt(16)%xx=TmpCvt3D(i-1,j  ,k+1)
+                    Ppt%Cvt(17)%xx=TmpCvt3D(i  ,j  ,k+1)
+                    Ppt%Cvt(18)%xx=TmpCvt3D(i+1,j  ,k+1)
+                    Ppt%Cvt(19)%xx=TmpCvt3D(i  ,j+1,k+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xx,TmpCvt3D,ierr)
+
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yy,TmpCvt3D,ierr)
+                    Ppt%Cvt(1)%yy= TmpCvt3D(i  ,j-1,k-1)
+                    Ppt%Cvt(2)%yy= TmpCvt3D(i-1,j  ,k-1)
+                    Ppt%Cvt(3)%yy= TmpCvt3D(i  ,j  ,k-1)
+                    Ppt%Cvt(4)%yy= TmpCvt3D(i+1,j  ,k-1)
+                    Ppt%Cvt(5)%yy= TmpCvt3D(i  ,j+1,k-1)
+                    Ppt%Cvt(6)%yy= TmpCvt3D(i-1,j-1,k  )
+                    Ppt%Cvt(7)%yy= TmpCvt3D(i  ,j-1,k  )
+                    Ppt%Cvt(8)%yy= TmpCvt3D(i+1,j-1,k  )
+                    Ppt%Cvt(9)%yy= TmpCvt3D(i-1,j  ,k  )
+                    Ppt%Cvt(10)%yy=TmpCvt3D(i  ,j  ,k  )
+                    Ppt%Cvt(11)%yy=TmpCvt3D(i+1,j  ,k  )
+                    Ppt%Cvt(12)%yy=TmpCvt3D(i-1,j+1,k  )
+                    Ppt%Cvt(13)%yy=TmpCvt3D(i  ,j+1,k  )
+                    Ppt%Cvt(14)%yy=TmpCvt3D(i+1,j+1,k  )
+                    Ppt%Cvt(15)%yy=TmpCvt3D(i  ,j-1,k+1)
+                    Ppt%Cvt(16)%yy=TmpCvt3D(i-1,j  ,k+1)
+                    Ppt%Cvt(17)%yy=TmpCvt3D(i  ,j  ,k+1)
+                    Ppt%Cvt(18)%yy=TmpCvt3D(i+1,j  ,k+1)
+                    Ppt%Cvt(19)%yy=TmpCvt3D(i  ,j+1,k+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yy,TmpCvt3D,ierr)
+
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%zz,TmpCvt3D,ierr)
+                    Ppt%Cvt(1)%zz= TmpCvt3D(i  ,j-1,k-1)
+                    Ppt%Cvt(2)%zz= TmpCvt3D(i-1,j  ,k-1)
+                    Ppt%Cvt(3)%zz= TmpCvt3D(i  ,j  ,k-1)
+                    Ppt%Cvt(4)%zz= TmpCvt3D(i+1,j  ,k-1)
+                    Ppt%Cvt(5)%zz= TmpCvt3D(i  ,j+1,k-1)
+                    Ppt%Cvt(6)%zz= TmpCvt3D(i-1,j-1,k  )
+                    Ppt%Cvt(7)%zz= TmpCvt3D(i  ,j-1,k  )
+                    Ppt%Cvt(8)%zz= TmpCvt3D(i+1,j-1,k  )
+                    Ppt%Cvt(9)%zz= TmpCvt3D(i-1,j  ,k  )
+                    Ppt%Cvt(10)%zz=TmpCvt3D(i  ,j  ,k  )
+                    Ppt%Cvt(11)%zz=TmpCvt3D(i+1,j  ,k  )
+                    Ppt%Cvt(12)%zz=TmpCvt3D(i-1,j+1,k  )
+                    Ppt%Cvt(13)%zz=TmpCvt3D(i  ,j+1,k  )
+                    Ppt%Cvt(14)%zz=TmpCvt3D(i+1,j+1,k  )
+                    Ppt%Cvt(15)%zz=TmpCvt3D(i  ,j-1,k+1)
+                    Ppt%Cvt(16)%zz=TmpCvt3D(i-1,j  ,k+1)
+                    Ppt%Cvt(17)%zz=TmpCvt3D(i  ,j  ,k+1)
+                    Ppt%Cvt(18)%zz=TmpCvt3D(i+1,j  ,k+1)
+                    Ppt%Cvt(19)%zz=TmpCvt3D(i  ,j+1,k+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%zz,TmpCvt3D,ierr)
+
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xy,TmpCvt3D,ierr)
+                    Ppt%Cvt(1)%xy= TmpCvt3D(i  ,j-1,k-1)
+                    Ppt%Cvt(2)%xy= TmpCvt3D(i-1,j  ,k-1)
+                    Ppt%Cvt(3)%xy= TmpCvt3D(i  ,j  ,k-1)
+                    Ppt%Cvt(4)%xy= TmpCvt3D(i+1,j  ,k-1)
+                    Ppt%Cvt(5)%xy= TmpCvt3D(i  ,j+1,k-1)
+                    Ppt%Cvt(6)%xy= TmpCvt3D(i-1,j-1,k  )
+                    Ppt%Cvt(7)%xy= TmpCvt3D(i  ,j-1,k  )
+                    Ppt%Cvt(8)%xy= TmpCvt3D(i+1,j-1,k  )
+                    Ppt%Cvt(9)%xy= TmpCvt3D(i-1,j  ,k  )
+                    Ppt%Cvt(10)%xy=TmpCvt3D(i  ,j  ,k  )
+                    Ppt%Cvt(11)%xy=TmpCvt3D(i+1,j  ,k  )
+                    Ppt%Cvt(12)%xy=TmpCvt3D(i-1,j+1,k  )
+                    Ppt%Cvt(13)%xy=TmpCvt3D(i  ,j+1,k  )
+                    Ppt%Cvt(14)%xy=TmpCvt3D(i+1,j+1,k  )
+                    Ppt%Cvt(15)%xy=TmpCvt3D(i  ,j-1,k+1)
+                    Ppt%Cvt(16)%xy=TmpCvt3D(i-1,j  ,k+1)
+                    Ppt%Cvt(17)%xy=TmpCvt3D(i  ,j  ,k+1)
+                    Ppt%Cvt(18)%xy=TmpCvt3D(i+1,j  ,k+1)
+                    Ppt%Cvt(19)%xy=TmpCvt3D(i  ,j+1,k+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xy,TmpCvt3D,ierr)
+
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xz,TmpCvt3D,ierr)
+                    Ppt%Cvt(1)%xz= TmpCvt3D(i  ,j-1,k-1)
+                    Ppt%Cvt(2)%xz= TmpCvt3D(i-1,j  ,k-1)
+                    Ppt%Cvt(3)%xz= TmpCvt3D(i  ,j  ,k-1)
+                    Ppt%Cvt(4)%xz= TmpCvt3D(i+1,j  ,k-1)
+                    Ppt%Cvt(5)%xz= TmpCvt3D(i  ,j+1,k-1)
+                    Ppt%Cvt(6)%xz= TmpCvt3D(i-1,j-1,k  )
+                    Ppt%Cvt(7)%xz= TmpCvt3D(i  ,j-1,k  )
+                    Ppt%Cvt(8)%xz= TmpCvt3D(i+1,j-1,k  )
+                    Ppt%Cvt(9)%xz= TmpCvt3D(i-1,j  ,k  )
+                    Ppt%Cvt(10)%xz=TmpCvt3D(i  ,j  ,k  )
+                    Ppt%Cvt(11)%xz=TmpCvt3D(i+1,j  ,k  )
+                    Ppt%Cvt(12)%xz=TmpCvt3D(i-1,j+1,k  )
+                    Ppt%Cvt(13)%xz=TmpCvt3D(i  ,j+1,k  )
+                    Ppt%Cvt(14)%xz=TmpCvt3D(i+1,j+1,k  )
+                    Ppt%Cvt(15)%xz=TmpCvt3D(i  ,j-1,k+1)
+                    Ppt%Cvt(16)%xz=TmpCvt3D(i-1,j  ,k+1)
+                    Ppt%Cvt(17)%xz=TmpCvt3D(i  ,j  ,k+1)
+                    Ppt%Cvt(18)%xz=TmpCvt3D(i+1,j  ,k+1)
+                    Ppt%Cvt(19)%xz=TmpCvt3D(i  ,j+1,k+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xz,TmpCvt3D,ierr)
+
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yz,TmpCvt3D,ierr)
+                    Ppt%Cvt(1)%yz= TmpCvt3D(i  ,j-1,k-1)
+                    Ppt%Cvt(2)%yz= TmpCvt3D(i-1,j  ,k-1)
+                    Ppt%Cvt(3)%yz= TmpCvt3D(i  ,j  ,k-1)
+                    Ppt%Cvt(4)%yz= TmpCvt3D(i+1,j  ,k-1)
+                    Ppt%Cvt(5)%yz= TmpCvt3D(i  ,j+1,k-1)
+                    Ppt%Cvt(6)%yz= TmpCvt3D(i-1,j-1,k  )
+                    Ppt%Cvt(7)%yz= TmpCvt3D(i  ,j-1,k  )
+                    Ppt%Cvt(8)%yz= TmpCvt3D(i+1,j-1,k  )
+                    Ppt%Cvt(9)%yz= TmpCvt3D(i-1,j  ,k  )
+                    Ppt%Cvt(10)%yz=TmpCvt3D(i  ,j  ,k  )
+                    Ppt%Cvt(11)%yz=TmpCvt3D(i+1,j  ,k  )
+                    Ppt%Cvt(12)%yz=TmpCvt3D(i-1,j+1,k  )
+                    Ppt%Cvt(13)%yz=TmpCvt3D(i  ,j+1,k  )
+                    Ppt%Cvt(14)%yz=TmpCvt3D(i+1,j+1,k  )
+                    Ppt%Cvt(15)%yz=TmpCvt3D(i  ,j-1,k+1)
+                    Ppt%Cvt(16)%yz=TmpCvt3D(i-1,j  ,k+1)
+                    Ppt%Cvt(17)%yz=TmpCvt3D(i  ,j  ,k+1)
+                    Ppt%Cvt(18)%yz=TmpCvt3D(i+1,j  ,k+1)
+                    Ppt%Cvt(19)%yz=TmpCvt3D(i  ,j+1,k+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yz,TmpCvt3D,ierr)
+
+                    CALL TargetFullTensor(Ppt%Cvt(1))
+                    CALL TargetFullTensor(Ppt%Cvt(2))
+                    CALL TargetFullTensor(Ppt%Cvt(3))
+                    CALL TargetFullTensor(Ppt%Cvt(4))
+                    CALL TargetFullTensor(Ppt%Cvt(5))
+                    CALL TargetFullTensor(Ppt%Cvt(6))
+                    CALL TargetFullTensor(Ppt%Cvt(7))
+                    CALL TargetFullTensor(Ppt%Cvt(8))
+                    CALL TargetFullTensor(Ppt%Cvt(9))
+                    CALL TargetFullTensor(Ppt%Cvt(10))
+                    CALL TargetFullTensor(Ppt%Cvt(11))
+                    CALL TargetFullTensor(Ppt%Cvt(12))
+                    CALL TargetFullTensor(Ppt%Cvt(13))
+                    CALL TargetFullTensor(Ppt%Cvt(14))
+                    CALL TargetFullTensor(Ppt%Cvt(15))
+                    CALL TargetFullTensor(Ppt%Cvt(16))
+                    CALL TargetFullTensor(Ppt%Cvt(17))
+                    CALL TargetFullTensor(Ppt%Cvt(18))
+                    CALL TargetFullTensor(Ppt%Cvt(19))
+
+                ELSE ! 2D mesh
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xx,TmpCvt2D,ierr)
+                    Ppt%Cvt(6)%xx= TmpCvt2D(i-1,j-1)
+                    Ppt%Cvt(7)%xx= TmpCvt2D(i  ,j-1)
+                    Ppt%Cvt(8)%xx= TmpCvt2D(i+1,j-1)
+                    Ppt%Cvt(9)%xx= TmpCvt2D(i-1,j  )
+                    Ppt%Cvt(10)%xx=TmpCvt2D(i  ,j  )
+                    Ppt%Cvt(11)%xx=TmpCvt2D(i+1,j  )
+                    Ppt%Cvt(12)%xx=TmpCvt2D(i-1,j+1)
+                    Ppt%Cvt(13)%xx=TmpCvt2D(i  ,j+1)
+                    Ppt%Cvt(14)%xx=TmpCvt2D(i+1,j+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xx,TmpCvt2D,ierr)
+
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yy,TmpCvt2D,ierr)
+                    Ppt%Cvt(6)%yy= TmpCvt2D(i-1,j-1)
+                    Ppt%Cvt(7)%yy= TmpCvt2D(i  ,j-1)
+                    Ppt%Cvt(8)%yy= TmpCvt2D(i+1,j-1)
+                    Ppt%Cvt(9)%yy= TmpCvt2D(i-1,j  )
+                    Ppt%Cvt(10)%yy=TmpCvt2D(i  ,j  )
+                    Ppt%Cvt(11)%yy=TmpCvt2D(i+1,j  )
+                    Ppt%Cvt(12)%yy=TmpCvt2D(i-1,j+1)
+                    Ppt%Cvt(13)%yy=TmpCvt2D(i  ,j+1)
+                    Ppt%Cvt(14)%yy=TmpCvt2D(i+1,j+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yy,TmpCvt2D,ierr)
+
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%zz,TmpCvt2D,ierr)
+                    Ppt%Cvt(6)%zz= TmpCvt2D(i-1,j-1)
+                    Ppt%Cvt(7)%zz= TmpCvt2D(i  ,j-1)
+                    Ppt%Cvt(8)%zz= TmpCvt2D(i+1,j-1)
+                    Ppt%Cvt(9)%zz= TmpCvt2D(i-1,j  )
+                    Ppt%Cvt(10)%zz=TmpCvt2D(i  ,j  )
+                    Ppt%Cvt(11)%zz=TmpCvt2D(i+1,j  )
+                    Ppt%Cvt(12)%zz=TmpCvt2D(i-1,j+1)
+                    Ppt%Cvt(13)%zz=TmpCvt2D(i  ,j+1)
+                    Ppt%Cvt(14)%zz=TmpCvt2D(i+1,j+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%zz,TmpCvt2D,ierr)
+
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xy,TmpCvt2D,ierr)
+                    Ppt%Cvt(6)%xy= TmpCvt2D(i-1,j-1)
+                    Ppt%Cvt(7)%xy= TmpCvt2D(i  ,j-1)
+                    Ppt%Cvt(8)%xy= TmpCvt2D(i+1,j-1)
+                    Ppt%Cvt(9)%xy= TmpCvt2D(i-1,j  )
+                    Ppt%Cvt(10)%xy=TmpCvt2D(i  ,j  )
+                    Ppt%Cvt(11)%xy=TmpCvt2D(i+1,j  )
+                    Ppt%Cvt(12)%xy=TmpCvt2D(i-1,j+1)
+                    Ppt%Cvt(13)%xy=TmpCvt2D(i  ,j+1)
+                    Ppt%Cvt(14)%xy=TmpCvt2D(i+1,j+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xy,TmpCvt2D,ierr)
+
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xz,TmpCvt2D,ierr)
+                    Ppt%Cvt(6)%xz= TmpCvt2D(i-1,j-1)
+                    Ppt%Cvt(7)%xz= TmpCvt2D(i  ,j-1)
+                    Ppt%Cvt(8)%xz= TmpCvt2D(i+1,j-1)
+                    Ppt%Cvt(9)%xz= TmpCvt2D(i-1,j  )
+                    Ppt%Cvt(10)%xz=TmpCvt2D(i  ,j  )
+                    Ppt%Cvt(11)%xz=TmpCvt2D(i+1,j  )
+                    Ppt%Cvt(12)%xz=TmpCvt2D(i-1,j+1)
+                    Ppt%Cvt(13)%xz=TmpCvt2D(i  ,j+1)
+                    Ppt%Cvt(14)%xz=TmpCvt2D(i+1,j+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%xz,TmpCvt2D,ierr)
+
+                    CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yz,TmpCvt2D,ierr)
+                    Ppt%Cvt(6)%yz= TmpCvt2D(i-1,j-1)
+                    Ppt%Cvt(7)%yz= TmpCvt2D(i  ,j-1)
+                    Ppt%Cvt(8)%yz= TmpCvt2D(i+1,j-1)
+                    Ppt%Cvt(9)%yz= TmpCvt2D(i-1,j  )
+                    Ppt%Cvt(10)%yz=TmpCvt2D(i  ,j  )
+                    Ppt%Cvt(11)%yz=TmpCvt2D(i+1,j  )
+                    Ppt%Cvt(12)%yz=TmpCvt2D(i-1,j+1)
+                    Ppt%Cvt(13)%yz=TmpCvt2D(i  ,j+1)
+                    Ppt%Cvt(14)%yz=TmpCvt2D(i+1,j+1)
+                    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%yz,TmpCvt2D,ierr)
+
+                    CALL TargetFullTensor(Ppt%Cvt(6))
+                    CALL TargetFullTensor(Ppt%Cvt(7))
+                    CALL TargetFullTensor(Ppt%Cvt(8))
+                    CALL TargetFullTensor(Ppt%Cvt(9))
+                    CALL TargetFullTensor(Ppt%Cvt(10))
+                    CALL TargetFullTensor(Ppt%Cvt(11))
+                    CALL TargetFullTensor(Ppt%Cvt(12))
+                    CALL TargetFullTensor(Ppt%Cvt(13))
+                    CALL TargetFullTensor(Ppt%Cvt(14))
+
+                END IF      
+            ELSE
+                PRINT*,"ERROR: The properties has to be defined by cell or by zone"
+            END IF  
+        END IF
     END IF
 
 END SUBROUTINE GetLocalConductivity
@@ -1149,7 +1413,7 @@ SUBROUTINE DestroyProperties(PptFld,ierr)
 !         IF (ALLOCATED(PptFld%Cvt%CvtZone)) DEALLOCATE(PptFld%Cvt%CvtZone)
 !         CALL VecDestroy(PptFld%PptType,ierr)
 !     ELSE
-!         CALL VecDestroy(PptFld%Cvt%CvtCell,ierr)
+!         CALL VecDestroy(PptFld%Cvt%Cvt,ierr)
 !     END IF
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
