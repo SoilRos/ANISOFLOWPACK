@@ -10,7 +10,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
     USE ANISOFLOW_Interface, ONLY : GetRunOptions, GetVerbose
     USE ANISOFLOW_Geometry, ONLY : UpdateGmtry
     USE ANISOFLOW_View, ONLY : ViewSolution
-    USE ANISOFLOW_BuildSystem, ONLY : GetSystem,ApplyDirichlet,ApplySource,ApplyCauchy,ApplyTimeDiff,GetInitSol
+    USE ANISOFLOW_BuildSystem, ONLY : ApplyDirichlet,ApplySource,ApplyCauchy,ApplyTimeDiff,GetInitSol
 
     IMPLICIT NONE
 

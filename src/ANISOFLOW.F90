@@ -5,7 +5,7 @@ PROGRAM ANISOFLOW
     USE ANISOFLOW_Geometry,             ONLY : GetGeometry,DestroyGeometry
     USE ANISOFLOW_Properties,           ONLY : GetProrperties,DestroyProperties
     USE ANISOFLOW_BoundaryConditions,   ONLY : GetBC,DestroyBC
-    USE ANISOFLOW_BuildSystem,          ONLY : GetSystem,DestroySystem
+    USE ANISOFLOW_BuildSystem,          ONLY : BuildSystem,DestroySystem
     USE ANISOFLOW_Solver,               ONLY : SolveSystem
 
     IMPLICIT NONE
@@ -51,7 +51,7 @@ PROGRAM ANISOFLOW
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(StageName))//" Stage] Inizialited\n",ierr)
 
-    CALL GetSystem(Gmtry,PptFld,BCFld,1,1,A,b,x,ierr)
+    CALL BuildSystem(Gmtry,PptFld,A,ierr)
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(StageName))//" Stage] Finalized\n",ierr)
     CALL PetscLogStagePop(Stage,ierr)
