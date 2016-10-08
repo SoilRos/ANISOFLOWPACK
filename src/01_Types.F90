@@ -205,20 +205,19 @@ MODULE ANISOFLOW_Types
  !      + SizeDirich: It's an array of integers that says the size of Dirich PETSc vector for each time zone.
  !      + SizeSource: It's an array of integers that says the size of Neumman PETSc vector for each time zone.
  !      + SizeCauchy: It's an array of integers that says the size of Cauchy PETSc vector for each time zone.
- !      + Dirich: It's a PETSc vector with the values of the Dirichlet cells. It must have the same 
- !                size as Dirichlet identifiers defined in Geometry data structure.
- !      + Neumman: It's a PETSc vector with the values of the Neumman cells. It must have the same 
- !                size as Neumman identifiers defined in Geometry data structure.
- !      + Cauchy: It's a PETSc vector with the values of the Cauchy cells. It must have the same 
- !                size as Cauchy identifiers defined in Geometry data structure.
+ !      + Dirich: It's a PETSc vector with the values of the Dirichlet cells to each time zone.
+ !      + Neumman: It's a PETSc vector with the values of the Neumman cells to each time zone.
+ !      + CauchyC: It's a PETSc vector with the values of C part of the Cauchy cells to each time zone.
+ !      + CauchyHe: It's a PETSc vector with the values of He part the Cauchy cells to each time zone.
+ !                  (Saved in its negative form to apply the vector directly to the system.)
  !      + DirichIS: It's a PETSc index set that has a map between Dirichlet information and vecs 
  !                  produced by DataMngr.
  !      + SourceIS: It's a PETSc index set that has a map between Source information and vecs 
  !                   roduced by DataMngr.
  !      + CauchyIS: It's a PETSc index set that has a map between Cauchy information and vecs 
  !                  produced by DataMngr.
- !    > NOTES: The Index Sets defined in Geometry for each boundary condition point the value of  
- !             Dirich, Neumman, and Cauchy vectors to the real position of every global vector 
+ !    > NOTES: The Index Sets defined in Geometry for each boundary condition. And Points the value
+ !             of Dirich, Neumman, and Cauchy vectors to the real position of every global vector 
  !             created with DataMngr defined in Geometry.
 
     TYPE BoundaryConditions
@@ -230,7 +229,7 @@ MODULE ANISOFLOW_Types
     END TYPE BoundaryConditions
 
  !  - StensilVar: It's a auxilar data structure to build the matrix.
- !    > VARIABLES: idx_rws, idx_clmn, Values, Size.
+ !    > VARIABLES: idx_rws, idx_clmn, idx_val, Size.
  !      + idx_rws: It's a PETSc MatStencil structure that contains the information of the rows that 
  !                 will be modified in the matrix. The allocation to the first component is always 
  !                 four, to the second one it depends on how many rows are necessary to change, 
@@ -239,16 +238,16 @@ MODULE ANISOFLOW_Types
  !                  that will be modified on the matrix. The allocation to the first component is  
  !                  always four, to the second one it depends on how many colums are necessary to 
  !                  change.
- !      + Values: It's an array that stores the values to be added to the position indicated by 
- !                idx_rws and idx_clmns.
- !      + Size: It's an integer that says how many values will be modified on the matrix.
+ !      + idx_val: It's an array that stores the values to be added to the position indicated by 
+ !                 idx_rws and idx_clmns.
+ !      + idx_size: It's an integer that says how many values will be modified on the matrix.
  !    > NOTES: An example of usage of the StencilVar of 3 values in a row is the following:
  !          
- !!          StencilVar%Size=3                           ! Amount of values of the Stencil
+ !!          StencilVar%idx_size=3                           ! Amount of values of the Stencil
  !!
  !!          ALLOCATE(StencilVar%idx_rws(4,1))           ! One row to modify.
  !!          ALLOCATE(StencilVar%idx_clmn(4,3))          ! Four values of the row to modify.
- !!          ALLOCATE(StencilVar%Values(StencilVar%Size))! Amount of values of the Stencil
+ !!          ALLOCATE(StencilVar%idx_val(StencilVar%idx_size))! Amount of values of the Stencil
  !!
  !!          StencilVar%idx_rws(MatStencil_i,1) = i      ! The value of the row to be modified will 
  !!          StencilVar%idx_rws(MatStencil_j,1) = j      !   be associated with the position i, j, 
@@ -260,22 +259,22 @@ MODULE ANISOFLOW_Types
  !!          StencilVar%idx_clmn(MatStencil_j,3) = j+1   !   j, and k to the second (2) value, and
  !!          StencilVar%idx_clmn(MatStencil_k,:) = k     !   i, j+1, and k to the third value.
  !!          
- !!          StencilVar%Values(1)=1.0                    ! Values of the stencil that will be added 
- !!          StencilVar%Values(2)=2.0                    !    to the positions defined with idx_rws
- !!          StencilVar%Values(3)=1.0                    !    and idx_clmn.
+ !!          StencilVar%idx_val(1)=1.D0                   ! Values of the stencil that will be added 
+ !!          StencilVar%idx_val(2)=2.D0                   !    to the positions defined with idx_rws
+ !!          StencilVar%idx_val(3)=1.D0                   !    and idx_clmn.
  !                                  
  !             Finally, the StencilVar needs to be added to the matrix with MatSetValuesStencil
  !             that is a PETSc function.
 
     TYPE StencilVar
         MatStencil,ALLOCATABLE          :: idx_rws(:,:),idx_clmns(:,:)
-        PetscReal,ALLOCATABLE           :: Values(:)
-        PetscInt                        :: Size
+        PetscReal,ALLOCATABLE           :: idx_val(:)
+        PetscInt                        :: idx_size
     END TYPE StencilVar
 
- !  - RunOptionsVar: It's a data structure that contains all options related to the running.
+ !  - RunOptionsVar: It's a data structure that contains all options related to the program execution.
  !    > VARIABLES: Time, Scheme.
- !      + Time: It's a boolean that defines if the running is steady or transient. The default value
+ !      + Time: It's a boolean that defines if the excecution is steady or transient. The default value
  !              is steady.
  !      + Scheme: It's an integer that defines the scheme stencil to solve the underground flow 
  !                equation.
@@ -290,25 +289,34 @@ MODULE ANISOFLOW_Types
     END TYPE RunOptionsVar
 
  !  - InputTypeVar: It's a collection of integer that defines the type of input to be used in the
- !                 program.
+ !                  program.
  !    > VARIABLES: Gmtry, Tplgy, Cvt, BC.
  !      + Gmtry: It's an integer that defines a type of file that will provide the domain size and
  !               the cell center coordinates.
- !          1: Defined by Blessent. An example is provided in "../ex/Blessent/in/tsim_USMH.asc"
+ !          1: Defined by Blessent. An example is provided in "***"
  !          2: Defined by Perez. An example is provided in "../ex/Perez/in/sanpck.domnRST"
  !      + Tplgy: It's an integer that defines a type of file that will provide the identifiers to
  !               each cell.
- !          1: from file... Default
- !          2: ...
- !          3: dirichlet on every border
+ !          1: Default. From a file which has a list of integers with the Tplgy identifiers ordered 
+ !             the lowest to the highest values on the x and the y axis respectively, then from
+ !             upper to lowest layer.
+ !          2: This type doesn't need an input file; the border of first layer is dirichlet otherwise is active.
+ !          3: This type doesn't need an input file; All borders are dirichlet otherwise is active.
  !      + Cvt: It's an integer that defines a type of file that will provide conductivity to each 
  !             cell or zone.
- !          1: It's a pair of files that provide block conductivities by zones and another one that
- !             provide an identifier of zone to each cell. An example is provided in "../ex/
- !             Blessent/in/matrix.mprops" and "../ex/Blessent/in/tsim_USMH.asc".
+ !          1: The Cvt is defided by a pair of files that provide block conductivities by zones and 
+ !             that provide an identifier of zone to each cell. An example is provided in "../ex/
+ !             Blessent/in/matrix.mprops" and "***". The first file can 
+ !             be entered to describe the conductivities as well as all properties.
+ !          2: The Cvt is defined by one file that contains a list of conductivities of each block.
+ !             It has the same order as of Tplgy input.
  !      + BC: It's a integer that define a type of file that will provide the boundary conditions.
- !          1: It's a file that only provide dirichlet condition and their position on the grid. An
- !             example is provided in "../Blessent/in/grid_400_400.nch_nprop_list.lateral_boundary".
+ !          1: It's a file that only provide boundary conditions and their position on the grid. An
+ !             example is provided in "***". In this input type the potition have to have a consecutive 
+ !             ordering, according to Tplgy input.
+ !          2: It's a file that only provide dirichlet condition and their position on the grid. An
+ !             example is provided in "***". The potition have to be described by its i, j and k position
+ !             on the grid.
 
     TYPE InputTypeVar
         PetscInt                        :: Gmtry,Tplgy,Cvt,Sto,BC,InitSol
