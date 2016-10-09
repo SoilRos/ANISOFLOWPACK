@@ -885,6 +885,17 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
     PetscReal                           :: dx,dxB,dxF,dy,dyB,dyF,dz,dzB,dzF
     TYPE(RunOptionsVar)                 :: RunOptions
 
+    CHARACTER(LEN=200)                      :: EventName,ClassName
+    PetscLogEvent                           :: Event
+    PetscClassId                            :: ClassID
+    PetscLogDouble                          :: EventFlops=0.d0
+
+    ClassName="Geometry"
+    CALL PetscClassIdRegister(ClassName,ClassID,ierr)
+    EventName="GetLocalTopology"
+    CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
+    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+
     i=Ppt%Pstn%i
     j=Ppt%Pstn%j
     k=Ppt%Pstn%k
@@ -1065,6 +1076,9 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
         END IF
     END IF
     CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,Gmtry%Tplgy,TmpTplgyArray2D,ierr)
+
+    CALL PetscLogFlops(EventFlops,ierr)
+    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
 END SUBROUTINE GetLocalTopology
 

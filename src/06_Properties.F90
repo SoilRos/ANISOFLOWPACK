@@ -1113,12 +1113,26 @@ SUBROUTINE GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
     PetscInt,INTENT(IN)                 :: i,j,k
     PetscErrorCode,INTENT(INOUT)        :: ierr
 
+    CHARACTER(LEN=200)                      :: EventName,ClassName
+    PetscLogEvent                           :: Event
+    PetscClassId                            :: ClassID
+    PetscLogDouble                          :: EventFlops=0.d0
+
+    ClassName="Property"
+    CALL PetscClassIdRegister(ClassName,ClassID,ierr)
+    EventName="GetLocalProperty"
+    CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
+    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+
     Ppt%Pstn%i=i
     Ppt%Pstn%j=j
     Ppt%Pstn%k=k
 
     CALL GetLocalTopology(Gmtry,Ppt,ierr)
     CALL GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
+  
+    CALL PetscLogFlops(EventFlops,ierr)
+    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
 END SUBROUTINE GetLocalProperty
 
@@ -1146,6 +1160,17 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
     TYPE(Tensor)                        :: TensorZero
     PetscInt                            :: CenterID,widthG(3),i,j,k
     PetscInt,ALLOCATABLE                :: ValI(:)
+
+    CHARACTER(LEN=200)                      :: EventName,ClassName
+    PetscLogEvent                           :: Event
+    PetscClassId                            :: ClassID
+    PetscLogDouble                          :: EventFlops=0.d0
+
+    ClassName="System"
+    CALL PetscClassIdRegister(ClassName,ClassID,ierr)
+    EventName="GetLocalConductivity"
+    CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
+    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
     CALL GetInputType(InputType,ierr)
 
@@ -1629,6 +1654,9 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
             END IF  
         END IF
     END IF
+
+    CALL PetscLogFlops(EventFlops,ierr)
+    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
 END SUBROUTINE GetLocalConductivity
 

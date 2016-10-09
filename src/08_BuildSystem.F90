@@ -48,7 +48,7 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
     DO k=corn(3),corn(3)+widthL(3)-1
         DO j=corn(2),corn(2)+widthL(2)-1
             DO i=corn(1),corn(1)+widthL(1)-1
-                CALL GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
+                CALL GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr) ! TODO: Debugear, es muy lento!!!
                 CALL GetStencil(Ppt,Stencil,ierr)
                 
                 CALL MatSetValuesStencil(A,1,Stencil%idx_rws,Stencil%idx_size,     &
@@ -168,7 +168,6 @@ SUBROUTINE GetStencil(Ppt,Stencil,ierr)
 
     CALL PetscLogFlops(EventFlops,ierr)
     CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
-
 
 END SUBROUTINE GetStencil
 
