@@ -73,6 +73,7 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
 
     PetscMPIInt                             :: process
     PetscInt                                :: u,i,j,ValI,CountTimeZone,CountDirich,CountSource,CountCauchy
+    PetscInt                                :: LocalSizeDirich,LocalSizeSource,LocalSizeCauchy
     PetscInt,ALLOCATABLE                    :: IndexDirich(:),IndexSource(:),IndexCauchy(:)
     PetscReal                               :: ValR1,ValR2,DT
     CHARACTER(LEN=200)                      :: InputFileBC,InputDir,Route
@@ -112,6 +113,9 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
     ALLOCATE(BCFld%CauchyIS(BCFld%SizeTimeZone))
 
     DT=0.d0
+    BCFld%SizeDirich(:)=0
+    BCFld%SizeSource(:)=0
+    BCFld%SizeCauchy(:)=0
 
     DO i=1,BCFld%SizeTimeZone
         ! TIME
@@ -126,9 +130,9 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
             READ(u,*)aux,DT
             DO j=1,BCFld%TimeZone(i)%SizeTime
                 IF ((i.EQ.1).AND.(j.EQ.1)) THEN
-                    BCFld%TimeZone(1)%Time(1)=DT
+                    BCFld%TimeZone(i)%Time(j)=DT
                 ELSEIF (j.EQ.1) THEN
-                    BCFld%TimeZone(i)%Time(1)=BCFld%TimeZone(i-1)%Time(BCFld%TimeZone(i-1)%SizeTime)+DT
+                    BCFld%TimeZone(i)%Time(j)=BCFld%TimeZone(i-1)%Time(BCFld%TimeZone(i-1)%SizeTime)+DT
                 ELSE
                     BCFld%TimeZone(i)%Time(j)=BCFld%TimeZone(i)%Time(j-1)+DT
                 END IF
@@ -140,7 +144,8 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
         IF (process.EQ.0) THEN
             READ(u,*)aux,CountDirich,aux,BCFld%SizeDirich(i)
         END IF
-        
+
+        LocalSizeDirich=BCFld%SizeDirich(i)
         CALL MPI_Bcast(BCFld%SizeDirich(i),1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
         CALL MPI_Bcast(CountDirich,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
 
@@ -158,7 +163,7 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
             ! Si entra en este condicional significa que las condiciones de frontera no son permanentes.
         END IF
 
-        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeDirich(i),BCFld%Dirich(CountDirich),ierr)
+        CALL VecCreateMPI(PETSC_COMM_WORLD,LocalSizeDirich,BCFld%SizeDirich(i),BCFld%Dirich(CountDirich),ierr)
         
         ALLOCATE(IndexDirich(BCFld%SizeDirich(i)))
 
@@ -179,12 +184,13 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
         CALL AOApplicationToPetscIS(AppOrd,BCFld%DirichIS(CountDirich),ierr)
         CALL VecAssemblyBegin(BCFld%Dirich(CountDirich),ierr)
         CALL VecAssemblyEnd(BCFld%Dirich(CountDirich),ierr)
-        
+
         ! Source
         IF (process.EQ.0) THEN
             READ(u,*)aux,CountSource,aux,BCFld%SizeSource(i)
         END IF
 
+        LocalSizeSource=BCFld%SizeSource(i)
         CALL MPI_Bcast(BCFld%SizeSource(i),1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
         CALL MPI_Bcast(CountSource,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
 
@@ -202,7 +208,7 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
             ! Si entra en este condicional significa que las condiciones de frontera no son permanentes.
         END IF
 
-        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeSource(i),BCFld%Source(CountSource),ierr)
+        CALL VecCreateMPI(PETSC_COMM_WORLD,LocalSizeSource,BCFld%SizeSource(i),BCFld%Source(CountSource),ierr)
 
         ALLOCATE(IndexSource(BCFld%SizeSource(i)))
 
@@ -228,6 +234,7 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
             READ(u,*)aux,CountCauchy,aux,BCFld%SizeCauchy(i)
         END IF
 
+        LocalSizeCauchy=BCFld%SizeCauchy(i)
         CALL MPI_Bcast(BCFld%SizeCauchy(i),1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
         CALL MPI_Bcast(CountCauchy,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
 
@@ -245,7 +252,7 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
             ! Si entra en este condicional significa que las condiciones de frontera no son permanentes.
         END IF
 
-        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeCauchy(i),BCFld%CauchyC(CountCauchy),ierr)
+        CALL VecCreateMPI(PETSC_COMM_WORLD,LocalSizeCauchy,BCFld%SizeCauchy(i),BCFld%CauchyC(CountCauchy),ierr)
         CALL VecDuplicate(BCFld%CauchyC(CountCauchy),BCFld%CauchyHe(CountCauchy),ierr)
 
         ALLOCATE(IndexCauchy(BCFld%SizeCauchy(i)))
@@ -293,6 +300,7 @@ SUBROUTINE GetBC_2(Gmtry,BCFld,ierr)
 
     PetscMPIInt                             :: process
     PetscInt                                :: u,i,j,ValI1,ValI2,ValI3,CountTimeZone,CountDirich,CountSource,CountCauchy,widthG(3)
+    PetscInt                                :: LocalSizeDirich,LocalSizeSource,LocalSizeCauchy
     PetscInt,ALLOCATABLE                    :: IndexDirich(:),IndexSource(:),IndexCauchy(:)
     PetscReal                               :: ValR1,ValR2,DT
     CHARACTER(LEN=200)                      :: InputFileBC,InputDir,Route
@@ -335,6 +343,10 @@ SUBROUTINE GetBC_2(Gmtry,BCFld,ierr)
     ALLOCATE(BCFld%SourceIS(BCFld%SizeTimeZone))
     ALLOCATE(BCFld%CauchyIS(BCFld%SizeTimeZone))
 
+    BCFld%SizeDirich(:)=0
+    BCFld%SizeSource(:)=0
+    BCFld%SizeCauchy(:)=0
+
     DO i=1,BCFld%SizeTimeZone
         ! TIME
         IF (process.EQ.0) THEN
@@ -363,6 +375,7 @@ SUBROUTINE GetBC_2(Gmtry,BCFld,ierr)
             READ(u,*)aux,CountDirich,aux,BCFld%SizeDirich(i)
         END IF
         
+        LocalSizeDirich=BCFld%SizeDirich(i)
         CALL MPI_Bcast(BCFld%SizeDirich(i),1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
         CALL MPI_Bcast(CountDirich,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
 
@@ -380,7 +393,7 @@ SUBROUTINE GetBC_2(Gmtry,BCFld,ierr)
             ! Si entra en este condicional significa que las condiciones de frontera no son permanentes.
         END IF
 
-        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeDirich(i),BCFld%Dirich(CountDirich),ierr)
+        CALL VecCreateMPI(PETSC_COMM_WORLD,LocalSizeDirich,BCFld%SizeDirich(i),BCFld%Dirich(CountDirich),ierr)
         
         ALLOCATE(IndexDirich(BCFld%SizeDirich(i)))
 
@@ -408,6 +421,7 @@ SUBROUTINE GetBC_2(Gmtry,BCFld,ierr)
             READ(u,*)aux,CountSource,aux,BCFld%SizeSource(i)
         END IF
 
+        LocalSizeSource=BCFld%SizeSource(i)
         CALL MPI_Bcast(BCFld%SizeSource(i),1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
         CALL MPI_Bcast(CountSource,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
 
@@ -425,7 +439,7 @@ SUBROUTINE GetBC_2(Gmtry,BCFld,ierr)
             ! Si entra en este condicional significa que las condiciones de frontera no son permanentes.
         END IF
 
-        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeSource(i),BCFld%Source(CountSource),ierr)
+        CALL VecCreateMPI(PETSC_COMM_WORLD,LocalSizeSource,BCFld%SizeSource(i),BCFld%Source(CountSource),ierr)
 
         ALLOCATE(IndexSource(BCFld%SizeSource(i)))
 
@@ -452,6 +466,7 @@ SUBROUTINE GetBC_2(Gmtry,BCFld,ierr)
             READ(u,*)aux,CountCauchy,aux,BCFld%SizeCauchy(i)
         END IF
 
+        LocalSizeCauchy=BCFld%SizeCauchy(i)
         CALL MPI_Bcast(BCFld%SizeCauchy(i),1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
         CALL MPI_Bcast(CountCauchy,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
 
@@ -469,7 +484,7 @@ SUBROUTINE GetBC_2(Gmtry,BCFld,ierr)
             ! Si entra en este condicional significa que las condiciones de frontera no son permanentes.
         END IF
 
-        CALL VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE,BCFld%SizeCauchy(i),BCFld%CauchyC(CountCauchy),ierr)
+        CALL VecCreateMPI(PETSC_COMM_WORLD,LocalSizeCauchy,BCFld%SizeCauchy(i),BCFld%CauchyC(CountCauchy),ierr)
         CALL VecDuplicate(BCFld%CauchyC(CountCauchy),BCFld%CauchyHe(CountCauchy),ierr)
 
         ALLOCATE(IndexCauchy(BCFld%SizeCauchy(i)))
