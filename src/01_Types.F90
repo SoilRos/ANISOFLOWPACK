@@ -361,11 +361,11 @@ CONTAINS
 
     END FUNCTION TargMirrorValue
 
-!!   - TargMirrorValue: It's a auxilar function to target a real that will be pointed later.
-!!     > IN: Value
-!!       + Values: It's a real.
-!!     > OUT: Value
-!!       + Values: It's the same input real but now as a target.
+!   - TargMirrorValue: It's a auxilar function to target a real that will be pointed later.
+!     > IN: Value
+!       + Values: It's a real.
+!     > OUT: Value
+!       + Values: It's the same input real but now as a target.
 
     FUNCTION TargPetscVec(x)
 

@@ -8,7 +8,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,BoundaryConditions,RunOptionsVar
     USE ANISOFLOW_Interface, ONLY : GetRunOptions, GetVerbose
-    USE ANISOFLOW_Geometry, ONLY : UpdateGmtry
+    USE ANISOFLOW_Geometry, ONLY : UpdateTplgy
     USE ANISOFLOW_View, ONLY : ViewSolution
     USE ANISOFLOW_BuildSystem, ONLY : ApplyDirichlet,ApplySource,ApplyCauchy,ApplyTimeDiff,GetInitSol
 
@@ -78,7 +78,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 !                 print*,CharMsg
                 IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Transitory iteration "//TRIM(CharMsg)// " inizialited\n",ierr)
 
-                CALL UpdateGmtry(Gmtry,BCFld%DirichIS(i),BCFld%SourceIS(i),BCFld%CauchyIS(i),ierr)
+                CALL UpdateTplgy(Gmtry,BCFld%DirichIS(i),BCFld%SourceIS(i),BCFld%CauchyIS(i),ierr)
 
         !         CALL UpdateSystem(Gmtry,PptFld,A,ierr) UpdateSystem !to new dirichlet
                 CALL VecSet(b,zero,ierr)
@@ -184,7 +184,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
         IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Steady solution inizialited\n",ierr)
    
-        CALL UpdateGmtry(Gmtry,BCFld%DirichIS(1),BCFld%SourceIS(1),BCFld%CauchyIS(1),ierr)
+        CALL UpdateTplgy(Gmtry,BCFld%DirichIS(1),BCFld%SourceIS(1),BCFld%CauchyIS(1),ierr)
 
         CALL VecSet(b,zero,ierr)
         CALL ApplyDirichlet(BCFld,1,b,ierr)

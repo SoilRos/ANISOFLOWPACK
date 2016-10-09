@@ -89,7 +89,7 @@ SUBROUTINE GetDataMngr(Comm,Scale,DataMngr,ierr)
         CALL GetInputType(InputType,ierr)
     END IF
 
-    ! InputType define the type of file that is provided.
+    ! InputType defines the type of file that is provided.
     !   1 and 2: Defined by Perez. An example is provided in "../ex/Perez/in/sanpck.domnRST"
 
     IF ((InputType%Gmtry.EQ.1).OR.(InputType%Gmtry.EQ.2)) THEN
@@ -434,7 +434,7 @@ END SUBROUTINE GetGrid_2
  !          3: Source Q.
  !          4: Cauchy boundary condition
  !      + SizeTplgy: It's a array of integers that quantify the indentifiers of each type decribed above
- !                   where inactive cells quantifier doesn't exist. It can be calculated with  the rest.
+ !                   where inactive cells quantifier doesn't exist.
  !          1: Active cell quantifier.
  !          2: Dirichlet boundary condition cell quantifier.
  !          3: Source in cell quantifier.
@@ -797,7 +797,7 @@ SUBROUTINE GetTopology_3(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
 
 END SUBROUTINE GetTopology_3
 
-SUBROUTINE UpdateGmtry(Gmtry,DirichIS,SourceIS,CauchyIS,ierr)
+SUBROUTINE UpdateTplgy(Gmtry,DirichIS,SourceIS,CauchyIS,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry
 
@@ -860,7 +860,7 @@ SUBROUTINE UpdateGmtry(Gmtry,DirichIS,SourceIS,CauchyIS,ierr)
     CALL DMGlobalToLocalBegin(Gmtry%DataMngr,TmpTplgy,INSERT_VALUES,Gmtry%Tplgy,ierr)
     CALL DMGlobalToLocalEnd(Gmtry%DataMngr,TmpTplgy,INSERT_VALUES,Gmtry%Tplgy,ierr)
 
-END SUBROUTINE UpdateGmtry
+END SUBROUTINE UpdateTplgy
 
 SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
 

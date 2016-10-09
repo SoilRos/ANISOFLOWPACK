@@ -176,6 +176,10 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,Cvt,ierr)
         CALL GetConductivity_1(Gmtry,PptFld,Cvt,ierr)
     ELSE IF (InputType%Cvt.EQ.2) THEN
         CALL GetConductivity_2(Gmtry,PptFld,Cvt,ierr)
+    ELSE IF (InputType%Cvt.EQ.3) THEN
+        CALL GetConductivity_3(Gmtry,PptFld,Cvt,ierr)
+    ELSE IF (InputType%Cvt.EQ.4) THEN
+        CALL GetConductivity_4(Gmtry,PptFld,Cvt,ierr)
     ELSE
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
             & "[ERROR] Conductivity InputType wrong\n",ierr)
@@ -274,7 +278,9 @@ SUBROUTINE GetCvtZoneID(Gmtry,PptFld,CvtZoneID_Local,DefinedBy,ierr)
         CvtZoneID_Local = ZoneID_tmp
         DefinedBy=2
     ELSE
-        PRINT*,"ERROR en CvtZone"! TODO: arreglar este mensage
+        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
+            & "[ERROR] Input_type_cvt must use Input_file_cvt_by_zones or Input_file_ppt_by_zones"  &
+            & // " containing the zonification of conductivities\n",ierr)
         STOP
     END IF
 
@@ -302,9 +308,9 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,Cvt,ierr)
     PetscInt                            :: u,i,j,CvtLen
     PetscReal                           :: ValR
     PetscMPIInt                         :: process
-    CHARACTER(LEN=200)                  :: InputDir,InputFileCvt!,ViewName!,EventName
+    CHARACTER(LEN=200)                  :: InputDir,InputFileCvt
     CHARACTER(LEN=200)                  :: Route
-    CHARACTER(LEN=13)                   :: CvtKind
+    CHARACTER(LEN=200)                   :: CvtKind
     PetscBool                           :: Verbose
 
     PARAMETER(u=01)
@@ -332,20 +338,23 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,Cvt,ierr)
             READ(u,*)
             READ(u,*)
             READ(u,*)
-            READ(u,'(A13)')CvtKind
-            IF (CvtKind.EQ."k anisotropic") THEN 
-                READ(u,*)Cvt%Zone(i)%xx, &
-                    & Cvt%Zone(i)%yy,Cvt%Zone(i)%zz
-                Cvt%Zone(i)%xy=0.D0
-                Cvt%Zone(i)%xz=0.D0
-                Cvt%Zone(i)%yz=0.D0
-            ELSE IF (CvtKind.EQ."k isotropic  ") THEN
+            READ(u,'(A)')CvtKind
+            IF (ADJUSTL(TRIM(CvtKind)).EQ."k isotropic  ") THEN
                 READ(u,*)Cvt%Zone(i)%xx
                 Cvt%Zone(i)%yy=Cvt%Zone(i)%xx
                 Cvt%Zone(i)%zz=Cvt%Zone(i)%xx
                 Cvt%Zone(i)%xy=0.D0
                 Cvt%Zone(i)%xz=0.D0
                 Cvt%Zone(i)%yz=0.D0
+            ELSEIF (ADJUSTL(TRIM(CvtKind)).EQ."k anisotropic") THEN 
+                READ(u,*)Cvt%Zone(i)%xx, &
+                    & Cvt%Zone(i)%yy,Cvt%Zone(i)%zz
+                Cvt%Zone(i)%xy=0.D0
+                Cvt%Zone(i)%xz=0.D0
+                Cvt%Zone(i)%yz=0.D0
+            ELSEIF (ADJUSTL(TRIM(CvtKind)).EQ."k non-orthogonal anisotropic") THEN 
+                READ(u,*)Cvt%Zone(i)%xx,Cvt%Zone(i)%yy,Cvt%Zone(i)%zz,&
+                        &Cvt%Zone(i)%xy,Cvt%Zone(i)%xz,Cvt%Zone(i)%yz
             ELSE
                 CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
                     & "[ERROR] File of conductivity properties is invalid\n"&
@@ -377,7 +386,7 @@ END SUBROUTINE GetConductivity_1
 
 SUBROUTINE GetConductivity_2(Gmtry,PptFld,Cvt,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,ConductivityField
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,ConductivityField,TargPetscVec
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileCvt
     USE ANISOFLOW_View, ONLY : ViewConductivity
     
@@ -400,7 +409,8 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,Cvt,ierr)
     CHARACTER(LEN=200)                  :: InputDir,InputFileCvt
     CHARACTER(LEN=200)                  :: Route,ViewName,EventName
     PetscBool                           :: Verbose
-    Vec                                 :: Cell_Global
+    Vec,POINTER                         :: Cvt_yy_pointer,Cvt_zz_pointer,Cvt_xz_pointer,Cvt_yz_pointer
+    Vec                                 :: Cvt_xx_Global
 
     PARAMETER(u=01)
 
@@ -413,7 +423,7 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,Cvt,ierr)
 !     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Event] Conductivity Field is stored by Block\n",ierr)
 
     CALL DMCreateLocalVector(Gmtry%DataMngr,Cvt%xx,ierr)
-    CALL DMCreateGlobalVector(Gmtry%DataMngr,Cell_Global,ierr)
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,Cvt_xx_Global,ierr)
 
     CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
 
@@ -430,26 +440,281 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,Cvt,ierr)
 
         DO i=1,widthG(1)*widthG(2)*widthG(3)
             READ(u,*)ValR
-            CALL VecSetValue(Cell_Global,i-1,ValR,INSERT_VALUES,ierr)
+            CALL VecSetValue(Cvt_xx_Global,i-1,ValR,INSERT_VALUES,ierr)
         END DO
         CLOSE(u)
     END IF
 
-    CALL VecAssemblyBegin(Cell_Global,ierr)
-    CALL VecAssemblyEnd(Cell_Global,ierr)
+    CALL VecAssemblyBegin(Cvt_xx_Global,ierr)
+    CALL VecAssemblyEnd(Cvt_xx_Global,ierr)
 
     ViewName="ANISOFLOW_Cvt"
     EventName="GetConductivity"
     CALL ViewConductivity(Cvt%xx,ViewName,EventName,ierr)
 
-    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cell_Global,INSERT_VALUES,Cvt%xx,ierr)
-    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cell_Global,INSERT_VALUES,Cvt%xx,ierr)
-    CALL VecDestroy(Cell_Global,ierr)
+    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cvt_xx_Global,INSERT_VALUES,Cvt%xx,ierr)
+    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cvt_xx_Global,INSERT_VALUES,Cvt%xx,ierr)
+    CALL VecDestroy(Cvt_xx_Global,ierr)
+
+    Cvt_yy_pointer => TargPetscVec(Cvt%xx)
+    Cvt%yy = Cvt_yy_pointer
+    Cvt_zz_pointer => TargPetscVec(Cvt%xx)
+    Cvt%zz = Cvt_zz_pointer
+
+    ! Saving a vector with zeros (If we put a conditionals on the stencil it can be avoided, but would be unclear)
+    CALL DMCreateLocalVector(Gmtry%DataMngr,Cvt%xy,ierr)
+    CALL VecZeroEntries(Cvt%xy,ierr)
+    CALL VecAssemblyBegin(Cvt%xy,ierr)
+    CALL VecAssemblyEnd(Cvt%xy,ierr)
+
+    Cvt_xz_pointer => TargPetscVec(Cvt%xy)
+    Cvt%xz = Cvt_xz_pointer
+    Cvt_yz_pointer => TargPetscVec(Cvt%xy)
+    Cvt%yz = Cvt_yz_pointer
 
 !     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field was satisfactorily created\n",ierr)
 
 END SUBROUTINE GetConductivity_2
 
+SUBROUTINE GetConductivity_3(Gmtry,PptFld,Cvt,ierr)
+
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,ConductivityField,TargPetscVec
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileCvt
+    USE ANISOFLOW_View, ONLY : ViewConductivity
+    
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
+#include <petsc/finclude/petscdmda.h90>
+
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    TYPE(Geometry),INTENT(IN)           :: Gmtry
+    TYPE(PropertiesField),INTENT(IN)    :: PptFld
+    TYPE(ConductivityField),INTENT(OUT) :: Cvt
+
+    PetscInt                            :: u,i,widthG(3)
+    PetscReal                           :: ValR(3)
+    PetscMPIInt                         :: process
+    CHARACTER(LEN=200)                  :: InputDir,InputFileCvt
+    CHARACTER(LEN=200)                  :: Route,ViewName,EventName
+    PetscBool                           :: Verbose
+    Vec,POINTER                         :: Cvt_xz_pointer,Cvt_yz_pointer
+    Vec                                 :: Cvt_xx_Global,Cvt_yy_Global,Cvt_zz_Global
+
+    PARAMETER(u=01)
+
+    CALL GetVerbose(Verbose,ierr)
+
+    CALL GetInputDir(InputDir,ierr)
+    CALL GetInputFileCvt(InputFileCvt,ierr)
+
+    Cvt%DefinedBy=3
+!     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Event] Conductivity Field is stored by Block\n",ierr)
+
+    CALL DMCreateLocalVector(Gmtry%DataMngr,Cvt%xx,ierr)
+    CALL DMCreateLocalVector(Gmtry%DataMngr,Cvt%yy,ierr)
+    CALL DMCreateLocalVector(Gmtry%DataMngr,Cvt%zz,ierr)
+
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,Cvt_xx_Global,ierr)
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,Cvt_yy_Global,ierr)
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,Cvt_zz_Global,ierr)
+
+    CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+
+    IF (process.EQ.0) THEN
+        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvt))
+        OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
+
+        ! It gets the global size from the geometry data manager.
+        CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,ierr)
+
+        DO i=1,widthG(1)*widthG(2)*widthG(3)
+            READ(u,*)ValR(1),ValR(2),ValR(3)
+            CALL VecSetValue(Cvt_xx_Global,i-1,ValR(1),INSERT_VALUES,ierr)
+            CALL VecSetValue(Cvt_yy_Global,i-1,ValR(2),INSERT_VALUES,ierr)
+            CALL VecSetValue(Cvt_zz_Global,i-1,ValR(3),INSERT_VALUES,ierr)
+        END DO
+        CLOSE(u)
+    END IF
+
+    CALL VecAssemblyBegin(Cvt_xx_Global,ierr)
+    CALL VecAssemblyEnd(Cvt_xx_Global,ierr)
+    CALL VecAssemblyBegin(Cvt_yy_Global,ierr)
+    CALL VecAssemblyEnd(Cvt_yy_Global,ierr)
+    CALL VecAssemblyBegin(Cvt_zz_Global,ierr)
+    CALL VecAssemblyEnd(Cvt_zz_Global,ierr)
+
+    EventName="GetConductivity"
+    ViewName="ANISOFLOW_Cvt_xx"
+    CALL ViewConductivity(Cvt%xx,ViewName,EventName,ierr)
+    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cvt_xx_Global,INSERT_VALUES,Cvt%xx,ierr)
+    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cvt_xx_Global,INSERT_VALUES,Cvt%xx,ierr)
+    CALL VecDestroy(Cvt_xx_Global,ierr)
+
+    ViewName="ANISOFLOW_Cvt_yy"
+    CALL ViewConductivity(Cvt%yy,ViewName,EventName,ierr)
+    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cvt_yy_Global,INSERT_VALUES,Cvt%yy,ierr)
+    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cvt_yy_Global,INSERT_VALUES,Cvt%yy,ierr)
+    CALL VecDestroy(Cvt_yy_Global,ierr)
+
+    ViewName="ANISOFLOW_Cvt_zz"
+    CALL ViewConductivity(Cvt%zz,ViewName,EventName,ierr)
+    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cvt_zz_Global,INSERT_VALUES,Cvt%zz,ierr)
+    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cvt_zz_Global,INSERT_VALUES,Cvt%zz,ierr)
+    CALL VecDestroy(Cvt_zz_Global,ierr)
+
+    ! Saving a vector with zeros (If we put a conditionals on the stencil it can be avoided, but would be unclear)
+    CALL DMCreateLocalVector(Gmtry%DataMngr,Cvt%xy,ierr)
+    CALL VecZeroEntries(Cvt%xy,ierr)
+    CALL VecAssemblyBegin(Cvt%xy,ierr)
+    CALL VecAssemblyEnd(Cvt%xy,ierr)
+
+    Cvt_xz_pointer => TargPetscVec(Cvt%xy)
+    Cvt%xz = Cvt_xz_pointer
+    Cvt_yz_pointer => TargPetscVec(Cvt%xy)
+    Cvt%yz = Cvt_yz_pointer
+
+!     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field was satisfactorily created\n",ierr)
+
+END SUBROUTINE GetConductivity_3
+
+SUBROUTINE GetConductivity_4(Gmtry,PptFld,Cvt,ierr)
+
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,ConductivityField
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileCvt
+    USE ANISOFLOW_View, ONLY : ViewConductivity
+    
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
+#include <petsc/finclude/petscdmda.h90>
+
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    TYPE(Geometry),INTENT(IN)           :: Gmtry
+    TYPE(PropertiesField),INTENT(IN)    :: PptFld
+    TYPE(ConductivityField),INTENT(OUT) :: Cvt
+
+    PetscInt                            :: u,i,widthG(3)
+    PetscReal                           :: ValR(6)
+    PetscMPIInt                         :: process
+    CHARACTER(LEN=200)                  :: InputDir,InputFileCvt
+    CHARACTER(LEN=200)                  :: Route,ViewName,EventName
+    PetscBool                           :: Verbose
+    Vec                                 :: Cvt_xx_Global,Cvt_yy_Global,Cvt_zz_Global
+    Vec                                 :: Cvt_xy_Global,Cvt_xz_Global,Cvt_yz_Global
+
+    PARAMETER(u=01)
+
+    CALL GetVerbose(Verbose,ierr)
+
+    CALL GetInputDir(InputDir,ierr)
+    CALL GetInputFileCvt(InputFileCvt,ierr)
+
+    Cvt%DefinedBy=3
+!     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Event] Conductivity Field is stored by Block\n",ierr)
+
+    CALL DMCreateLocalVector(Gmtry%DataMngr,Cvt%xx,ierr)
+    CALL DMCreateLocalVector(Gmtry%DataMngr,Cvt%yy,ierr)
+    CALL DMCreateLocalVector(Gmtry%DataMngr,Cvt%zz,ierr)
+    CALL DMCreateLocalVector(Gmtry%DataMngr,Cvt%xy,ierr)
+    CALL DMCreateLocalVector(Gmtry%DataMngr,Cvt%xz,ierr)
+    CALL DMCreateLocalVector(Gmtry%DataMngr,Cvt%yz,ierr)
+
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,Cvt_xx_Global,ierr)
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,Cvt_yy_Global,ierr)
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,Cvt_zz_Global,ierr)
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,Cvt_xy_Global,ierr)
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,Cvt_xz_Global,ierr)
+    CALL DMCreateGlobalVector(Gmtry%DataMngr,Cvt_yz_Global,ierr)
+
+    CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+
+    IF (process.EQ.0) THEN
+        Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileCvt))
+        OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
+
+        ! It gets the global size from the geometry data manager.
+        CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,ierr)
+
+        DO i=1,widthG(1)*widthG(2)*widthG(3)
+            READ(u,*)ValR(1),ValR(2),ValR(3),ValR(4),ValR(5),ValR(6)
+            CALL VecSetValue(Cvt_xx_Global,i-1,ValR(1),INSERT_VALUES,ierr)
+            CALL VecSetValue(Cvt_yy_Global,i-1,ValR(2),INSERT_VALUES,ierr)
+            CALL VecSetValue(Cvt_zz_Global,i-1,ValR(3),INSERT_VALUES,ierr)
+            CALL VecSetValue(Cvt_xy_Global,i-1,ValR(4),INSERT_VALUES,ierr)
+            CALL VecSetValue(Cvt_xz_Global,i-1,ValR(5),INSERT_VALUES,ierr)
+            CALL VecSetValue(Cvt_yz_Global,i-1,ValR(6),INSERT_VALUES,ierr)
+        END DO
+        CLOSE(u)
+    END IF
+
+    CALL VecAssemblyBegin(Cvt_xx_Global,ierr)
+    CALL VecAssemblyEnd(Cvt_xx_Global,ierr)
+    CALL VecAssemblyBegin(Cvt_yy_Global,ierr)
+    CALL VecAssemblyEnd(Cvt_yy_Global,ierr)
+    CALL VecAssemblyBegin(Cvt_zz_Global,ierr)
+    CALL VecAssemblyEnd(Cvt_zz_Global,ierr)
+    CALL VecAssemblyBegin(Cvt_xy_Global,ierr)
+    CALL VecAssemblyEnd(Cvt_xy_Global,ierr)
+    CALL VecAssemblyBegin(Cvt_xz_Global,ierr)
+    CALL VecAssemblyEnd(Cvt_xz_Global,ierr)
+    CALL VecAssemblyBegin(Cvt_yz_Global,ierr)
+    CALL VecAssemblyEnd(Cvt_yz_Global,ierr)
+
+    EventName="GetConductivity"
+    ViewName="ANISOFLOW_Cvt_xx"
+    CALL ViewConductivity(Cvt%xx,ViewName,EventName,ierr)
+    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cvt_xx_Global,INSERT_VALUES,Cvt%xx,ierr)
+    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cvt_xx_Global,INSERT_VALUES,Cvt%xx,ierr)
+    CALL VecDestroy(Cvt_xx_Global,ierr)
+
+    ViewName="ANISOFLOW_Cvt_yy"
+    CALL ViewConductivity(Cvt%yy,ViewName,EventName,ierr)
+    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cvt_yy_Global,INSERT_VALUES,Cvt%yy,ierr)
+    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cvt_yy_Global,INSERT_VALUES,Cvt%yy,ierr)
+    CALL VecDestroy(Cvt_yy_Global,ierr)
+
+    ViewName="ANISOFLOW_Cvt_zz"
+    CALL ViewConductivity(Cvt%zz,ViewName,EventName,ierr)
+    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cvt_zz_Global,INSERT_VALUES,Cvt%zz,ierr)
+    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cvt_zz_Global,INSERT_VALUES,Cvt%zz,ierr)
+    CALL VecDestroy(Cvt_zz_Global,ierr)
+
+    ViewName="ANISOFLOW_Cvt_xy"
+    CALL ViewConductivity(Cvt%xy,ViewName,EventName,ierr)
+    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cvt_xy_Global,INSERT_VALUES,Cvt%xy,ierr)
+    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cvt_xy_Global,INSERT_VALUES,Cvt%xy,ierr)
+    CALL VecDestroy(Cvt_xy_Global,ierr)
+
+    ViewName="ANISOFLOW_Cvt_xz"
+    CALL ViewConductivity(Cvt%xz,ViewName,EventName,ierr)
+    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cvt_xz_Global,INSERT_VALUES,Cvt%xz,ierr)
+    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cvt_xz_Global,INSERT_VALUES,Cvt%xz,ierr)
+    CALL VecDestroy(Cvt_xz_Global,ierr)
+
+    ViewName="ANISOFLOW_Cvt_yz"
+    CALL ViewConductivity(Cvt%yz,ViewName,EventName,ierr)
+    CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cvt_yz_Global,INSERT_VALUES,Cvt%yz,ierr)
+    CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cvt_yz_Global,INSERT_VALUES,Cvt%yz,ierr)
+    CALL VecDestroy(Cvt_yz_Global,ierr)
+
+!     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Stage] Conductivity Field was satisfactorily created\n",ierr)
+
+END SUBROUTINE GetConductivity_4
 
 SUBROUTINE GetStorage(Gmtry,PptFld,Sto,ierr)
 
@@ -586,7 +851,9 @@ SUBROUTINE GetStoZoneID(Gmtry,PptFld,StoZoneID_Local,DefinedBy,ierr)
         StoZoneID_Local = ZoneID_tmp
         DefinedBy=2
     ELSE
-        PRINT*,"ERROR en StoZone"! TODO: arreglar este mensage
+        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
+            & "[ERROR] Input_type_sto must use Input_file_sto_by_zones or Input_file_ppt_by_zones"  &
+            & // " containing the zonification of specific storage.\n",ierr)
         STOP
     END IF
 
@@ -596,7 +863,6 @@ SUBROUTINE GetStorage_1(Gmtry,PptFld,Sto,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,SpecificStorageField,PropertiesField,TargetFullTensor
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileSto
-!     USE ANISOFLOW_View, ONLY : ViewStorage
     USE ANISOFLOW_Geometry, ONLY : VecApplicationToPetsc
     
     IMPLICIT NONE
@@ -1365,21 +1631,6 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
     END IF
 
 END SUBROUTINE GetLocalConductivity
-
-PetscReal FUNCTION Armonic(ValR1,ValR2)
-
-    IMPLICIT NONE
-
-#include <petsc/finclude/petsc.h>
-
-    PetscReal, INTENT(IN) :: ValR1,ValR2
-    IF ((ValR1==0).OR.(ValR2==0)) THEN
-        Armonic=0.D0
-    ELSE
-        Armonic = 2.0/(1.0/ValR1+1.0/ValR2)
-    END IF
-
-END FUNCTION Armonic
 
 SUBROUTINE DestroyProperties(PptFld,ierr)
 

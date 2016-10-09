@@ -70,7 +70,7 @@ END SUBROUTINE BuildSystem
 SUBROUTINE GetInitSol(Gmtry,x,ierr)
 
     USE ANISOFLOW_Types, ONLY : InputTypeVar,Geometry
-    USE ANISOFLOW_Interface, ONLY : GetInputDir,GetInputTypeInitSol,GetInputFileInitSol
+    USE ANISOFLOW_Interface, ONLY : GetInputDir,GetInputTypeInitSol,GetInputFileInitSol,GetVerbose
 
     IMPLICIT NONE
 
@@ -86,7 +86,9 @@ SUBROUTINE GetInitSol(Gmtry,x,ierr)
     TYPE(InputTypeVar)          :: InputType
     CHARACTER(LEN=200)          :: Route,InputDir,InputFileInitSol
     PetscViewer                 :: Viewer
+    PetscBool                   :: Verbose
    
+    CALL GetVerbose(Verbose,ierr)
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputFileInitSol(InputFileInitSol,InputFileInitSolFlg,ierr)
 
@@ -100,23 +102,23 @@ SUBROUTINE GetInitSol(Gmtry,x,ierr)
             CALL PetscViewerBinaryOpen(PETSC_COMM_WORLD,Route,FILE_MODE_READ,Viewer,ierr)
             CALL VecLoad(x,Viewer,ierr)
             CALL PetscViewerDestroy(Viewer,ierr)
-            PRINT*,"Inital solution ",InputFileInitSol," has been implemented properly."
+            IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[SolveSystem Event] Inital solution "//ADJUSTL(TRIM(InputFileInitSol))//" has been implemented properly.\n",ierr)
         ELSEIF (InputType%InitSol.EQ.2) THEN
-            PRINT*,"ERROR: Initial solution is not able to be opend from ASCII format, you should use binary or HDF5 formats. Initial solution was set to 0."
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"ERROR: Initial solution is not able to be opend from ASCII format, you should use binary or HDF5 formats. Initial solution was set to 0.",ierr)
         ELSEIF (InputType%InitSol.EQ.3) THEN
 #if defined(PETSC_HAVE_HDF5)
             CALL PetscViewerHDF5Open(PETSC_COMM_WORLD,Route,FILE_MODE_READ,Viewer,ierr)
             CALL VecLoad(x,Viewer,ierr)
             CALL PetscViewerDestroy(Viewer,ierr)
-            PRINT*,"Inital solution ",InputFileInitSol," has been implemented properly."
+            IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[SolveSystem Event] Inital solution "//ADJUSTL(TRIM(InputFileInitSol))//" has been implemented properly.\n",ierr)
 #else
-            PRINT*,"ERROR: Initial solution is not able to be opend from HDF5 format, you should use binary or install HDF5 libraries. Initial solution was set to 0."
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"ERROR: Initial solution is not able to be opend from HDF5 format, you should use binary or install HDF5 libraries. Initial solution was set to 0.",ierr)
 #endif
         ELSE 
-            PRINT*,"ERROR: InitSol is not valid. Initial solution was set to 0."
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"ERROR: InitSol is not valid. Initial solution was set to 0.",ierr)
         END IF
     ELSE
-        PRINT*,"WARING: Initial solution was set to 0."
+        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"WARING: Initial solution was set to 0.",ierr)
     END IF
 
 END SUBROUTINE GetInitSol

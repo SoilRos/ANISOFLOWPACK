@@ -220,6 +220,10 @@ SUBROUTINE GetInputTypeCvt(InputType,ierr)
             InputType%Cvt=InputTypeCvtTmp
         ELSE IF (InputTypeCvtTmp.EQ.2) THEN
             InputType%Cvt=InputTypeCvtTmp
+        ELSE IF (InputTypeCvtTmp.EQ.3) THEN
+            InputType%Cvt=InputTypeCvtTmp
+        ELSE IF (InputTypeCvtTmp.EQ.4) THEN
+            InputType%Cvt=InputTypeCvtTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
                 & "[ERROR] Input_type_cvt used is invalid\n",ierr)
