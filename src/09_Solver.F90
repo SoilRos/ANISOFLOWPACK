@@ -32,7 +32,8 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
     KSPConvergedReason                      :: SolverConvergedReason
     PC                                      :: SolverPC
     PCType                                  :: SolverPCType
-    Vec                                     :: diagA
+!     Vec                                     :: diagA
+    Mat                                     :: copyA
     CHARACTER(LEN=200)                      :: Name,CharCount,Chari,Charj,CharMsg
     CHARACTER(LEN=200)                      :: CharTolR,CharTolAbs,CharTolD,CharMaxIts,CharSolverConvergedReason
     
@@ -58,15 +59,20 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
     
 
     CALL KSPCreate(PETSC_COMM_WORLD,Solver,ierr)
-    CALL GetRunOptions(RunOptions,ierr)
 
     CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
     CALL GetInitSol(Gmtry,x,ierr)
 
+    CALL MatSetOption(A,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE,ierr)
+
+    CALL GetRunOptions(RunOptions,ierr)
+    
     If (RunOptions%Time) THEN ! Transitory
 
-        CALL VecDuplicate(x,diagA,ierr)
-        CALL MatGetDiagonal(A,diagA,ierr)
+!         CALL VecDuplicate(x,diagA,ierr)
+!         CALL MatGetDiagonal(A,diagA,ierr)
+        CALL MatDuplicate(A,MAT_COPY_VALUES,copyA,ierr)
+
         Count=1
         DO i=1,BCFld%SizeTimeZone
             DO j=1,BCFld%TimeZone(i)%SizeTime
@@ -75,17 +81,18 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
                 WRITE(Charj,*)j
 
                 CharMsg="["//TRIM(ADJUSTL(Chari))//":"//TRIM(ADJUSTL(Charj))//"]"
-!                 print*,CharMsg
                 IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Transitory iteration "//TRIM(CharMsg)// " inizialited\n",ierr)
 
-                CALL UpdateTplgy(Gmtry,BCFld%DirichIS(i),BCFld%SourceIS(i),BCFld%CauchyIS(i),ierr)
+!               UpdateTplgy en la práctica no sirve para nada, pues los BC se aplican con los IS del BC, no con la geometria
+!                   aún así, puede ser útil para visualizar el cambio de la geometría en el tiempo
+!                 CALL UpdateTplgy(Gmtry,BCFld%DirichIS(i),BCFld%SourceIS(i),BCFld%CauchyIS(i),ierr)
+!                 CALL UpdateSystem(BCFld,A,ierr) UpdateSystem !to new dirichlet
 
-        !         CALL UpdateSystem(Gmtry,PptFld,A,ierr) UpdateSystem !to new dirichlet
                 CALL VecSet(b,zero,ierr)
                 CALL ApplyTimeDiff(PptFld,BCFld,i,j,A,b,x,ierr)
-                CALL ApplyDirichlet(BCFld,i,b,ierr)
+                CALL ApplyDirichlet(BCFld,i,A,b,ierr)
                 CALL ApplySource(BCFld,i,b,ierr)
-!                 CALL ApplyCauchy(BCFld,i,A,b,ierr)
+                CALL ApplyCauchy(BCFld,i,A,b,ierr)
 
                 CALL KSPSetOperators(Solver,A,A,ierr)
                 CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)
@@ -170,7 +177,9 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
                 Name=ADJUSTL(Name)
                 CALL ViewSolution(x,Name,EventName,ierr)
                 Count=Count+1
-                CALL MatDiagonalSet(A,diagA,INSERT_VALUES,ierr)
+
+!                 CALL MatDiagonalSet(A,diagA,INSERT_VALUES,ierr)
+                CALL MatCopy(copyA,A,SAME_NONZERO_PATTERN,ierr)
 
                 IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Transitory iteration "//TRIM(CharMsg)// " finalized\n",ierr)
 
@@ -180,14 +189,18 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
             END DO
         END DO
+!         CALL VecDestroy(diagA,ierr)
+        CALL MatDestroy(copyA,ierr)
     ELSE ! Steady
 
         IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Steady solution inizialited\n",ierr)
-   
+
+!         UpdateTplgy en la práctica no sirve para nada, pues los BC se aplican con los IS del BC, no con la geometria
+!             aún así, puede ser útil para visualizar el cambio de la geometría en el tiempo
         CALL UpdateTplgy(Gmtry,BCFld%DirichIS(1),BCFld%SourceIS(1),BCFld%CauchyIS(1),ierr)
 
         CALL VecSet(b,zero,ierr)
-        CALL ApplyDirichlet(BCFld,1,b,ierr)
+        CALL ApplyDirichlet(BCFld,1,A,b,ierr)
         CALL ApplySource(BCFld,1,b,ierr)
         CALL ApplyCauchy(BCFld,1,A,b,ierr)
 

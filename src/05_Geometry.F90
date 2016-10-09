@@ -464,10 +464,13 @@ SUBROUTINE GetTopology(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     END IF
 
     ! InputType define the type of file that is provided.
+    !   0: all active
     !   1: From file
     !   2: Border of first layer dirichlet
     !   3: Borders dirichlet
-    IF (InputType%Tplgy.EQ.1) THEN
+    IF (InputType%Tplgy.EQ.0) THEN
+        CALL GetTopology_0(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
+    ELSEIF (InputType%Tplgy.EQ.1) THEN
         CALL GetTopology_1(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     ELSE IF (InputType%Tplgy.EQ.2) THEN
         CALL GetTopology_2(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
@@ -484,6 +487,64 @@ SUBROUTINE GetTopology(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     END IF
 
 END SUBROUTINE GetTopology
+
+
+SUBROUTINE GetTopology_0(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
+
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileTplgy
+    USE ANISOFLOW_View, ONLY : ViewTopology
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscdm.h>
+#include <petsc/finclude/petscdmda.h>
+#include <petsc/finclude/petscdmda.h90>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    MPI_Comm,INTENT(IN)             :: Comm
+    PetscInt,INTENT(IN)             :: Scale
+    DM,INTENT(IN)                   :: DataMngr
+    Vec,INTENT(OUT)                 :: Tplgy
+    PetscInt,INTENT(OUT)            :: SizeTplgy(4)
+
+    CHARACTER(LEN=200)              :: ViewName,EventName
+    PetscReal                       :: one=1.D0
+    PetscInt                        :: widthG(3),BCLenL(3),BCLenG(3)
+    PetscBool                       :: Verbose
+
+    CALL GetVerbose(Verbose,ierr)
+
+    ! It quantifies Dirichlet, and Cauchy boundary condition on global processors.
+    BCLenL(:)=0
+    BCLenG(:)=0
+
+    ! It gets the global size from the geometry data manager.
+    CALL DMDAGetInfo(DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+        & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+        & PETSC_NULL_INTEGER,ierr)
+
+    ! Saving topology identificators as local vector in PETSc ordering
+    CALL DMCreateLocalVector(DataMngr,Tplgy,ierr)
+
+    CALL VecSet(Tplgy,one,ierr)
+
+    ! Changing topology identificators from application ordering to PETSc ordering
+    ViewName="ANISOFLOW_Tplgy"
+    EventName="GetTopology"
+    CALL ViewTopology(Tplgy,ViewName,EventName,ierr)
+
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] WARNING: All domain is active.\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Topology Identifiers were satisfactorily created\n",ierr)
+
+    CALL MPI_ALLREDUCE(BCLenL,BCLenG,3,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
+    SizeTplgy(2:4)=BCLenG(:)
+    SizeTplgy(1)=widthG(1)*widthG(3)*widthG(3)-(SizeTplgy(2)+SizeTplgy(3)+SizeTplgy(4))
+
+END SUBROUTINE GetTopology_0
 
  !  - GetTopology_1: It's a routine that creates and fills the information related to topology.
  !                   when InputType%Tplgy=1. It creates a vector and index sets to describe 
@@ -864,8 +925,7 @@ END SUBROUTINE UpdateTplgy
 
 SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,Property,RunOptionsVar
-    USE ANISOFLOW_Interface, ONLY : GetRunOptions,GetVerbose
+    USE ANISOFLOW_Types, ONLY : Geometry,Property
 
     IMPLICIT NONE
 
@@ -881,20 +941,9 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
     PetscErrorCode,INTENT(INOUT)        :: ierr
 
     PetscReal,POINTER                   :: TmpTplgyArray3D(:,:,:),TmpTplgyArray2D(:,:),xArray(:),yArray(:),zArray(:)
-    PetscInt                            :: i,j,k,xSize,ySize,zSize,widthG(3)
+    PetscInt                            :: i,j,k,widthG(3)
     PetscReal                           :: dx,dxB,dxF,dy,dyB,dyF,dz,dzB,dzF
-    TYPE(RunOptionsVar)                 :: RunOptions
-
-    CHARACTER(LEN=200)                      :: EventName,ClassName
-    PetscLogEvent                           :: Event
-    PetscClassId                            :: ClassID
-    PetscLogDouble                          :: EventFlops=0.d0
-
-    ClassName="Geometry"
-    CALL PetscClassIdRegister(ClassName,ClassID,ierr)
-    EventName="GetLocalTopology"
-    CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
-    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    DMDAStencilType                     :: Stencil
 
     i=Ppt%Pstn%i
     j=Ppt%Pstn%j
@@ -905,23 +954,20 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
         & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
-        & PETSC_NULL_INTEGER,ierr)
+        & Stencil,ierr)
 
-    CALL VecGetSize(Gmtry%x,xSize,ierr)
     CALL VecGetArrayReadF90(Gmtry%x,xArray,ierr)
     dxB=xArray(i+1)-xArray(i)
     dx =xArray(i+2)-xArray(i+1)
     dxF=xArray(i+3)-xArray(i+2)
     CALL VecRestoreArrayReadF90(Gmtry%x,xArray,ierr)
 
-    CALL VecGetSize(Gmtry%y,ySize,ierr)
     CALL VecGetArrayReadF90(Gmtry%y,yArray,ierr)
     dyB=yArray(j+1)-yArray(j)
     dy =yArray(j+2)-yArray(j+1)
     dyF=yArray(j+3)-yArray(j+2)
     CALL VecRestoreArrayReadF90(Gmtry%y,yArray,ierr)
 
-    CALL VecGetSize(Gmtry%z,zSize,ierr)
     CALL VecGetArrayReadF90(Gmtry%z,zArray,ierr)
     IF (widthG(3).NE.1) THEN
         dzB=zArray(k+1)-zArray(k)
@@ -936,11 +982,9 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
 
     ! Revisar los diferenciales de x,y,z que se usan como dividendo, si los valores son cercanos a cero puede haber problemas!!!!
 
-    CALL GetRunOptions(RunOptions,ierr)
-
-    IF (RunOptions%Scheme.EQ.1) THEN
+    IF (Stencil.EQ.DMDA_STENCIL_STAR) THEN
         Ppt%StnclType=1
-    ELSEIF ((RunOptions%Scheme.EQ.2).OR.(RunOptions%Scheme.EQ.3)) THEN
+    ELSEIF (Stencil.EQ.DMDA_STENCIL_BOX) THEN
         Ppt%StnclType=2
     END IF
 
@@ -1074,11 +1118,8 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
                 & "[ERROR] Ppt%StnclType must be 1 or 2\n",ierr)
             STOP
         END IF
+        CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,Gmtry%Tplgy,TmpTplgyArray2D,ierr)
     END IF
-    CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,Gmtry%Tplgy,TmpTplgyArray2D,ierr)
-
-    CALL PetscLogFlops(EventFlops,ierr)
-    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
 END SUBROUTINE GetLocalTopology
 

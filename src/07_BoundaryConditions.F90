@@ -36,7 +36,7 @@ SUBROUTINE GetBC(Gmtry,BCFld,ierr)
 
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
-    
+
     CALL GetInputType(InputType,ierr)
 
     IF (InputType%BC.EQ.1) THEN
@@ -53,7 +53,6 @@ SUBROUTINE GetBC(Gmtry,BCFld,ierr)
     
     CALL PetscLogFlops(EventFlops,ierr)
     CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
-
 
 END SUBROUTINE GetBC
 

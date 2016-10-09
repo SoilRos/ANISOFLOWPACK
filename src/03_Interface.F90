@@ -169,9 +169,13 @@ SUBROUTINE GetInputTypeTplgy(InputType,ierr)
         & InputTypeTplgyTmp,InputTypeTplgyFlg,ierr)
 
     IF (InputTypeTplgyFlg) THEN
-        IF (InputTypeTplgyTmp.EQ.1) THEN
+        IF (InputTypeTplgyTmp.EQ.0) THEN
+            InputType%Tplgy=InputTypeTplgyTmp
+        ELSEIF (InputTypeTplgyTmp.EQ.1) THEN
             InputType%Tplgy=InputTypeTplgyTmp
         ELSE IF (InputTypeTplgyTmp.EQ.2) THEN
+            InputType%Tplgy=InputTypeTplgyTmp
+        ELSE IF (InputTypeTplgyTmp.EQ.3) THEN
             InputType%Tplgy=InputTypeTplgyTmp
         ELSE
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &

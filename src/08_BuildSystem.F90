@@ -48,7 +48,7 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
     DO k=corn(3),corn(3)+widthL(3)-1
         DO j=corn(2),corn(2)+widthL(2)-1
             DO i=corn(1),corn(1)+widthL(1)-1
-                CALL GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr) ! TODO: Debugear, es muy lento!!!
+                CALL GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr) ! TODO: Debuguear, es muy lento!!!
                 CALL GetStencil(Ppt,Stencil,ierr)
                 
                 CALL MatSetValuesStencil(A,1,Stencil%idx_rws,Stencil%idx_size,     &
@@ -137,18 +137,8 @@ SUBROUTINE GetStencil(Ppt,Stencil,ierr)
     TYPE(StencilVar),INTENT(OUT)            :: Stencil
     
     TYPE(RunOptionsVar)                     :: RunOptions
-    CHARACTER(LEN=200)                      :: EventName,ClassName
-    PetscLogEvent                           :: Event
-    PetscClassId                            :: ClassID
-    PetscLogDouble                          :: EventFlops=0.d0
-
-    ClassName="System"
-    CALL PetscClassIdRegister(ClassName,ClassID,ierr)
-    EventName="GetStencil"
-    CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
-    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
-
-    CALL GetRunOptions(RunOptions,ierr)
+        
+    CALL GetRunOptions(RunOptions,ierr) ! Quitar esto, toma mucho tiempo!
 
     ALLOCATE(Stencil%idx_rws(4,1))
 
@@ -165,9 +155,6 @@ SUBROUTINE GetStencil(Ppt,Stencil,ierr)
         STOP
     
     END IF
-
-    CALL PetscLogFlops(EventFlops,ierr)
-    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
 END SUBROUTINE GetStencil
 
@@ -615,26 +602,31 @@ END SUBROUTINE GetLiStencil
 
 ! END SUBROUTINE AnisoflowStencil
 
-
-SUBROUTINE ApplyDirichlet(BCFld,TimeZone,b,ierr)
+SUBROUTINE ApplyDirichlet(BCFld,TimeZone,A,b,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
-    USe ANISOFLOW_Interface, ONLY : GetVerbose
+    USE ANISOFLOW_Interface, ONLY : GetVerbose
 
     IMPLICIT NONE
 
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscmat.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
     PetscInt,INTENT(IN)                     :: TimeZone
+    Mat,INTENT(INOUT)                       :: A
     Vec,INTENT(INOUT)                       :: b
 
     VecScatter                              :: Scatter
     IS                                      :: NaturalOrder
     PetscInt                                :: DirichSize
+    PetscReal                               :: one=1.D0
     PetscBool                               :: Verbose
+
+
+    CALL MatZeroRowsIS(A,BCFld%DirichIS(TimeZone),-one,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
     CALL VecGetSize(BCFld%Dirich(TimeZone),DirichSize,ierr)
 
@@ -653,10 +645,52 @@ SUBROUTINE ApplyDirichlet(BCFld,TimeZone,b,ierr)
 
 END SUBROUTINE ApplyDirichlet
 
+! SUBROUTINE UnapplyDirichlet(BCFld,TimeZone,A,b,ierr)
+
+!     USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
+!     USE ANISOFLOW_Interface, ONLY : GetVerbose
+
+!     IMPLICIT NONE
+
+! #include <petsc/finclude/petscsys.h>
+! #include <petsc/finclude/petscvec.h>
+! #include <petsc/finclude/petscmat.h>
+
+!     PetscErrorCode,INTENT(INOUT)            :: ierr
+!     TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
+!     PetscInt,INTENT(IN)                     :: TimeZone
+!     A,INTENT(INOUT)                         :: A
+!     Vec,INTENT(INOUT)                       :: b
+
+!     VecScatter                              :: Scatter
+!     IS                                      :: NaturalOrder
+!     PetscInt                                :: DirichSize
+!     PetscBool                               :: Verbose
+
+
+!     CALL MatZeroRowsColumnsIS(A,BCFld%DirichIS(TimeZone),-one,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+
+!     CALL VecGetSize(BCFld%Dirich(TimeZone),DirichSize,ierr)
+
+!     CALL ISCreateStride(PETSC_COMM_WORLD,DirichSize,0,1,NaturalOrder,ierr)
+!     CALL VecScatterCreate(BCFld%Dirich(TimeZone),NaturalOrder,b,BCFld%DirichIS(TimeZone),Scatter,ierr)
+
+
+!     CALL VecScatterBegin(Scatter,BCFld%Dirich(TimeZone),b,INSERT_VALUES,SCATTER_FORWARD,ierr)
+!     CALL VecScatterEnd(Scatter,BCFld%Dirich(TimeZone),b,INSERT_VALUES,SCATTER_FORWARD,ierr)
+
+!     CALL VecScatterDestroy(Scatter,ierr)
+!     CALL ISDestroy(NaturalOrder,ierr)
+
+!     CALL GetVerbose(Verbose,ierr)
+!     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetSystem Event] Dirichlet boundary conditions properly implemented\n",ierr)
+
+! END SUBROUTINE UnapplyDirichlet
+
 SUBROUTINE ApplySource(BCFld,TimeZone,b,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
-    USe ANISOFLOW_Interface, ONLY : GetVerbose
+    USE ANISOFLOW_Interface, ONLY : GetVerbose
 
     IMPLICIT NONE
 
@@ -692,7 +726,7 @@ END SUBROUTINE ApplySource
 SUBROUTINE ApplyCauchy(BCFld,TimeZone,A,b,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
-    USe ANISOFLOW_Interface, ONLY : GetVerbose
+    USE ANISOFLOW_Interface, ONLY : GetVerbose
 
     IMPLICIT NONE
 

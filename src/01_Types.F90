@@ -215,6 +215,7 @@ MODULE ANISOFLOW_Types
         PetscInt                        :: SizeTimeZone
         PetscInt,ALLOCATABLE            :: SizeDirich(:),SizeSource(:),SizeCauchy(:)
         Vec,ALLOCATABLE                 :: Dirich(:),Source(:),CauchyC(:),CauchyHe(:)
+        IS                              :: pDirichIS,pSourceIS,pCauchyIS
         IS,ALLOCATABLE                  :: DirichIS(:),SourceIS(:),CauchyIS(:)
         TYPE(TimeZoneVar),ALLOCATABLE   :: TimeZone(:)
     END TYPE BoundaryConditions

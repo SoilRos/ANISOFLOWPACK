@@ -1113,33 +1113,18 @@ SUBROUTINE GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
     PetscInt,INTENT(IN)                 :: i,j,k
     PetscErrorCode,INTENT(INOUT)        :: ierr
 
-    CHARACTER(LEN=200)                      :: EventName,ClassName
-    PetscLogEvent                           :: Event
-    PetscClassId                            :: ClassID
-    PetscLogDouble                          :: EventFlops=0.d0
-
-    ClassName="Property"
-    CALL PetscClassIdRegister(ClassName,ClassID,ierr)
-    EventName="GetLocalProperty"
-    CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
-    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
-
     Ppt%Pstn%i=i
     Ppt%Pstn%j=j
     Ppt%Pstn%k=k
 
     CALL GetLocalTopology(Gmtry,Ppt,ierr)
     CALL GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
-  
-    CALL PetscLogFlops(EventFlops,ierr)
-    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
 END SUBROUTINE GetLocalProperty
 
 SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
 
-    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,Property,Tensor,TargetFullTensor,InputTypeVar
-    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputType
+    USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,Property,Tensor,TargetFullTensor
     USE ANISOFLOW_Operators
 
     IMPLICIT NONE
@@ -1155,24 +1140,10 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
     TYPE(Property),INTENT(INOUT)        :: Ppt
     PetscErrorCode,INTENT(INOUT)        :: ierr
 
-    TYPE(InputTypeVar)                  :: InputType
     PetscReal,POINTER                   :: TmpCvt3D(:,:,:),TmpCvt2D(:,:)
     TYPE(Tensor)                        :: TensorZero
     PetscInt                            :: CenterID,widthG(3),i,j,k
     PetscInt,ALLOCATABLE                :: ValI(:)
-
-    CHARACTER(LEN=200)                      :: EventName,ClassName
-    PetscLogEvent                           :: Event
-    PetscClassId                            :: ClassID
-    PetscLogDouble                          :: EventFlops=0.d0
-
-    ClassName="System"
-    CALL PetscClassIdRegister(ClassName,ClassID,ierr)
-    EventName="GetLocalConductivity"
-    CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
-    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
-
-    CALL GetInputType(InputType,ierr)
 
     i=Ppt%Pstn%i
     j=Ppt%Pstn%j
@@ -1213,6 +1184,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
             IF ((Ppt%StnclTplgy(CenterID).EQ.1).OR.(Ppt%StnclTplgy(CenterID).EQ.3).OR.(Ppt%StnclTplgy(CenterID).EQ.4)) THEN 
                 ! Only get properties for active blocks
                 IF (widthG(3).NE.1) THEN ! 3D mesh
+                    
                     CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt3D,ierr)
                     ValI(1)=INT(TmpCvt3D(i  ,j  ,k-1))
                     ValI(2)=INT(TmpCvt3D(i  ,j-1,k  ))
@@ -1654,9 +1626,6 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
             END IF  
         END IF
     END IF
-
-    CALL PetscLogFlops(EventFlops,ierr)
-    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
 
 END SUBROUTINE GetLocalConductivity
 
