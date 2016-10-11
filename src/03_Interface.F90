@@ -757,6 +757,26 @@ SUBROUTINE GetHomogeneusStoFlg(HomogeneusStoFlg,ierr)
 END SUBROUTINE GetHomogeneusStoFlg
  !    
 
+SUBROUTINE GetProjectName(ProjectName,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    CHARACTER(LEN=200),INTENT(OUT)  :: ProjectName
+
+    PetscBool                       :: ProjectNameFlg
+
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Project_name",ProjectName,     &
+        & ProjectNameFlg,ierr)
+    IF (.NOT.ProjectNameFlg) ProjectName="ANISOFLOW"
+    ProjectName=TRIM(ProjectName)
+
+END SUBROUTINE GetProjectName
+
+ !
+
 SUBROUTINE GetOutputDir(OutputDir,ierr)
 
     IMPLICIT NONE

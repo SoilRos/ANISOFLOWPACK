@@ -34,7 +34,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
     PCType                                  :: SolverPCType
 !     Vec                                     :: diagA
     Mat                                     :: copyA
-    CHARACTER(LEN=200)                      :: Name,CharCount,Chari,Charj,CharMsg
+    CHARACTER(LEN=200)                      :: ViewName,CharCount,Chari,Charj,CharMsg
     CHARACTER(LEN=200)                      :: CharTolR,CharTolAbs,CharTolD,CharMaxIts,CharSolverConvergedReason
     
     PetscInt                                :: i,j,Count,MaxIts
@@ -173,9 +173,9 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
                 END IF
 
                 WRITE(CharCount,*)Count
-                Name="ANISOFLOW_Sol_"//TRIM(ADJUSTL(CharCount))
-                Name=ADJUSTL(Name)
-                CALL ViewSolution(x,Name,EventName,ierr)
+                ViewName="Sol_"//TRIM(ADJUSTL(CharCount))
+                ViewName=ADJUSTL(ViewName)
+                CALL ViewSolution(x,ViewName,EventName,ierr)
                 Count=Count+1
 
 !                 CALL MatDiagonalSet(A,diagA,INSERT_VALUES,ierr)
@@ -280,8 +280,8 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
         IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Converged reason: "//TRIM(CharSolverconvergedreason)//"\n",ierr)
                 
 
-        Name="ANISOFLOW_Sol"
-        CALL ViewSolution(x,Name,EventName,ierr)
+        ViewName="Sol"
+        CALL ViewSolution(x,ViewName,EventName,ierr)
 
         IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Steady solution finalized\n",ierr)
 

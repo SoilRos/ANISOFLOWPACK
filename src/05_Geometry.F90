@@ -533,7 +533,7 @@ SUBROUTINE GetTopology_0(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     CALL VecSet(Tplgy,one,ierr)
 
     ! Changing topology identificators from application ordering to PETSc ordering
-    ViewName="ANISOFLOW_Tplgy"
+    ViewName="Tplgy"
     EventName="GetTopology"
     CALL ViewTopology(Tplgy,ViewName,EventName,ierr)
 
@@ -645,7 +645,7 @@ SUBROUTINE GetTopology_1(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
 
     ! Changing temporal topology identificators from application ordering to PETSc ordering
     CALL VecApplicationToPetsc(DataMngr,TmpTplgy,ierr)
-    ViewName="ANISOFLOW_Tplgy"
+    ViewName="Tplgy"
     EventName="GetTopology"
     CALL ViewTopology(TmpTplgy,ViewName,EventName,ierr)
 
@@ -739,7 +739,7 @@ SUBROUTINE GetTopology_2(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     END DO
     IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] WARNING: Topology File wasn't provided. Default topology used is ...\n",ierr)
 
-    ViewName="ANISOFLOW_Tplgy"
+    ViewName="Tplgy"
     EventName="GetTopology"
     CALL ViewTopology(TmpTplgy,ViewName,EventName,ierr)
 
@@ -835,7 +835,7 @@ SUBROUTINE GetTopology_3(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     END DO
     IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] WARNING: Topology File wasn't provided. Default topology used is ...\n",ierr)
 
-    ViewName="ANISOFLOW_Tplgy"
+    ViewName="Tplgy"
     EventName="GetTopology"
     CALL ViewTopology(TmpTplgy,ViewName,EventName,ierr)
 

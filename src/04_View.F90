@@ -6,9 +6,9 @@ MODULE ANISOFLOW_View
 
 CONTAINS
 
-SUBROUTINE ViewSolution(x,Name,StageName,ierr)
+SUBROUTINE ViewSolution(x,ViewName,StageName,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Interface, ONLY : GetOutputType,GetProjectName
 
     IMPLICIT NONE
 
@@ -16,27 +16,30 @@ SUBROUTINE ViewSolution(x,Name,StageName,ierr)
 #include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
-    CHARACTER(LEN=200),INTENT(IN)           :: Name,StageName
+    CHARACTER(LEN=200),INTENT(IN)           :: ViewName,StageName
     Vec,INTENT(IN)                          :: x
 
-    TYPE(OutputTypeVar)                      :: OutputType
+    CHARACTER(LEN=200)                      :: ProjectName,FileName
+    TYPE(OutputTypeVar)                     :: OutputType
 
     CALL GetOutputType(OutputType,ierr)
+    CALL GetProjectName(ProjectName,ierr)
+    FileName=ADJUSTL(TRIM(ProjectName)//"_"//TRIM(ViewName))
 
     CALL PetscObjectSetName(x,"Solution",ierr)
     IF (OutputType%Sol.EQ.1) THEN
-        CALL ViewVecProperty_1(x,Name,StageName,ierr)
+        CALL ViewVecProperty_1(x,FileName,StageName,ierr)
     ELSE IF (OutputType%Sol.EQ.2) THEN
-        CALL ViewVecProperty_2(x,Name,StageName,ierr)
+        CALL ViewVecProperty_2(x,FileName,StageName,ierr)
     ELSE IF (OutputType%Sol.EQ.3) THEN
-        CALL ViewVecProperty_3(x,Name,StageName,ierr)
+        CALL ViewVecProperty_3(x,FileName,StageName,ierr)
     END IF
 
 END SUBROUTINE ViewSolution
 
-SUBROUTINE ViewTopology(x,Name,StageName,ierr)
+SUBROUTINE ViewTopology(x,ViewName,StageName,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Interface, ONLY : GetOutputType,GetProjectName
 
     IMPLICIT NONE
 
@@ -44,27 +47,30 @@ SUBROUTINE ViewTopology(x,Name,StageName,ierr)
 #include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
-    CHARACTER(LEN=200),INTENT(IN)           :: Name,StageName
+    CHARACTER(LEN=200),INTENT(IN)           :: ViewName,StageName
     Vec,INTENT(IN)                          :: x
 
-    TYPE(OutputTypeVar)                      :: OutputType
+    CHARACTER(LEN=200)                      :: ProjectName,FileName
+    TYPE(OutputTypeVar)                     :: OutputType
 
     CALL GetOutputType(OutputType,ierr)
+    CALL GetProjectName(ProjectName,ierr)
+    FileName=ADJUSTL(TRIM(ProjectName)//"_"//TRIM(ViewName))
 
     CALL PetscObjectSetName(x,"Topology",ierr)
     IF (OutputType%Tplgy.EQ.1) THEN
-        CALL ViewVecProperty_1(x,Name,StageName,ierr)
+        CALL ViewVecProperty_1(x,FileName,StageName,ierr)
     ELSE IF (OutputType%Tplgy.EQ.2) THEN
-        CALL ViewVecProperty_2(x,Name,StageName,ierr)
+        CALL ViewVecProperty_2(x,FileName,StageName,ierr)
     ELSE IF (OutputType%Tplgy.EQ.3) THEN
-        CALL ViewVecProperty_3(x,Name,StageName,ierr)
+        CALL ViewVecProperty_3(x,FileName,StageName,ierr)
     END IF
 
 END SUBROUTINE ViewTopology
 
-SUBROUTINE ViewConductivity(x,Name,StageName,ierr)
+SUBROUTINE ViewConductivity(x,ViewName,StageName,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Interface, ONLY : GetOutputType,GetProjectName
 
     IMPLICIT NONE
 
@@ -72,27 +78,30 @@ SUBROUTINE ViewConductivity(x,Name,StageName,ierr)
 #include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
-    CHARACTER(LEN=200),INTENT(IN)           :: Name,StageName
+    CHARACTER(LEN=200),INTENT(IN)           :: ViewName,StageName
     Vec,INTENT(IN)                          :: x
 
-    TYPE(OutputTypeVar)                      :: OutputType
+    CHARACTER(LEN=200)                      :: ProjectName,FileName
+    TYPE(OutputTypeVar)                     :: OutputType
 
     CALL GetOutputType(OutputType,ierr)
+    CALL GetProjectName(ProjectName,ierr)
+    FileName=ADJUSTL(TRIM(ProjectName)//"_"//TRIM(ViewName))
 
     CALL PetscObjectSetName(x,"Conductivity",ierr)
     IF (OutputType%Cvt.EQ.1) THEN
-        CALL ViewVecProperty_1(x,Name,StageName,ierr)
+        CALL ViewVecProperty_1(x,FileName,StageName,ierr)
     ELSE IF (OutputType%Cvt.EQ.2) THEN
-        CALL ViewVecProperty_2(x,Name,StageName,ierr)
+        CALL ViewVecProperty_2(x,FileName,StageName,ierr)
     ELSE IF (OutputType%Cvt.EQ.3) THEN
-        CALL ViewVecProperty_3(x,Name,StageName,ierr)
+        CALL ViewVecProperty_3(x,FileName,StageName,ierr)
     END IF
 
 END SUBROUTINE ViewConductivity
 
-SUBROUTINE ViewStorage(x,Name,StageName,ierr)
+SUBROUTINE ViewStorage(x,ViewName,StageName,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Interface, ONLY : GetOutputType,GetProjectName
 
     IMPLICIT NONE
 
@@ -100,27 +109,32 @@ SUBROUTINE ViewStorage(x,Name,StageName,ierr)
 #include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
-    CHARACTER(LEN=200),INTENT(IN)           :: Name,StageName
+    CHARACTER(LEN=200),INTENT(IN)           :: ViewName,StageName
     Vec,INTENT(IN)                          :: x
 
-    TYPE(OutputTypeVar)                      :: OutputType
+    CHARACTER(LEN=200)                      :: ProjectName,FileName
+    TYPE(OutputTypeVar)                     :: OutputType
+
+    CALL GetOutputType(OutputType,ierr)
+    CALL GetProjectName(ProjectName,ierr)
+    FileName=ADJUSTL(TRIM(ProjectName)//"_"//TRIM(ViewName))
 
     CALL GetOutputType(OutputType,ierr)
 
     CALL PetscObjectSetName(x,"SpecificStorage",ierr)
     IF (OutputType%Sto.EQ.1) THEN
-        CALL ViewVecProperty_1(x,Name,StageName,ierr)
+        CALL ViewVecProperty_1(x,FileName,StageName,ierr)
     ELSE IF (OutputType%Sto.EQ.2) THEN
-        CALL ViewVecProperty_2(x,Name,StageName,ierr)
+        CALL ViewVecProperty_2(x,FileName,StageName,ierr)
     ELSE IF (OutputType%Sto.EQ.3) THEN
-        CALL ViewVecProperty_3(x,Name,StageName,ierr)
+        CALL ViewVecProperty_3(x,FileName,StageName,ierr)
     END IF
 
 END SUBROUTINE ViewStorage
 
-SUBROUTINE ViewProperty(x,Name,StageName,ierr)
+SUBROUTINE ViewProperty(x,ViewName,StageName,ierr)
 
-    USE ANISOFLOW_Interface
+    USE ANISOFLOW_Interface, ONLY : GetOutputType,GetProjectName
 
     IMPLICIT NONE
 
@@ -128,20 +142,23 @@ SUBROUTINE ViewProperty(x,Name,StageName,ierr)
 #include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
-    CHARACTER(LEN=200),INTENT(IN)           :: Name,StageName
+    CHARACTER(LEN=200),INTENT(IN)           :: ViewName,StageName
     Vec,INTENT(IN)                          :: x
 
-    TYPE(OutputTypeVar)                      :: OutputType
+    CHARACTER(LEN=200)                      :: ProjectName,FileName
+    TYPE(OutputTypeVar)                     :: OutputType
 
     CALL GetOutputType(OutputType,ierr)
+    CALL GetProjectName(ProjectName,ierr)
+    FileName=ADJUSTL(TRIM(ProjectName)//"_"//TRIM(ViewName))
 
     CALL PetscObjectSetName(x,"Property",ierr)
     IF (OutputType%Ppt.EQ.1) THEN
-        CALL ViewVecProperty_1(x,Name,StageName,ierr)
+        CALL ViewVecProperty_1(x,FileName,StageName,ierr)
     ELSE IF (OutputType%Ppt.EQ.2) THEN
-        CALL ViewVecProperty_2(x,Name,StageName,ierr)
+        CALL ViewVecProperty_2(x,FileName,StageName,ierr)
     ELSE IF (OutputType%Ppt.EQ.3) THEN
-        CALL ViewVecProperty_3(x,Name,StageName,ierr)
+        CALL ViewVecProperty_3(x,FileName,StageName,ierr)
     END IF
 
 END SUBROUTINE ViewProperty

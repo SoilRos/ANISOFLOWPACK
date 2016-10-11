@@ -125,7 +125,7 @@ SUBROUTINE GetInitSol(Gmtry,x,ierr)
             WRITE(CharInitSolUniValue,*)InitSolUniValue
             CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[SolveSystem Event] Inital solution was set "//ADJUSTL(TRIM(CharInitSolUniValue))//" .\n",ierr)
         ELSE
-            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"WARING: Initial solution was set to 0.",ierr)
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"WARING: Initial solution was set to 0.\n",ierr)
         END IF
     END IF
 

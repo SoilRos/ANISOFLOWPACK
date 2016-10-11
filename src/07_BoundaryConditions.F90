@@ -317,13 +317,13 @@ SUBROUTINE GetBC_2(Gmtry,BCFld,ierr)
     CALL DMDAGetAO(Gmtry%DataMngr,AppOrd,ierr)
 
     CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
-PRINT*,"GetBC_2: A"
+
     IF (process.EQ.0) THEN
         Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileBC))
         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
         READ(u,*)aux,BCFld%SizeTimeZone
     END IF
-PRINT*,"GetBC_2: A"
+
     CALL MPI_Bcast(BCFld%SizeTimeZone,1,MPI_INT, 0, PETSC_COMM_WORLD,ierr)
         
     ! It gets the global size from the geometry data manager.
@@ -332,7 +332,7 @@ PRINT*,"GetBC_2: A"
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
         & PETSC_NULL_INTEGER,ierr)
-PRINT*,"GetBC_2: A"
+
     ALLOCATE(BCFld%TimeZone(BCFld%SizeTimeZone))
     ALLOCATE(BCFld%SizeDirich(BCFld%SizeTimeZone))
     ALLOCATE(BCFld%Dirich(BCFld%SizeTimeZone))
