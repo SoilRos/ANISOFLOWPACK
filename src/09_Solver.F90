@@ -92,7 +92,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
                 CALL ApplyTimeDiff(PptFld,BCFld,i,j,A,b,x,ierr)
                 CALL ApplyDirichlet(BCFld,i,A,b,ierr)
                 CALL ApplySource(BCFld,i,b,ierr)
-                CALL ApplyCauchy(BCFld,i,A,b,ierr)
+!                 CALL ApplyCauchy(BCFld,i,A,b,ierr)
 
                 CALL KSPSetOperators(Solver,A,A,ierr)
                 CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)

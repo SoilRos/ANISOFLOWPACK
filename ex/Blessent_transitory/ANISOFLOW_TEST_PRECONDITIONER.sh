@@ -54,7 +54,7 @@ Time=1														# Transitory boolean
 
 np=2 # for np in `seq 1 $np_max`; do
 ksptype=gmres # 	for ksptype in "${KSP[@]}"; do
-pctype=mg # 		for pctype in "${PC[@]}"; do
+pctype=bjacobi # 		for pctype in "${PC[@]}"; do
 			echo "*************************************************"
 			echo "*************** Beginning new run ***************"
 			echo "Options"
@@ -85,7 +85,7 @@ pctype=mg # 		for pctype in "${PC[@]}"; do
 			-pc_sor_omega 1 -pc_sor_symmetric -pc_sor_its 1\
 			-ksp_initial_guess_nonzero 							\
 			-ksp_monitor 										\
-			-ksp_monitor_lg_residualnorm 0 		\
+			-ksp_monitor_lg_residualnorm 1 		\
 			-log_view 					ascii:$OutputDir/ANISOFLOW-NP$np-KSP$ksptype-PC$pctype.log \
 			| tee $OutputDir/ANISOFLOW-NP$np-KSP$ksptype-PC$pctype.log_term
 			echo "***************** Ending program ****************"

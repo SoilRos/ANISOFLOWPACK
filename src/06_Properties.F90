@@ -37,9 +37,8 @@ SUBROUTINE GetProrperties(Gmtry,PptFld,ierr)
 
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
-    
-    CALL GetPptZoneID(Gmtry,PptFld%ZoneID,PptFld%DefinedByPptZones,ierr)
 
+    CALL GetPptZoneID(Gmtry,PptFld%ZoneID,PptFld%DefinedByPptZones,ierr)
     CALL GetConductivity(Gmtry,PptFld,PptFld%Cvt,ierr)
 
     CALL GetRunOptions(RunOptions,ierr)
@@ -58,7 +57,7 @@ END SUBROUTINE GetProrperties
 SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByPptZones,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry
-    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFilePptByZone
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFilePptByZone,GetHomogeneusPptFlg
     USE ANISOFLOW_View, ONLY : ViewProperty
     USE ANISOFLOW_Geometry, ONLY : VecApplicationToPetsc
 
@@ -77,9 +76,9 @@ SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByPptZones,ierr)
 
     PetscInt                            :: widthG(3),u,ValI,i
     PetscMPIInt                         :: process
-    PetscReal                           :: ValR
+    PetscReal                           :: ValR,one=1.D0
     CHARACTER(LEN=200)                  :: InputFilePptByZone,Route,ViewName,InputDir,EventName
-    PetscBool                           :: InputFilePptByZoneFlg,Verbose
+    PetscBool                           :: InputFilePptByZoneFlg,HomogeneusPptFlg,Verbose
     Vec                                 :: PptZoneID_Global
 
     PARAMETER(u=01)
@@ -88,8 +87,9 @@ SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByPptZones,ierr)
 
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputFilePptByZone(InputFilePptByZone,InputFilePptByZoneFlg,ierr)
+    CALL GetHomogeneusPptFlg(HomogeneusPptFlg,ierr)
 
-    IF (InputFilePptByZoneFlg) THEN
+    IF (InputFilePptByZoneFlg.AND.(.NOT.HomogeneusPptFlg)) THEN
 
         CALL DMCreateGlobalVector(Gmtry%DataMngr,PptZoneID_Global,ierr)
         CALL DMCreateLocalVector(Gmtry%DataMngr,PptZoneID_Local,ierr)
@@ -112,7 +112,7 @@ SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByPptZones,ierr)
                     READ(u,*)ValI
                     IF (ValI.LE.0) THEN
                         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
-                            & "[ERROR] Input_file_ppt_by_zones entry only can contain"  &
+                            & "[ERROR] -Input_file_ppt_by_zones entry only can contain"  &
                             & // " natural numbers\n",ierr)
                         STOP
                     END IF
@@ -136,6 +136,38 @@ SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByPptZones,ierr)
         CALL DMGlobalToLocalEnd(Gmtry%DataMngr,PptZoneID_Global,INSERT_VALUES,PptZoneID_Local,ierr)
         CALL VecDestroy(PptZoneID_Global,ierr)
         DefinedByPptZones=.TRUE.
+
+    ELSEIF (HomogeneusPptFlg) THEN
+
+        CALL DMCreateGlobalVector(Gmtry%DataMngr,PptZoneID_Global,ierr)
+        CALL DMCreateLocalVector(Gmtry%DataMngr,PptZoneID_Local,ierr)
+
+        CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+            & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+            & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+            & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+            & PETSC_NULL_INTEGER,ierr)
+
+        CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+
+        CALL VecSet(PptZoneID_Global,one,ierr)
+
+        CALL VecAssemblyBegin(PptZoneID_Global,ierr)
+        CALL VecAssemblyEnd(PptZoneID_Global,ierr)
+
+        CALL VecApplicationToPetsc(Gmtry%DataMngr,PptZoneID_Global,ierr)
+
+        ViewName="ANISOFLOW_PptZoneID"
+        EventName="GetPptZoneID"
+        CALL ViewProperty(PptZoneID_Global,ViewName,EventName,ierr)
+
+        CALL DMGlobalToLocalBegin(Gmtry%DataMngr,PptZoneID_Global,INSERT_VALUES,PptZoneID_Local,ierr)
+        CALL DMGlobalToLocalEnd(Gmtry%DataMngr,PptZoneID_Global,INSERT_VALUES,PptZoneID_Local,ierr)
+        CALL VecDestroy(PptZoneID_Global,ierr)
+        DefinedByPptZones=.TRUE.
+        IF (InputFilePptByZoneFlg) THEN 
+            IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Event] WARNING: -Input_file_ppt_by_zones and -Homogeneuos_ppt used at the same time; properties was set homogeneuos in the whole domain..\n",ierr)
+        END IF
     END IF
 
 END SUBROUTINE GetPptZoneID
@@ -196,7 +228,7 @@ END SUBROUTINE GetConductivity
 SUBROUTINE GetCvtZoneID(Gmtry,PptFld,CvtZoneID_Local,DefinedBy,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,TargPetscVec
-    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFilePptByZone,GetInputFileCvtByZone
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFilePptByZone,GetInputFileCvtByZone,GetHomogeneusPptFlg,GetHomogeneusCvtFlg
     USE ANISOFLOW_View, ONLY : ViewConductivity
     USE ANISOFLOW_Geometry, ONLY : VecApplicationToPetsc
 
@@ -216,9 +248,9 @@ SUBROUTINE GetCvtZoneID(Gmtry,PptFld,CvtZoneID_Local,DefinedBy,ierr)
 
     PetscInt                            :: widthG(3),u,ValI,i
     PetscMPIInt                         :: process
-    PetscReal                           :: ValR
+    PetscReal                           :: ValR,one=1.D0
     CHARACTER(LEN=200)                  :: InputFilePptByZone,InputFileCvtByZone,Route,ViewName,InputDir,EventName
-    PetscBool                           :: InputFilePptByZoneFlg,InputFileCvtByZoneFlg,Verbose
+    PetscBool                           :: InputFilePptByZoneFlg,InputFileCvtByZoneFlg,HomogeneusPptFlg,HomogeneusCvtFlg,Verbose
     Vec                                 :: CvtZoneID_Global
     Vec,POINTER                         :: ZoneID_tmp
 
@@ -230,7 +262,10 @@ SUBROUTINE GetCvtZoneID(Gmtry,PptFld,CvtZoneID_Local,DefinedBy,ierr)
     CALL GetInputFilePptByZone(InputFilePptByZone,InputFilePptByZoneFlg,ierr)
     CALL GetInputFileCvtByZone(InputFileCvtByZone,InputFileCvtByZoneFlg,ierr)
 
-    IF (InputFileCvtByZoneFlg) THEN
+    CALL GetHomogeneusCvtFlg(HomogeneusCvtFlg,ierr)
+    CALL GetHomogeneusPptFlg(HomogeneusPptFlg,ierr)
+
+    IF (InputFileCvtByZoneFlg.AND.(.NOT.HomogeneusCvtFlg)) THEN
 
         CALL DMCreateGlobalVector(Gmtry%DataMngr,CvtZoneID_Global,ierr)
         CALL DMCreateLocalVector(Gmtry%DataMngr,CvtZoneID_Local,ierr)
@@ -273,14 +308,46 @@ SUBROUTINE GetCvtZoneID(Gmtry,PptFld,CvtZoneID_Local,DefinedBy,ierr)
         CALL VecDestroy(CvtZoneID_Global,ierr)
 
         DefinedBy=1
-    ELSEIF (InputFilePptByZoneFlg) THEN
+    ELSEIF (HomogeneusCvtFlg) THEN
+
+        CALL DMCreateGlobalVector(Gmtry%DataMngr,CvtZoneID_Global,ierr)
+        CALL DMCreateLocalVector(Gmtry%DataMngr,CvtZoneID_Local,ierr)
+
+        CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+            & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+            & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+            & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+            & PETSC_NULL_INTEGER,ierr)
+
+        CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+
+        CALL VecSet(CvtZoneID_Global,one,ierr)
+
+        CALL VecAssemblyBegin(CvtZoneID_Global,ierr)
+        CALL VecAssemblyEnd(CvtZoneID_Global,ierr)
+
+        CALL VecApplicationToPetsc(Gmtry%DataMngr,CvtZoneID_Global,ierr)
+
+        ViewName="ANISOFLOW_CvtZoneID"
+        EventName="GetCvtZoneID"
+        CALL ViewConductivity(CvtZoneID_Global,ViewName,EventName,ierr)
+
+        CALL DMGlobalToLocalBegin(Gmtry%DataMngr,CvtZoneID_Global,INSERT_VALUES,CvtZoneID_Local,ierr)
+        CALL DMGlobalToLocalEnd(Gmtry%DataMngr,CvtZoneID_Global,INSERT_VALUES,CvtZoneID_Local,ierr)
+        CALL VecDestroy(CvtZoneID_Global,ierr)
+
+        DefinedBy=1
+        IF (InputFileCvtByZoneFlg) THEN 
+            IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Event] WARNING: -Input_file_cvt_by_zones and -Homogeneuos_cvt used at the same time; conductivities was set homogeneuos in the whole domain.\n",ierr)
+        END IF
+    ELSEIF (InputFilePptByZoneFlg.OR.HomogeneusPptFlg) THEN
         ZoneID_tmp => TargPetscVec(PptFld%ZoneID)
         CvtZoneID_Local = ZoneID_tmp
         DefinedBy=2
     ELSE
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
-            & "[ERROR] Input_type_cvt must use Input_file_cvt_by_zones or Input_file_ppt_by_zones"  &
-            & // " containing the zonification of conductivities\n",ierr)
+            & "[ERROR] -Input_type_cvt 1 must be used with -Input_file_(cvt,ppt)_by_zones,"  &
+            & // " which contains the conductivities zonification, or with -Homogeneuos_(cvt,ppt) 1, which sets the first property of -Input_file_(cvt,ppt) to the whole domain.\n",ierr)
         STOP
     END IF
 
@@ -310,7 +377,7 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,Cvt,ierr)
     PetscMPIInt                         :: process
     CHARACTER(LEN=200)                  :: InputDir,InputFileCvt
     CHARACTER(LEN=200)                  :: Route
-    CHARACTER(LEN=200)                   :: CvtKind
+    CHARACTER(LEN=200)                  :: CvtKind
     PetscBool                           :: Verbose
 
     PARAMETER(u=01)
@@ -318,6 +385,7 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,Cvt,ierr)
     CALL GetVerbose(Verbose,ierr)
 
     CALL GetCvtZoneID(Gmtry,PptFld,Cvt%ZoneID,Cvt%DefinedBy,ierr)
+
     CALL GetInputDir(InputDir,ierr)
     CALL GetInputFileCvt(InputFileCvt,ierr)
 
@@ -339,6 +407,7 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,Cvt,ierr)
             READ(u,*)
             READ(u,*)
             READ(u,'(A)')CvtKind
+
             IF (ADJUSTL(TRIM(CvtKind)).EQ."k isotropic  ") THEN
                 READ(u,*)Cvt%Zone(i)%xx
                 Cvt%Zone(i)%yy=Cvt%Zone(i)%xx
@@ -367,7 +436,6 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,Cvt,ierr)
         END DO
         CLOSE(u)
     END IF
-
 
     CALL MPI_Bcast(Cvt%Zone(:)%xx,CvtLen,MPI_DOUBLE,0,PETSC_COMM_WORLD,ierr)
     CALL MPI_Bcast(Cvt%Zone(:)%yy,CvtLen,MPI_DOUBLE,0,PETSC_COMM_WORLD,ierr)
@@ -769,7 +837,7 @@ END SUBROUTINE GetStorage
 SUBROUTINE GetStoZoneID(Gmtry,PptFld,StoZoneID_Local,DefinedBy,ierr)
 
     USE ANISOFLOW_Types, ONLY : Geometry,PropertiesField,TargPetscVec
-    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFilePptByZone,GetInputFileStoByZone
+    USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFilePptByZone,GetInputFileStoByZone,GetHomogeneusPptFlg,GetHomogeneusCvtFlg
     USE ANISOFLOW_View, ONLY : ViewStorage
     USE ANISOFLOW_Geometry, ONLY : VecApplicationToPetsc
 
@@ -789,9 +857,9 @@ SUBROUTINE GetStoZoneID(Gmtry,PptFld,StoZoneID_Local,DefinedBy,ierr)
 
     PetscInt                            :: widthG(3),u,ValI,i
     PetscMPIInt                         :: process
-    PetscReal                           :: ValR
+    PetscReal                           :: ValR,one=1.D0
     CHARACTER(LEN=200)                  :: InputFilePptByZone,InputFileStoByZone,Route,ViewName,InputDir,EventName
-    PetscBool                           :: InputFilePptByZoneFlg,InputFileStoByZoneFlg,Verbose
+    PetscBool                           :: InputFilePptByZoneFlg,InputFileStoByZoneFlg,HomogeneusPptFlg,HomogeneusStoFlg,Verbose
     Vec,POINTER                         :: ZoneID_tmp
     Vec                                 :: StoZoneID_Global
 
@@ -803,8 +871,10 @@ SUBROUTINE GetStoZoneID(Gmtry,PptFld,StoZoneID_Local,DefinedBy,ierr)
     CALL GetInputFilePptByZone(InputFilePptByZone,InputFilePptByZoneFlg,ierr)
     CALL GetInputFileStoByZone(InputFileStoByZone,InputFileStoByZoneFlg,ierr)
 
+    CALL GetHomogeneusCvtFlg(HomogeneusStoFlg,ierr)
+    CALL GetHomogeneusPptFlg(HomogeneusPptFlg,ierr)
 
-    IF (InputFileStoByZoneFlg) THEN
+    IF (InputFileStoByZoneFlg.AND.(.NOT.HomogeneusStoFlg)) THEN
 
         CALL DMCreateGlobalVector(Gmtry%DataMngr,StoZoneID_Global,ierr)
         CALL DMCreateLocalVector(Gmtry%DataMngr,StoZoneID_Local,ierr)
@@ -846,7 +916,39 @@ SUBROUTINE GetStoZoneID(Gmtry,PptFld,StoZoneID_Local,DefinedBy,ierr)
         CALL DMGlobalToLocalEnd(Gmtry%DataMngr,StoZoneID_Global,INSERT_VALUES,StoZoneID_Local,ierr)
         CALL VecDestroy(StoZoneID_Global,ierr)
         DefinedBy=1
-    ELSEIF (InputFilePptByZoneFlg) THEN
+    ELSEIF (HomogeneusStoFlg) THEN
+
+        CALL DMCreateGlobalVector(Gmtry%DataMngr,StoZoneID_Global,ierr)
+        CALL DMCreateLocalVector(Gmtry%DataMngr,StoZoneID_Local,ierr)
+
+        CALL DMDAGetInfo(Gmtry%DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
+            & widthG(3),PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,                 &
+            & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+            & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
+            & PETSC_NULL_INTEGER,ierr)
+
+        CALL MPI_Comm_rank(MPI_COMM_WORLD,process,ierr)
+
+        CALL VecSet(StoZoneID_Global,one,ierr)
+
+        CALL VecAssemblyBegin(StoZoneID_Global,ierr)
+        CALL VecAssemblyEnd(StoZoneID_Global,ierr)
+
+        CALL VecApplicationToPetsc(Gmtry%DataMngr,StoZoneID_Global,ierr)
+
+        ViewName="ANISOFLOW_StoZoneID"
+        EventName="GetStoZoneID"
+        CALL ViewStorage(StoZoneID_Global,ViewName,EventName,ierr)
+
+        CALL DMGlobalToLocalBegin(Gmtry%DataMngr,StoZoneID_Global,INSERT_VALUES,StoZoneID_Local,ierr)
+        CALL DMGlobalToLocalEnd(Gmtry%DataMngr,StoZoneID_Global,INSERT_VALUES,StoZoneID_Local,ierr)
+        CALL VecDestroy(StoZoneID_Global,ierr)
+
+        DefinedBy=1
+        IF (InputFileStoByZoneFlg) THEN 
+            IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"[GetProrperties Event] WARNING: -Input_file_sto_by_zones and -Homogeneuos_sto used at the same time; specific storages was set homogeneuos in the whole domain.\n",ierr)
+        END IF
+    ELSEIF (InputFilePptByZoneFlg.OR.HomogeneusPptFlg) THEN
         ZoneID_tmp => TargPetscVec(PptFld%ZoneID)
         StoZoneID_Local = ZoneID_tmp
         DefinedBy=2
@@ -1170,11 +1272,12 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
     END IF
     
     TensorZero%xx=0.D0
+    TensorZero%yy=0.D0
+    TensorZero%zz=0.D0
     TensorZero%xy=0.D0
     TensorZero%xz=0.D0
-    TensorZero%yy=0.D0
     TensorZero%yz=0.D0
-    TensorZero%zz=0.D0
+     CALL TargetFullTensor(TensorZero)
 
     Ppt%Cvt(:)=TensorZero
 
@@ -1338,6 +1441,13 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
                 PRINT*,"ERROR: The properties has to be defined by cell or by zone"
             END IF  
         END IF
+        IF (k.EQ.0) Ppt%Cvt(1)=TensorZero
+        IF (j.EQ.0) Ppt%Cvt(2)=TensorZero
+        IF (i.EQ.0) Ppt%Cvt(3)=TensorZero
+        IF (i.EQ.(widthG(1)-1)) Ppt%Cvt(5)=TensorZero
+        IF (j.EQ.(widthG(2)-1)) Ppt%Cvt(6)=TensorZero
+        IF (k.EQ.(widthG(3)-1)) Ppt%Cvt(7)=TensorZero
+
     ELSEIF (Ppt%StnclType.EQ.2) THEN          ! Stencil type box (19)
         IF ((PptFld%Cvt%DefinedBy.EQ.1).OR.(PptFld%Cvt%DefinedBy.EQ.2)) THEN 
             ! Defined by zones, so have to get the information from Zone(ZoneID(i))
@@ -1366,6 +1476,7 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
                     ValI(19)=INT(TmpCvt3D(i  ,j+1,k+1))
                     CALL DMDAVecRestoreArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt3D,ierr)
                     Ppt%Cvt(:)=PptFld%Cvt%Zone(ValI(:))
+
                 ELSE ! 2D mesh
                     CALL DMDAVecGetArrayReadF90(Gmtry%DataMngr,PptFld%Cvt%ZoneID,TmpCvt2D,ierr)
                     ValI(6)= INT(TmpCvt2D(i-1,j-1))
@@ -1625,6 +1736,20 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
                 PRINT*,"ERROR: The properties has to be defined by cell or by zone"
             END IF  
         END IF
+        IF (k.EQ.0) Ppt%Cvt(1:5)=TensorZero
+        IF (j.EQ.0) THEN
+            Ppt%Cvt(1)=TensorZero;Ppt%Cvt(6:8)=TensorZero;Ppt%Cvt(15)=TensorZero
+        END IF
+        IF (i.EQ.0) THEN
+            Ppt%Cvt(2)=TensorZero;Ppt%Cvt(6)=TensorZero;Ppt%Cvt(9)=TensorZero;Ppt%Cvt(12)=TensorZero;Ppt%Cvt(16)=TensorZero
+        END IF
+        IF (i.EQ.(widthG(1)-1)) THEN
+            Ppt%Cvt(4)=TensorZero;Ppt%Cvt(8)=TensorZero;Ppt%Cvt(11)=TensorZero;Ppt%Cvt(14)=TensorZero;Ppt%Cvt(18)=TensorZero
+        END IF
+        IF (j.EQ.(widthG(2)-1)) THEN
+            Ppt%Cvt(5)=TensorZero;Ppt%Cvt(12:14)=TensorZero;Ppt%Cvt(19)=TensorZero
+        END IF
+        IF (k.EQ.(widthG(3)-1)) Ppt%Cvt(15:19)=TensorZero
     END IF
 
 END SUBROUTINE GetLocalConductivity

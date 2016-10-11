@@ -436,7 +436,7 @@ SUBROUTINE GetInputFileTplgy(InputFileTplgy,ierr)
 
     IF (.NOT.InputFileTplgyFlg) THEN
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "[ERROR] Input_file_tplgy command must be used\n",ierr)
+            & "[ERROR] Input_file_tplgy or Input_type_tplgy 0 commands must be used.\n",ierr)
         STOP
     END IF
 
@@ -471,6 +471,38 @@ SUBROUTINE GetInputFilePptByZone(InputFilePptByZone,InputFilePptByZoneFlg,ierr)
 
 END SUBROUTINE GetInputFilePptByZone
 
+ !  - GetInputFilePpt: It's a routine that provides a file name to open the properties file
+ !    > OUT: InputFilePpt, ierr.
+ !      + InputFilePpt: It's a string that specifies file name to open the properties file in 
+ !                      InputDir.
+ !      + ierr: It's an integer that indicates whether an error has occurred during the call.
+ !    > NOTES: The user must provide a file name using "-Input_file_ppt" followed by properties
+ !             file name.
+
+SUBROUTINE GetInputFilePpt(InputFilePpt,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)    :: ierr
+    CHARACTER(LEN=200),INTENT(OUT)  :: InputFilePpt
+
+    PetscBool                       :: InputFilePptFlg
+
+    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_file_ppt",         &
+        InputFilePpt,InputFilePptFlg,ierr)
+
+    IF (.NOT.InputFilePptFlg) THEN
+        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+            & "[ERROR] If -Input_type_(cvt,sto) 1 command are used without -Input_file_(cvt,sto)_by_zones or -Homogeneuos_(cvt,sto), the commands -Input_file_ppt and (-Homogeneuos_ppt or -Input_file_ppt_by_zones) must be used.\n",ierr)
+        STOP
+    END IF
+
+    InputFilePpt=TRIM(InputFilePpt)
+
+END SUBROUTINE GetInputFilePpt
+
 
  !  - GetInputFileCvt: It's a routine that provides a file name to open the conductivity file in 
  !                       InputDir.
@@ -495,10 +527,8 @@ SUBROUTINE GetInputFileCvt(InputFileCvt,ierr)
     CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_file_cvt",         &
         InputFileCvt,InputFileCvtFlg,ierr)
 
-    IF (.NOT.InputFileCvtFlg) THEN
-        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "[ERROR] Input_file_cvt command must be used\n",ierr)
-        STOP
+    IF (.NOT.(InputFileCvtFlg)) THEN
+        CALL GetInputFilePpt(InputFileCvt,ierr)
     END IF
 
     InputFileCvt=TRIM(InputFileCvt)
@@ -555,10 +585,8 @@ SUBROUTINE GetInputFileSto(InputFileSto,ierr)
     CALL PetscOptionsGetString(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Input_file_sto",         &
         InputFileSto,InputFileStoFlg,ierr)
 
-    IF (.NOT.InputFileStoFlg) THEN
-        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-            & "[ERROR] Input_file_sto command must be used\n",ierr)
-        STOP
+    IF (.NOT.(InputFileStoFlg)) THEN
+        CALL GetInputFilePpt(InputFileSto,ierr)
     END IF
 
     InputFileSto=TRIM(InputFileSto)
@@ -651,6 +679,82 @@ SUBROUTINE GetInputFileInitSol(InputFileInitSol,InputFileInitSolFlg,ierr)
 
 END SUBROUTINE GetInputFileInitSol
 
+ !
+
+SUBROUTINE GetInitSolUniValue(InitSolUniValue,InitSolUniValueFlg,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    PetscBool,INTENT(OUT)               :: InitSolUniValueFlg
+    PetscReal,INTENT(OUT)               :: InitSolUniValue
+
+    CALL PetscOptionsGetReal(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Init_sol_value",      &
+        & InitSolUniValue,InitSolUniValueFlg,ierr)
+
+END SUBROUTINE GetInitSolUniValue
+
+ !
+
+SUBROUTINE GetHomogeneusPptFlg(HomogeneusPptFlg,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    PetscBool,INTENT(OUT)               :: HomogeneusPptFlg
+
+    PetscBool                           :: HomogeneusPptFlg_1=.FALSE.,HomogeneusPptFlg_2=.FALSE.
+
+    CALL PetscOptionsGetBool(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Homogeneuos_ppt",      &
+        & HomogeneusPptFlg_1,HomogeneusPptFlg_2,ierr)
+
+    HomogeneusPptFlg=(HomogeneusPptFlg_1.OR.HomogeneusPptFlg_2).AND.HomogeneusPptFlg_1
+
+END SUBROUTINE GetHomogeneusPptFlg
+
+ ! 
+
+SUBROUTINE GetHomogeneusCvtFlg(HomogeneusCvtFlg,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    PetscBool,INTENT(OUT)               :: HomogeneusCvtFlg
+
+    PetscBool                           :: HomogeneusCvtFlg_1=.FALSE.,HomogeneusCvtFlg_2=.FALSE.
+
+    CALL PetscOptionsGetBool(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Homogeneuos_cvt",      &
+        & HomogeneusCvtFlg_1,HomogeneusCvtFlg_2,ierr)
+
+    HomogeneusCvtFlg=(HomogeneusCvtFlg_1.OR.HomogeneusCvtFlg_2).AND.HomogeneusCvtFlg_1
+
+END SUBROUTINE GetHomogeneusCvtFlg
+
+ ! 
+
+SUBROUTINE GetHomogeneusStoFlg(HomogeneusStoFlg,ierr)
+
+    IMPLICIT NONE
+
+#include <petsc/finclude/petscsys.h>
+
+    PetscErrorCode,INTENT(INOUT)        :: ierr
+    PetscBool,INTENT(OUT)               :: HomogeneusStoFlg
+
+    PetscBool                           :: HomogeneusStoFlg_1=.FALSE.,HomogeneusStoFlg_2=.FALSE.
+
+    CALL PetscOptionsGetBool(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,"-Homogeneuos_sto",      &
+        & HomogeneusStoFlg_1,HomogeneusStoFlg_2,ierr)
+
+    HomogeneusStoFlg=(HomogeneusStoFlg_1.OR.HomogeneusStoFlg_2).AND.HomogeneusStoFlg_1
+
+END SUBROUTINE GetHomogeneusStoFlg
  !    
 
 SUBROUTINE GetOutputDir(OutputDir,ierr)

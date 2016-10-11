@@ -300,7 +300,7 @@ SUBROUTINE GetGrid_1(Comm,DataMngr,Scale,x,y,z,ierr)
         CALL VecSetValue(z,i,Value,INSERT_VALUES,ierr)
     END DO
     ! Default DX=DY=DZ=1.0
-    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] WARNING: Grid System wasn't provided. Default grid used has DX=DY=DZ=1.0\n",ierr)
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] WARNING: Grid System wasn't provided. To provide one you have to use -Input_type_gmtry 2 otherwise a default grid used is DX=DY=DZ=1.0\n",ierr)
 
     CALL VecAssemblyBegin(x,ierr)
     CALL VecAssemblyEnd(x,ierr)
@@ -957,22 +957,22 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
         & Stencil,ierr)
 
     CALL VecGetArrayReadF90(Gmtry%x,xArray,ierr)
-    dxB=xArray(i+1)-xArray(i)
-    dx =xArray(i+2)-xArray(i+1)
-    dxF=xArray(i+3)-xArray(i+2)
+    dxB=ABS(xArray(i+1)-xArray(i))
+    dx =ABS(xArray(i+2)-xArray(i+1))
+    dxF=ABS(xArray(i+3)-xArray(i+2))
     CALL VecRestoreArrayReadF90(Gmtry%x,xArray,ierr)
 
     CALL VecGetArrayReadF90(Gmtry%y,yArray,ierr)
-    dyB=yArray(j+1)-yArray(j)
-    dy =yArray(j+2)-yArray(j+1)
-    dyF=yArray(j+3)-yArray(j+2)
+    dyB=ABS(yArray(j+1)-yArray(j))
+    dy =ABS(yArray(j+2)-yArray(j+1))
+    dyF=ABS(yArray(j+3)-yArray(j+2))
     CALL VecRestoreArrayReadF90(Gmtry%y,yArray,ierr)
 
     CALL VecGetArrayReadF90(Gmtry%z,zArray,ierr)
     IF (widthG(3).NE.1) THEN
-        dzB=zArray(k+1)-zArray(k)
-        dz =zArray(k+2)-zArray(k+1)
-        dzF=zArray(k+3)-zArray(k+2)
+        dzB=ABS(zArray(k+1)-zArray(k))
+        dz =ABS(zArray(k+2)-zArray(k+1))
+        dzF=ABS(zArray(k+3)-zArray(k+2))
     ELSE
         dzB=0.d0
         dz =1.d0

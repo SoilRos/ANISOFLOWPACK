@@ -1,0 +1,225 @@
+                                  MODFLOW-2005     
+      U.S. GEOLOGICAL SURVEY MODULAR FINITE-DIFFERENCE GROUND-WATER FLOW MODEL
+                            VERSION 1.11.00 8/8/2013
+
+ LIST FILE: str.lst
+                         UNIT    7
+
+ OPENING str.ba6
+ FILE TYPE:BAS6   UNIT    8   STATUS:OLD    
+ FORMAT:FORMATTED              ACCESS:SEQUENTIAL          
+
+ OPENING str.sip
+ FILE TYPE:SIP   UNIT   13   STATUS:OLD    
+ FORMAT:FORMATTED              ACCESS:SEQUENTIAL          
+
+ OPENING str.oc
+ FILE TYPE:OC   UNIT   14   STATUS:OLD    
+ FORMAT:FORMATTED              ACCESS:SEQUENTIAL          
+
+ OPENING str.bc6
+ FILE TYPE:BCF6   UNIT    9   STATUS:OLD    
+ FORMAT:FORMATTED              ACCESS:SEQUENTIAL          
+
+ OPENING str.dis
+ FILE TYPE:DIS   UNIT   10   STATUS:OLD    
+ FORMAT:FORMATTED              ACCESS:SEQUENTIAL          
+
+ BAS -- BASIC PACKAGE, VERSION 7, 5/2/2005 INPUT READ FROM UNIT    8
+
+ MODFLOW was compiled using mixed precision
+ Precision of REAL variables:           6
+ Precision of DOUBLE PRECISION variables:          15
+
+ DISCRETIZATION INPUT DATA READ FROM UNIT   10
+    1 LAYERS         6 ROWS         6 COLUMNS
+    1 STRESS PERIOD(S) IN SIMULATION
+ MODEL TIME UNIT IS SECONDS
+ MODEL LENGTH UNIT IS UNDEFINED
+  Confining bed flag for each layer:
+   0
+
+                     DELR =   1000.00    
+
+                     DELC =   1000.00    
+
+ TOP ELEVATION OF LAYER 1 =   600.000    
+
+   MODEL LAYER BOTTOM EL. =   0.00000     FOR LAYER   1
+
+
+ STRESS PERIOD     LENGTH       TIME STEPS     MULTIPLIER FOR DELT    SS FLAG
+ ----------------------------------------------------------------------------
+        1         1296000.          3                    1.500         SS
+
+ STEADY-STATE SIMULATION
+
+
+
+
+ #EXAMPLE SIMULATION OF STREAM ROUTING PACKAGE -- STEADY STATE OCTOBER 21, 1987  
+ #-- STREAM STAGE IS CALCULATED                                                  
+
+           BOUNDARY ARRAY =              1 FOR LAYER   1
+
+ AQUIFER HEAD WILL BE SET TO   999.00     AT ALL NO-FLOW NODES (IBOUND=0).
+
+
+
+                       INITIAL HEAD FOR LAYER   1
+ READING ON UNIT    8 WITH FORMAT: (10F13.0)           
+
+            1           2           3           4           5           6
+ ........................................................................
+   1    480.0       480.0       480.0       480.0       480.0       480.0    
+   2    480.0       480.0       480.0       480.0       480.0       480.0    
+   3    480.0       480.0       480.0       480.0       480.0       480.0    
+   4    480.0       480.0       480.0       480.0       480.0       480.0    
+   5    480.0       480.0       480.0       480.0       480.0       480.0    
+   6    480.0       480.0       480.0       480.0       480.0       480.0    
+
+ OUTPUT CONTROL IS SPECIFIED EVERY TIME STEP
+ HEAD PRINT FORMAT CODE IS   5    DRAWDOWN PRINT FORMAT CODE IS   5
+ HEADS WILL BE SAVED ON UNIT    0    DRAWDOWNS WILL BE SAVED ON UNIT    0
+
+ BCF -- BLOCK-CENTERED FLOW PACKAGE, VERSION 7, 5/2/2005
+         INPUT READ FROM UNIT  9
+ STEADY-STATE SIMULATION
+ HEAD AT CELLS THAT CONVERT TO DRY=  0.10000E+31
+ WETTING CAPABILITY IS NOT ACTIVE
+      LAYER  LAYER-TYPE CODE     INTERBLOCK T
+      --------------------------------------------
+         1            0          0 -- HARMONIC    
+
+ COLUMN TO ROW ANISOTROPY =   1.00000    
+
+     TRANSMIS. ALONG ROWS =  8.000000E-02 FOR LAYER   1
+
+ SIP -- STRONGLY-IMPLICIT PROCEDURE SOLUTION PACKAGE
+                    VERSION 7, 5/2/2005 INPUT READ FROM UNIT   13
+ MAXIMUM OF 150 ITERATIONS ALLOWED FOR CLOSURE
+  5 ITERATION PARAMETERS
+
+          SOLUTION BY THE STRONGLY IMPLICIT PROCEDURE
+          -------------------------------------------
+ MAXIMUM ITERATIONS ALLOWED FOR CLOSURE =      150
+                 ACCELERATION PARAMETER =     1.0000    
+      HEAD CHANGE CRITERION FOR CLOSURE =    0.10000E-03
+      SIP HEAD CHANGE PRINTOUT INTERVAL =      999
+
+     CALCULATE ITERATION PARAMETERS FROM MODEL CALCULATED WSEED
+1
+                            STRESS PERIOD NO.    1, LENGTH =   1296000.    
+                            -----------------------------------------------
+
+                              NUMBER OF TIME STEPS =     3
+
+                               MULTIPLIER FOR DELT =     1.500
+
+                            INITIAL TIME STEP SIZE =   272842.1    
+
+ SOLVING FOR HEAD 
+
+ AVERAGE SEED = 0.06853892
+ MINIMUM SEED = 0.06853892
+
+     5 ITERATION PARAMETERS CALCULATED FROM AVERAGE SEED:
+
+  0.000000E+00 0.488337E+00 0.738201E+00 0.866047E+00 0.931461E+00
+
+     1 ITERATIONS FOR TIME STEP   1 IN STRESS PERIOD    1
+
+ HEAD/DRAWDOWN PRINTOUT FLAG = 0     TOTAL BUDGET PRINTOUT FLAG = 0
+ CELL-BY-CELL FLOW TERM FLAG = 0
+
+ OUTPUT FLAGS FOR ALL LAYERS ARE THE SAME:
+   HEAD    DRAWDOWN  HEAD  DRAWDOWN
+ PRINTOUT  PRINTOUT  SAVE    SAVE
+ ----------------------------------
+     0         0       0       0
+
+ SOLVING FOR HEAD 
+     1 ITERATIONS FOR TIME STEP   2 IN STRESS PERIOD    1
+
+ HEAD/DRAWDOWN PRINTOUT FLAG = 0     TOTAL BUDGET PRINTOUT FLAG = 0
+ CELL-BY-CELL FLOW TERM FLAG = 0
+
+ OUTPUT FLAGS FOR ALL LAYERS ARE THE SAME:
+   HEAD    DRAWDOWN  HEAD  DRAWDOWN
+ PRINTOUT  PRINTOUT  SAVE    SAVE
+ ----------------------------------
+     0         0       0       0
+
+ SOLVING FOR HEAD 
+     1 ITERATIONS FOR TIME STEP   3 IN STRESS PERIOD    1
+
+ MAXIMUM HEAD CHANGE FOR EACH ITERATION:
+
+    HEAD CHANGE   HEAD CHANGE   HEAD CHANGE   HEAD CHANGE   HEAD CHANGE
+  LAYER,ROW,COL LAYER,ROW,COL LAYER,ROW,COL LAYER,ROW,COL LAYER,ROW,COL
+ ----------------------------------------------------------------------
+      0.000    
+  (  0,  0,  0)
+
+
+ HEAD/DRAWDOWN PRINTOUT FLAG = 1     TOTAL BUDGET PRINTOUT FLAG = 1
+ CELL-BY-CELL FLOW TERM FLAG = 1
+
+ OUTPUT FLAGS FOR ALL LAYERS ARE THE SAME:
+   HEAD    DRAWDOWN  HEAD  DRAWDOWN
+ PRINTOUT  PRINTOUT  SAVE    SAVE
+ ----------------------------------
+     1         0       0       0
+1
+              HEAD IN LAYER   1 AT END OF TIME STEP   3 IN STRESS PERIOD    1
+  ---------------------------------------------------------------------------
+
+           1       2       3       4       5       6
+ ...................................................
+   1  480.000 480.000 480.000 480.000 480.000 480.000
+   2  480.000 480.000 480.000 480.000 480.000 480.000
+   3  480.000 480.000 480.000 480.000 480.000 480.000
+   4  480.000 480.000 480.000 480.000 480.000 480.000
+   5  480.000 480.000 480.000 480.000 480.000 480.000
+   6  480.000 480.000 480.000 480.000 480.000 480.000
+1
+  VOLUMETRIC BUDGET FOR ENTIRE MODEL AT END OF TIME STEP    3, STRESS PERIOD   1
+  ------------------------------------------------------------------------------
+
+     CUMULATIVE VOLUMES      L**3       RATES FOR THIS TIME STEP      L**3/T
+     ------------------                 ------------------------
+
+           IN:                                      IN:
+           ---                                      ---
+             STORAGE =           0.0000               STORAGE =           0.0000
+       CONSTANT HEAD =           0.0000         CONSTANT HEAD =           0.0000
+
+            TOTAL IN =           0.0000              TOTAL IN =           0.0000
+
+          OUT:                                     OUT:
+          ----                                     ----
+             STORAGE =           0.0000               STORAGE =           0.0000
+       CONSTANT HEAD =           0.0000         CONSTANT HEAD =           0.0000
+
+           TOTAL OUT =           0.0000             TOTAL OUT =           0.0000
+
+            IN - OUT =           0.0000              IN - OUT =           0.0000
+
+ PERCENT DISCREPANCY =           0.00     PERCENT DISCREPANCY =           0.00
+
+
+
+
+
+
+         TIME SUMMARY AT END OF TIME STEP    3 IN STRESS PERIOD    1
+                    SECONDS     MINUTES      HOURS       DAYS        YEARS
+                    -----------------------------------------------------------
+   TIME STEP LENGTH 6.13895E+05  10232.      170.53      7.1053     1.94531E-02
+ STRESS PERIOD TIME 1.29600E+06  21600.      360.00      15.000     4.10678E-02
+         TOTAL TIME 1.29600E+06  21600.      360.00      15.000     4.10678E-02
+1
+
+ Run end date and time (yyyy/mm/dd hh:mm:ss): 2016/10/10  0:00:01
+ Elapsed run time:  0.037 Seconds
+
