@@ -1,0 +1,14 @@
+../../src/ANISOFLOW						\
+-Input_file_gmtry grid.txt 					\
+-Input_type_tplgy 0 						\
+-Input_file_ppt heterogeneous_properties.txt \
+-Input_file_ppt_by_zones properties_zones.txt \
+-Input_file_bc bc.txt 						\
+-Input_type_bc 2 							\
+-Run_options_scheme 2 						\
+-Output_type_ppt 3 							\
+-Project_name 11x11_transitory_heterogeneous_li \
+-Run_options_time 1 						\
+-Init_sol_value 10 							\
+-ksp_view_solution draw 					\
+-draw_pause 0.5

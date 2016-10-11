@@ -69,6 +69,10 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
     
     If (RunOptions%Time) THEN ! Transitory
 
+        IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Saving initial solution finalized\n",ierr)
+        ViewName="Sol_0";ViewName=ADJUSTL(ViewName)
+        CALL ViewSolution(x,ViewName,EventName,ierr)
+
 !         CALL VecDuplicate(x,diagA,ierr)
 !         CALL MatGetDiagonal(A,diagA,ierr)
         CALL MatDuplicate(A,MAT_COPY_VALUES,copyA,ierr)
@@ -173,8 +177,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
                 END IF
 
                 WRITE(CharCount,*)Count
-                ViewName="Sol_"//TRIM(ADJUSTL(CharCount))
-                ViewName=ADJUSTL(ViewName)
+                ViewName="Sol_"//TRIM(ADJUSTL(CharCount));ViewName=ADJUSTL(ViewName)
                 CALL ViewSolution(x,ViewName,EventName,ierr)
                 Count=Count+1
 

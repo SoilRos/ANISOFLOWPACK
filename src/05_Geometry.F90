@@ -956,28 +956,25 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
         & PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,        &
         & Stencil,ierr)
 
+    dxB=0.D0;dx=0.D0;dxF=0.D0
+    dyB=0.D0;dy=0.D0;dyF=0.D0
+    dzB=0.D0;dz=0.D0;dzF=0.D0
     CALL VecGetArrayReadF90(Gmtry%x,xArray,ierr)
-    dxB=ABS(xArray(i+1)-xArray(i))
-    dx =ABS(xArray(i+2)-xArray(i+1))
-    dxF=ABS(xArray(i+3)-xArray(i+2))
+    IF (i.GT.0)             dxB=ABS(xArray(i+1)-xArray(i))
+                            dx =ABS(xArray(i+2)-xArray(i+1))
+    IF (i.LT.(widthG(1)-1)) dxF=ABS(xArray(i+3)-xArray(i+2))
     CALL VecRestoreArrayReadF90(Gmtry%x,xArray,ierr)
 
     CALL VecGetArrayReadF90(Gmtry%y,yArray,ierr)
-    dyB=ABS(yArray(j+1)-yArray(j))
-    dy =ABS(yArray(j+2)-yArray(j+1))
-    dyF=ABS(yArray(j+3)-yArray(j+2))
+    IF (j.GT.0)             dyB=ABS(yArray(j+1)-yArray(j))
+                            dy =ABS(yArray(j+2)-yArray(j+1))
+    IF (j.LT.(widthG(2)-1)) dyF=ABS(yArray(j+3)-yArray(j+2))
     CALL VecRestoreArrayReadF90(Gmtry%y,yArray,ierr)
 
     CALL VecGetArrayReadF90(Gmtry%z,zArray,ierr)
-    IF (widthG(3).NE.1) THEN
-        dzB=ABS(zArray(k+1)-zArray(k))
-        dz =ABS(zArray(k+2)-zArray(k+1))
-        dzF=ABS(zArray(k+3)-zArray(k+2))
-    ELSE
-        dzB=0.d0
-        dz =1.d0
-        dzF=0.d0
-    END IF
+    IF (k.GT.0)             dzB=ABS(zArray(k+1)-zArray(k))
+                            dz =ABS(zArray(k+2)-zArray(k+1))
+    IF (k.LT.(widthG(3)-1)) dzF=ABS(zArray(k+3)-zArray(k+2))
     CALL VecRestoreArrayReadF90(Gmtry%z,zArray,ierr)
 
     ! Revisar los diferenciales de x,y,z que se usan como dividendo, si los valores son cercanos a cero puede haber problemas!!!!
@@ -1073,7 +1070,7 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
             Ppt%dx(6)=dx   ; Ppt%dy(6)=dyF  ; Ppt%dz(6)=dz
             Ppt%dx(7)=dx   ; Ppt%dy(7)=dy   ; Ppt%dz(7)=dzF
         ELSEIF (Ppt%StnclType.EQ.2) THEN
-            ALLOCATE(Ppt%StnclTplgy(19))
+            ALLOCATE(Ppt%StnclTplgy(19),Ppt%dx(19),Ppt%dy(19),Ppt%dz(19))
             Ppt%StnclTplgy(:)=0
             Ppt%StnclTplgy(1)= INT(TmpTplgyArray2D(i  ,j-1))
             Ppt%StnclTplgy(2)= INT(TmpTplgyArray2D(i-1,j  ))

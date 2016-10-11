@@ -1,12 +1,10 @@
 ../../src/ANISOFLOW 						\
--Input_type_gmtry 2 						\
 -Input_file_gmtry grid.txt 					\
 -Input_type_tplgy 0 						\
--Input_file_ppt iso_properties.txt 			\
+-Input_file_ppt o_aniso_properties.txt 		\
 -Homogeneuos_ppt 							\
--Input_file_bc steady_bc.txt 				\
+-Input_file_bc bc.txt 						\
 -Input_type_bc 2 							\
--Project_name 10x10_steady_iso_traditional 	\
--Output_type 3 								\
+-Project_name 11x11_steady_o_aniso_traditional \
 -ksp_view_solution draw 					\
 -draw_pause 5

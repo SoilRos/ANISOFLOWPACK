@@ -254,6 +254,7 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
         END IF
 
         Stencil%idx_val(4)= -(Stencil%idx_val(1)+Stencil%idx_val(2)+Stencil%idx_val(3)+Stencil%idx_val(5)+Stencil%idx_val(6)+Stencil%idx_val(7))
+        Stencil%idx_val(:)=Stencil%idx_val(:)/(Ppt%dx(4)*Ppt%dy(4)*Ppt%dz(4))
 
     ELSEIF (Ppt%StnclTplgy(4).EQ.2) THEN ! Dirichlet cell
         Stencil%idx_val(4)=-one
@@ -491,6 +492,7 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
                               &+(Ppt%dx(10)*Ppt%dy(10)) * (Ppt%Cvt(17)%zy.ARMONIC.Ppt%Cvt(10)%zy) / (Ppt%dy(19)+2*Ppt%dy(17)+Ppt%dy(15))
         END IF
 
+        Stencil%idx_val(:)=Stencil%idx_val(:)/(Ppt%dx(10)*Ppt%dy(10)*Ppt%dz(10))
     ELSEIF (Ppt%StnclTplgy(10).EQ.2) THEN ! Dirichlet cell
         Stencil%idx_val(10)=-one
     END IF

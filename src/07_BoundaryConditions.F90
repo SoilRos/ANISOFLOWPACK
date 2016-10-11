@@ -362,9 +362,9 @@ SUBROUTINE GetBC_2(Gmtry,BCFld,ierr)
             READ(u,*)aux,DT
             DO j=1,BCFld%TimeZone(i)%SizeTime
                 IF ((i.EQ.1).AND.(j.EQ.1)) THEN
-                    BCFld%TimeZone(1)%Time(1)=0.0
+                    BCFld%TimeZone(i)%Time(j)=DT
                 ELSEIF (j.EQ.1) THEN
-                    BCFld%TimeZone(i)%Time(1)=BCFld%TimeZone(i-1)%Time(BCFld%TimeZone(i-1)%SizeTime)+DT
+                    BCFld%TimeZone(i)%Time(j)=BCFld%TimeZone(i-1)%Time(BCFld%TimeZone(i-1)%SizeTime)+DT
                 ELSE
                     BCFld%TimeZone(i)%Time(j)=BCFld%TimeZone(i)%Time(j-1)+DT
                 END IF
