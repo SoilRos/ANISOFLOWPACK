@@ -1,8 +1,7 @@
- Timezones:           2
+ Timezones:           50
  Timezone(            1 ):            1
  DT:            1
- DirichletBoundaryCondition(            1  ):          321
-        450   8.70436811    
+ DirichletBoundaryCondition(            1  ):          320
            1   6.70436811    
            2   6.71134472    
            3   6.71828318    

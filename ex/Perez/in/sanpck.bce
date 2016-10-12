@@ -1,6 +1,0 @@
-Timezones:          1      
-Timezone(1       ): 100
-DT: 0.5
-DirichletBoundaryCondition(1       ): 0
-NeummanBoundaryCondition(1       ): 0
-CauchyBoundaryCondition(1       ): 0

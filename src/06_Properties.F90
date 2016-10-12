@@ -1015,14 +1015,14 @@ SUBROUTINE GetStorage_1(Gmtry,PptFld,Sto,ierr)
                 READ(u,*)
             END DO
             READ(u,'(A16)')StoKind
-            IF (StoKind.EQ."specific storage") THEN 
+!             IF (StoKind.EQ."specific storage") THEN 
                 READ(u,*)Zone_tmp(i)
-            ELSE
-                CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
-                    & "[ERROR] File of Specific Storage properties is invalid\n"&
-                    & ,ierr)
-                STOP            
-            END IF
+!             ELSE
+!                 CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,             &
+!                     & "[ERROR] File of Specific Storage properties is invalid\n"&
+!                     & ,ierr)
+!                 STOP            
+!             END IF
             DO j=1,21
                 READ(u,*)
             END DO

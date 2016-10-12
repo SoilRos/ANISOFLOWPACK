@@ -21,7 +21,7 @@ PROGRAM BC_GENERATOR
     END DO
     CLOSE(u)
     ALLOCATE(BC_value_tmp(sizeBC))
-    OPEN(u,FILE='ANISOFLOW_TEST.bc', STATUS='NEW')
+    OPEN(u,FILE='ANISOFLOW_TEST.bc', STATUS='REPLACE')
     WRITE(u,*)'Timezones: ',timezones
     i=1
     DO t=1,dt*timezones,dt
