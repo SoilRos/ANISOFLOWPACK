@@ -56,7 +56,11 @@ FUNCTION RealArmonic(x,y)
 #include <petsc/finclude/petsc.h>
 
     PetscReal, INTENT(IN) :: x,y
+
     PetscReal             :: RealArmonic
+
+!     PetscInt              :: InterfaceOperatorType
+!     COMMON                /INFERFACEOPERATOR/ InterfaceOperatorType
 
     IF ((x==0).OR.(y==0)) THEN
         RealArmonic=0.D0

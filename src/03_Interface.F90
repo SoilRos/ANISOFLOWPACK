@@ -1066,9 +1066,9 @@ SUBROUTINE GetRunOptions(RunOptions,ierr)
         RunOptions%Time,RunOptionsTimeFlg,ierr)
 
     IF (RunOptionsSchemeFlg) THEN
-        IF ((RunOptions%Scheme.GE.3).OR.(RunOptions%Scheme.LE.0)) THEN
-            CALL PetscSynchronizedPrintf(PETSC_NULL_OBJECT,PETSC_COMM_WORLD,                     &
-                & "[ERROR] Run_options_scheme command must be an integer between 1 and 2\n",ierr)
+        IF ((RunOptions%Scheme.GT.3).OR.(RunOptions%Scheme.LT.1)) THEN
+            CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                     &
+                & "[ERROR] Run_options_scheme command must be an integer between 1 and 3\n",ierr)
             STOP
         END IF
     END IF

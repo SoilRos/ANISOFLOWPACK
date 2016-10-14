@@ -159,11 +159,11 @@ SUBROUTINE GetDataMngr_1(Comm,Scale,DataMngr,ierr)
     ! It decides the stencil shape depending on the scheme used.
     IF (RunOptions%Scheme.EQ.1) THEN
         Stencil=DMDA_STENCIL_STAR
-    ELSEIF (RunOptions%Scheme.EQ.2) THEN
+    ELSEIF ((RunOptions%Scheme.EQ.2).OR.(RunOptions%Scheme.EQ.3)) THEN
         Stencil=DMDA_STENCIL_BOX
     ELSE
         CALL PetscSynchronizedPrintf(Comm,                         &
-            & "[ERROR] Run_options_scheme command must be an integer between 1 and 2\n",ierr)
+            & "[ERROR] Run_options_scheme command must be an integer between 1 and 3.\n",ierr)
         STOP
     END IF
 

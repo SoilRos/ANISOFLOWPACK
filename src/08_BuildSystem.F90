@@ -154,8 +154,8 @@ SUBROUTINE GetStencil(Ppt,Stencil,ierr)
         CALL GetTraditionalStencil(Ppt,Stencil,ierr)
     ELSEIF (RunOptions%Scheme.EQ.2) THEN
         CALL GetLiStencil(Ppt,Stencil,ierr)
-    ! ELSEIF (RunOptions%Scheme.EQ.3) THEN
-    !     CALL AnisoflowStencil(Ppt,Stencil,ierr)
+    ELSEIF (RunOptions%Scheme.EQ.3) THEN
+        CALL GetPerezStencil(Ppt,Stencil,ierr)
     ELSE
     
         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
@@ -479,7 +479,7 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
             Stencil%idx_clmns(MatStencil_i,18) = i+1
             Stencil%idx_clmns(MatStencil_j,18) = j
             Stencil%idx_clmns(MatStencil_k,18) = k+1
-            Stencil%idx_val(18)=(Ppt%dy(10)*Ppt%dz(10)) * (Ppt%Cvt(11)%xz.ARMONIC.Ppt%Cvt(10)%xz) / (Ppt%dz(18)+2*Ppt%dz(11)+Ppt%dz(5 )) &
+            Stencil%idx_val(18)=(Ppt%dy(10)*Ppt%dz(10)) * (Ppt%Cvt(11)%xz.ARMONIC.Ppt%Cvt(10)%xz) / (Ppt%dz(18)+2*Ppt%dz(11)+Ppt%dz(4 )) &
                               &+(Ppt%dx(10)*Ppt%dy(10)) * (Ppt%Cvt(17)%zx.ARMONIC.Ppt%Cvt(10)%zx) / (Ppt%dx(18)+2*Ppt%dx(17)+Ppt%dx(16))
         END IF
 
@@ -492,7 +492,8 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
                               &+(Ppt%dx(10)*Ppt%dy(10)) * (Ppt%Cvt(17)%zy.ARMONIC.Ppt%Cvt(10)%zy) / (Ppt%dy(19)+2*Ppt%dy(17)+Ppt%dy(15))
         END IF
 
-        Stencil%idx_val(:)=Stencil%idx_val(:)/(Ppt%dx(10)*Ppt%dy(10)*Ppt%dz(10))
+        Stencil%idx_val(: )=Stencil%idx_val(:)/(Ppt%dx(10)*Ppt%dy(10)*Ppt%dz(10))
+
     ELSEIF (Ppt%StnclTplgy(10).EQ.2) THEN ! Dirichlet cell
         Stencil%idx_val(10)=-one
     END IF
@@ -500,117 +501,218 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
 END SUBROUTINE GetLiStencil
 
 
-! SUBROUTINE AnisoflowStencil(Ppt,Stencil,ierr)
+SUBROUTINE GetPerezStencil(Ppt,Stencil,ierr)
 
-!     USE ANISOFLOW_Types, ONLY : Property,StencilVar
-!     USE ANISOFLOW_Operators
+    USE ANISOFLOW_Types, ONLY : Property,StencilVar
+    USE ANISOFLOW_Operators
 
-!     IMPLICIT NONE
+    IMPLICIT NONE
 
-! #include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscsys.h>
 
-!     PetscErrorCode,INTENT(INOUT)            :: ierr
-!     TYPE(Property),INTENT(IN)               :: Ppt
-!     TYPE(StencilVar),INTENT(INOUT)          :: Stencil
+    PetscErrorCode,INTENT(INOUT)            :: ierr
+    TYPE(Property),INTENT(IN)               :: Ppt
+    TYPE(StencilVar),INTENT(INOUT)          :: Stencil
 
-!     PetscInt                                :: i,j,k
-!     PetscReal                               :: one=1.d0,zero=0.d0
+    PetscInt                                :: i,j,k
+    PetscReal                               :: one=1.d0,zero=0.d0
 
-!     IF (Ppt%StnclType.NE.2) THEN
-!         CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-!             & "ERROR: Properties must have a a stencil type box.\n",ierr)
-!         STOP
-!     END IF
+    IF (Ppt%StnclType.NE.2) THEN
+        CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
+            & "ERROR: Properties must have a a stencil type box.\n",ierr)
+        STOP
+    END IF
 
-!     ALLOCATE(Stencil%idx_clmns(4,19))
-!     ALLOCATE(Stencil%idx_val(19))
-!     Stencil%idx_size=19
+    ! The Li stencil is based on 19 cells.
+    ALLOCATE(Stencil%idx_clmns(4,19))
+    ALLOCATE(Stencil%idx_val(19))
+    Stencil%idx_size=19
 
-!     ! It gets the position of the cell.
-!     i=Ppt%Pstn%i
-!     j=Ppt%Pstn%j
-!     k=Ppt%Pstn%k
+    ! It gets the position of the cell.
+    i=Ppt%Pstn%i
+    j=Ppt%Pstn%j
+    k=Ppt%Pstn%k
 
-!     ! Rows to modify
-!     Stencil%idx_rws(MatStencil_i,1) = i
-!     Stencil%idx_rws(MatStencil_j,1) = j
-!     Stencil%idx_rws(MatStencil_k,1) = k
-!     ! Columns to modify
-!     Stencil%idx_clmns(MatStencil_i,:) = i
-!     Stencil%idx_clmns(MatStencil_j,:) = j
-!     Stencil%idx_clmns(MatStencil_k,:) = k
+    ! Rows to modify
+    Stencil%idx_rws(MatStencil_i,1) = i
+    Stencil%idx_rws(MatStencil_j,1) = j
+    Stencil%idx_rws(MatStencil_k,1) = k
+    ! Columns to modify
+    Stencil%idx_clmns(MatStencil_i,:) = i
+    Stencil%idx_clmns(MatStencil_j,:) = j
+    Stencil%idx_clmns(MatStencil_k,:) = k
 
-!     ! Initial stencil vaulues
-!     Stencil%idx_val(:)=zero
+    ! Initial stencil vaulues
+    Stencil%idx_val(:)=zero
 
-!     ! If the current cell is an active, source, or cauchy cell:
-!     IF ((Ppt%StnclTplgy(10).EQ.1).OR.(Ppt%StnclTplgy(10).EQ.3).OR.(Ppt%StnclTplgy(10).EQ.10)) THEN
-   
-!         ! 1-G
-!         IF (Ppt%StnclTplgy(3).NE.0) THEN
-!             Stencil%idx_clmns(MatStencil_i,3) = i
-!             Stencil%idx_clmns(MatStencil_j,3) = j
-!             Stencil%idx_clmns(MatStencil_k,3) = k-1
-!             Stencil%idx_val(3)=(Ppt%dx(10)*Ppt%dy(10)) * (Ppt%Cvt(3)%zz.ARMONIC.Ppt%Cvt(10)%zz) * 2/(Ppt%dz(3)+Ppt%dz(10))
-!         END IF
+    ! If the current cell is an active, source, or cauchy cell:
+    IF ((Ppt%StnclTplgy(10).EQ.1).OR.(Ppt%StnclTplgy(10).EQ.3).OR.(Ppt%StnclTplgy(10).EQ.4)) THEN
 
-!         ! 3-G  -- Orthogonal direction
-!         IF (Ppt%StnclTplgy(3).NE.0) THEN
-!             Stencil%idx_clmns(MatStencil_i,3) = i
-!             Stencil%idx_clmns(MatStencil_j,3) = j
-!             Stencil%idx_clmns(MatStencil_k,3) = k-1
-!             Stencil%idx_val(3)=(Ppt%dx(10)*Ppt%dy(10)) * (Ppt%Cvt(3)%zz.ARMONIC.Ppt%Cvt(10)%zz) * 2/(Ppt%dz(3)+Ppt%dz(10))
-!         END IF
+        ! 1-P Bloque izquierdo-centro-superior
+        IF (Ppt%StnclTplgy(1).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,1) = i
+            Stencil%idx_clmns(MatStencil_j,1) = j-1
+            Stencil%idx_clmns(MatStencil_k,1) = k-1
+            Stencil%idx_val(1)=-(Ppt%dx(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(7)%yz.ARMONIC.Ppt%Cvt(10)%yz) / (Ppt%dz(15)+2*Ppt%dz(7)+Ppt%dz(1)) &
+                              &-(Ppt%dx(10)*Ppt%dy(10)) * 2*(Ppt%Cvt(3)%zy.ARMONIC.Ppt%Cvt(10)%zy) / (Ppt%dy(5 )+2*Ppt%dy(3)+Ppt%dy(1))              
+        END IF
 
-!         ! 7-E  -- Orthogonal direction
-!         IF (Ppt%StnclTplgy(7).NE.0) THEN
-!             Stencil%idx_clmns(MatStencil_i,7) = i
-!             Stencil%idx_clmns(MatStencil_j,7) = j-1
-!             Stencil%idx_clmns(MatStencil_k,7) = k
-!             Stencil%idx_val(7)=(Ppt%dx(10)*Ppt%dz(10)) * (Ppt%Cvt(7)%yy.ARMONIC.Ppt%Cvt(10)%yy) * 2/(Ppt%dy(7)+Ppt%dy(10))
-!         END IF
+        ! 2-L Bloque centro-detras-superior
+        IF (Ppt%StnclTplgy(2).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,2) = i-1
+            Stencil%idx_clmns(MatStencil_j,2) = j
+            Stencil%idx_clmns(MatStencil_k,2) = k-1
+            Stencil%idx_val(2)=-(Ppt%dy(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(9)%xz.ARMONIC.Ppt%Cvt(10)%xz) / (Ppt%dz(16)+2*Ppt%dz(9)+Ppt%dz(2)) &
+                              &-(Ppt%dx(10)*Ppt%dy(10)) * 2*(Ppt%Cvt(3)%zx.ARMONIC.Ppt%Cvt(10)%zx) / (Ppt%dx(4 )+2*Ppt%dx(3)+Ppt%dx(2))
+        END IF
 
-!         ! 9-C  -- Orthogonal direction
-!         IF (Ppt%StnclTplgy(9).NE.0) THEN
-!             Stencil%idx_clmns(MatStencil_i,9) = i-1
-!             Stencil%idx_clmns(MatStencil_j,9) = j
-!             Stencil%idx_clmns(MatStencil_k,9) = k
-!             Stencil%idx_val(9)=(Ppt%dy(10)*Ppt%dz(10)) * (Ppt%Cvt(9)%xx.ARMONIC.Ppt%Cvt(10)%xx) * 2/(Ppt%dx(9)+Ppt%dx(10))
-!         END IF
+        ! 3-F Bloque centro-centro-superior
+        IF (Ppt%StnclTplgy(3).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,3) = i
+            Stencil%idx_clmns(MatStencil_j,3) = j
+            Stencil%idx_clmns(MatStencil_k,3) = k-1
+            Stencil%idx_val(3)=(Ppt%dx(10)*Ppt%dy(10)) * 2*(Ppt%Cvt(3)%zz.ARMONIC.Ppt%Cvt(10)%zz) / (Ppt%dz(3)+Ppt%dz(10))
+        END IF
 
-!         ! 11-B  -- Orthogonal direction
-!         IF (Ppt%StnclTplgy(11).NE.0) THEN
-!             Stencil%idx_clmns(MatStencil_i,11) = i+1
-!             Stencil%idx_clmns(MatStencil_j,11) = j
-!             Stencil%idx_clmns(MatStencil_k,11) = k
-!             Stencil%idx_val(11)=(Ppt%dy(10)*Ppt%dz(10)) * (Ppt%Cvt(11)%xx.ARMONIC.Ppt%Cvt(10)%xx) * 2/(Ppt%dx(11)+Ppt%dx(10))
-!         END IF
+        ! 4-N Bloque centro-frontal-superior
+        IF (Ppt%StnclTplgy(4).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,4) = i+1
+            Stencil%idx_clmns(MatStencil_j,4) = j
+            Stencil%idx_clmns(MatStencil_k,4) = k-1
+            Stencil%idx_val(4)=(Ppt%dy(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(11)%xz.ARMONIC.Ppt%Cvt(10)%xz) / (Ppt%dz(18)+2*Ppt%dz(11)+Ppt%dz(4)) &
+                             &+(Ppt%dx(10)*Ppt%dy(10)) * 2*(Ppt%Cvt(3 )%zx.ARMONIC.Ppt%Cvt(10)%zx) / (Ppt%dx(4 )+2*Ppt%dx(3 )+Ppt%dx(2))
+        END IF
 
-!         ! 13-D  -- Orthogonal direction
-!         IF (Ppt%StnclTplgy(13).NE.0) THEN
-!             Stencil%idx_clmns(MatStencil_i,13) = i
-!             Stencil%idx_clmns(MatStencil_j,13) = j+1
-!             Stencil%idx_clmns(MatStencil_k,13) = k
-!             Stencil%idx_val(13)=(Ppt%dx(10)*Ppt%dz(10)) * (Ppt%Cvt(13)%yy.ARMONIC.Ppt%Cvt(10)%yy) * 2/(Ppt%dy(13)+Ppt%dy(10))
-!         END IF
+        ! 5-R Bloque derecho-centro-superior
+        IF (Ppt%StnclTplgy(5).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,5) = i
+            Stencil%idx_clmns(MatStencil_j,5) = j+1
+            Stencil%idx_clmns(MatStencil_k,5) = k-1
+            Stencil%idx_val(5)=(Ppt%dy(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(13)%yz.ARMONIC.Ppt%Cvt(10)%yz) / (Ppt%dz(19)+2*Ppt%dz(13)+Ppt%dz(5 )) &
+                             &+(Ppt%dx(10)*Ppt%dy(10)) * 2*(Ppt%Cvt(3 )%zy.ARMONIC.Ppt%Cvt(10)%zy) / (Ppt%dy(5 )+2*Ppt%dy(3 )+Ppt%dy(1 ))
+        END IF
 
-!         ! 17-F  -- Orthogonal direction
-!         IF (Ppt%StnclTplgy(17).NE.0) THEN
-!             Stencil%idx_clmns(MatStencil_i,17) = i
-!             Stencil%idx_clmns(MatStencil_j,17) = j
-!             Stencil%idx_clmns(MatStencil_k,17) = k+1
-!             Stencil%idx_val(17)=(Ppt%dx(10)*Ppt%dy(10)) * (Ppt%Cvt(17)%zz.ARMONIC.Ppt%Cvt(10)%zz) * 2/(Ppt%dz(17)+Ppt%dz(10))
-!         END IF
+        ! 6-H Bloque izquierdo-detras-centro
+        IF (Ppt%StnclTplgy(6).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,6) = i-1
+            Stencil%idx_clmns(MatStencil_j,6) = j-1
+            Stencil%idx_clmns(MatStencil_k,6) = k
+            Stencil%idx_val(6)=-(Ppt%dy(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(9)%xy.ARMONIC.Ppt%Cvt(10)%xy) / (Ppt%dy(12)+2*Ppt%dy(9)+Ppt%dy(6)) &
+                              &-(Ppt%dx(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(7)%xy.ARMONIC.Ppt%Cvt(10)%xy) / (Ppt%dx(6 )+2*Ppt%dx(7)+Ppt%dx(8))
+        END IF
 
-!         ! 10-A
-!         Stencil%idx_val(10)= -(Stencil%idx_val(3)+Stencil%idx_val(7)+Stencil%idx_val(9)+Stencil%idx_val(11)+Stencil%idx_val(13)+Stencil%idx_val(17))
+        ! 7-D Bloque izquierdo-centro-centro
+        IF (Ppt%StnclTplgy(7).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,7) = i
+            Stencil%idx_clmns(MatStencil_j,7) = j-1
+            Stencil%idx_clmns(MatStencil_k,7) = k
+            Stencil%idx_val(7)=(Ppt%dx(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(7)%yy.ARMONIC.Ppt%Cvt(10)%yy) / (Ppt%dy(10)+Ppt%dy(7))
+        END IF
 
-!     ELSEIF (Ppt%StnclTplgy(10).EQ.2) THEN ! Dirichlet cell
-!         Stencil%idx_val(10)=-one
-!     END IF
+        ! 8-J Bloque izquierdo-frontal-centro
+        IF (Ppt%StnclTplgy(8).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,8) = i+1
+            Stencil%idx_clmns(MatStencil_j,8) = j-1
+            Stencil%idx_clmns(MatStencil_k,8) = k
+            Stencil%idx_val(8)=(Ppt%dy(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(11)%xy.ARMONIC.Ppt%Cvt(10)%xy) / (Ppt%dy(8)+2*Ppt%dy(11)+Ppt%dy(14)) &
+                             &+(Ppt%dx(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(7 )%xy.ARMONIC.Ppt%Cvt(10)%xy) / (Ppt%dx(6)+2*Ppt%dx(7 )+Ppt%dx(8 ))
+        END IF
 
+        ! 9-B Bloque centro-detras-centro
+        IF (Ppt%StnclTplgy(9).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,9) = i-1
+            Stencil%idx_clmns(MatStencil_j,9) = j
+            Stencil%idx_clmns(MatStencil_k,9) = k
+            Stencil%idx_val(9)=(Ppt%dy(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(9)%xx.ARMONIC.Ppt%Cvt(10)%xx) / (Ppt%dx(10)+Ppt%dx(9))
+        END IF
 
-! END SUBROUTINE AnisoflowStencil
+        ! 11-C Bloque centro-frontal-centro
+        IF (Ppt%StnclTplgy(11).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,11) = i+1
+            Stencil%idx_clmns(MatStencil_j,11) = j
+            Stencil%idx_clmns(MatStencil_k,11) = k
+            Stencil%idx_val(11)=(Ppt%dz(10)*Ppt%dy(10)) * 2*(Ppt%Cvt(11)%xx.ARMONIC.Ppt%Cvt(10)%xx) / (Ppt%dx(11)+Ppt%dx(10))
+        END IF
+
+        ! 12-I Bloque derecho-detras-centro
+        IF (Ppt%StnclTplgy(12).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,12) = i-1
+            Stencil%idx_clmns(MatStencil_j,12) = j+1
+            Stencil%idx_clmns(MatStencil_k,12) = k
+            Stencil%idx_val(12)=(Ppt%dy(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(9 )%xy.ARMONIC.Ppt%Cvt(10)%xy) / (Ppt%dy(6 )+2*Ppt%dy(9 )+Ppt%dy(12)) &
+                            &+(Ppt%dx(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(13)%xy.ARMONIC.Ppt%Cvt(10)%xy) / (Ppt%dx(12)+2*Ppt%dx(13)+Ppt%dx(14))
+        END IF
+
+        ! 13-E Bloque derecho-centro-centro
+        IF (Ppt%StnclTplgy(13).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,13) = i
+            Stencil%idx_clmns(MatStencil_j,13) = j+1
+            Stencil%idx_clmns(MatStencil_k,13) = k
+            Stencil%idx_val(13)=(Ppt%dx(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(13)%yy.ARMONIC.Ppt%Cvt(10)%yy) / (Ppt%dy(13)+Ppt%dy(10))
+        END IF
+
+        ! 14-K Bloque derecho-frontal-centro
+        IF (Ppt%StnclTplgy(14).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,14) = i+1
+            Stencil%idx_clmns(MatStencil_j,14) = j+1
+            Stencil%idx_clmns(MatStencil_k,14) = k
+            Stencil%idx_val(14)=-(Ppt%dy(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(11)%xy.ARMONIC.Ppt%Cvt(10)%xy) / (Ppt%dy(8 )+2*Ppt%dy(11)+Ppt%dy(14)) &
+                               &-(Ppt%dx(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(13)%xy.ARMONIC.Ppt%Cvt(10)%xy) / (Ppt%dx(12)+2*Ppt%dx(13)+Ppt%dx(14))
+        END IF
+
+        ! 15-Q Bloque izquierdo-centro-inferior
+        IF (Ppt%StnclTplgy(15).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,15) = i
+            Stencil%idx_clmns(MatStencil_j,15) = j-1
+            Stencil%idx_clmns(MatStencil_k,15) = k+1
+            Stencil%idx_val(15)=(Ppt%dx(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(7 )%yz.ARMONIC.Ppt%Cvt(10)%yz) / (Ppt%dz(15)+2*Ppt%dz(7 )+Ppt%dz(1 )) &
+                              &+(Ppt%dx(10)*Ppt%dy(10)) * 2*(Ppt%Cvt(17)%zy.ARMONIC.Ppt%Cvt(10)%zy) / (Ppt%dy(19)+2*Ppt%dy(17)+Ppt%dy(15))
+        END IF
+
+        ! 16-M Bloque centro-detras-inferior
+        IF (Ppt%StnclTplgy(16).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,16) = i-1
+            Stencil%idx_clmns(MatStencil_j,16) = j
+            Stencil%idx_clmns(MatStencil_k,16) = k+1
+            Stencil%idx_val(16)=(Ppt%dy(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(9 )%xz.ARMONIC.Ppt%Cvt(10)%xz) / (Ppt%dz(16)+2*Ppt%dz(9 )+Ppt%dz(2 )) &
+                              &+(Ppt%dx(10)*Ppt%dy(10)) * 2*(Ppt%Cvt(17)%zx.ARMONIC.Ppt%Cvt(10)%zx) / (Ppt%dx(18)+2*Ppt%dx(17)+Ppt%dx(16))
+        END IF
+
+        ! 17-I Bloque centro-centro-inferior
+        IF (Ppt%StnclTplgy(17).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,17) = i
+            Stencil%idx_clmns(MatStencil_j,17) = j
+            Stencil%idx_clmns(MatStencil_k,17) = k+1
+            Stencil%idx_val(17)=(Ppt%dx(10)*Ppt%dy(10)) * 2*(Ppt%Cvt(17)%zz.ARMONIC.Ppt%Cvt(10)%zz) / (Ppt%dz(17)+Ppt%dz(10))
+        END IF
+
+        ! 18-O Bloque centro-frontal-inferior
+        IF (Ppt%StnclTplgy(18).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,18) = i+1
+            Stencil%idx_clmns(MatStencil_j,18) = j
+            Stencil%idx_clmns(MatStencil_k,18) = k+1
+            Stencil%idx_val(18)=-(Ppt%dy(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(11)%xz.ARMONIC.Ppt%Cvt(10)%xz) / (Ppt%dz(18)+2*Ppt%dz(11)+Ppt%dz(4 )) &
+                               &-(Ppt%dx(10)*Ppt%dy(10)) * 2*(Ppt%Cvt(17)%zx.ARMONIC.Ppt%Cvt(10)%zx) / (Ppt%dx(18)+2*Ppt%dx(17)+Ppt%dx(16))
+        END IF
+
+        ! 19-S Bloque derecho-centro-inferior
+        IF (Ppt%StnclTplgy(19).NE.0) THEN
+            Stencil%idx_clmns(MatStencil_i,19) = i
+            Stencil%idx_clmns(MatStencil_j,19) = j+1
+            Stencil%idx_clmns(MatStencil_k,19) = k+1
+            Stencil%idx_val(19)=-(Ppt%dx(10)*Ppt%dz(10)) * 2*(Ppt%Cvt(13)%yz.ARMONIC.Ppt%Cvt(10)%yz) / (Ppt%dz(15)+2*Ppt%dz(13)+Ppt%dz(5 )) &
+                               &-(Ppt%dx(10)*Ppt%dy(10)) * 2*(Ppt%Cvt(3 )%zy.ARMONIC.Ppt%Cvt(10)%zy) / (Ppt%dy(19)+2*Ppt%dy(17)+Ppt%dy(15))              
+        END IF
+
+        ! 10-A Bloque centro-centro-centro
+        Stencil%idx_val(10)= -(Stencil%idx_val(3)+Stencil%idx_val(7)+Stencil%idx_val(9)+Stencil%idx_val(11)+Stencil%idx_val(13)+Stencil%idx_val(17))
+        Stencil%idx_val(:)=Stencil%idx_val(:)/(Ppt%dx(10)*Ppt%dy(10)*Ppt%dz(10))
+
+    ELSEIF (Ppt%StnclTplgy(10).EQ.2) THEN ! Dirichlet cell
+        Stencil%idx_val(10)=-one
+    END IF
+
+END SUBROUTINE GetPerezStencil
 
 SUBROUTINE ApplyDirichlet(BCFld,TimeZone,A,b,ierr)
 
