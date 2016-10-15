@@ -16,7 +16,7 @@ PROGRAM ANISOFLOW_RANDOM_FIELD_GENERATOR
     IF (Nargs.GT.0) THEN
         DO i=1,NArgs
             CALL GET_COMMAND_ARGUMENT(i,Arg)
-            READ(Arg,'(I5)') IndexWidth(i)
+            READ(Arg,"(I5)") IndexWidth(i)
             IF (i.EQ.3) EXIT
         END DO
     END IF
@@ -38,6 +38,7 @@ PROGRAM ANISOFLOW_RANDOM_FIELD_GENERATOR
     CALL CreateZones(ProjectName,IndexWidth,ZonesSize)
     CALL CreateBC(ProjectName,IndexWidth,SimulationDays)
     CALL CreateExecutionLine(ProjectName)
+    CALL CreatePerformanceTest(ProjectName)
 
 END PROGRAM ANISOFLOW_RANDOM_FIELD_GENERATOR
 
@@ -55,7 +56,7 @@ SUBROUTINE CreateGmtry(ProjectName,RealWidth,IndexWidth)
     INTEGER,PARAMETER               :: u=01
 
     FileName=TRIM(ProjectName)//"_gmtry.txt"
-    OPEN(u,FILE=FileName, STATUS='REPLACE')
+    OPEN(u,FILE=FileName, STATUS="REPLACE")
     
     WRITE(u,*)"COLUMNS  ",IndexWidth(1)
     WRITE(u,*)"ROWS     ",IndexWidth(2)
@@ -88,7 +89,7 @@ SUBROUTINE CreateProperties(ProjectName,IsoSize,OAnisoSize,NOAnisoSize)
     INTEGER,PARAMETER               :: u=01
 
     FileName=TRIM(ProjectName)//"_properties.txt"
-    OPEN(u,FILE=FileName, STATUS='REPLACE')
+    OPEN(u,FILE=FileName, STATUS="REPLACE")
 
     DO i=1,(IsoSize+OAnisoSize+NOAnisoSize)
         CALL RANDOM_NUMBER(RandCvt)
@@ -104,7 +105,7 @@ SUBROUTINE CreateProperties(ProjectName,IsoSize,OAnisoSize,NOAnisoSize)
             WRITE(u,*) 5*RandCvt(1),5*RandCvt(2),5*RandCvt(3)
         ELSE
             WRITE(u,*)"k non-orthogonal anisotropic"
-            WRITE(u,*)5*RandCvt(1),5*RandCvt(2),5*RandCvt(3),0.5*RandCvt(4),0.1*RandCvt(5),0.1*RandCvt(6)
+            WRITE(u,*)5*RandCvt(1),5*RandCvt(2),5*RandCvt(3),2*RandCvt(4),0.1*RandCvt(5),0.1*RandCvt(6)
         END IF
 
         WRITE(u,*)" "
@@ -154,7 +155,7 @@ SUBROUTINE CreateZones(ProjectName,IndexWidth,ZonesSize)
     ALLOCATE(ZoneInt(IndexWidth(1),IndexWidth(2),IndexWidth(3)))
 
     FileName=TRIM(ProjectName)//"_zones.txt"
-    OPEN(u,FILE=FileName, STATUS='REPLACE')
+    OPEN(u,FILE=FileName, STATUS="REPLACE")
 
     CALL RANDOM_NUMBER(ZoneReal);ZoneInt=INT((ZonesSize)*ZoneReal+1)
     ZoneInt(:,:,:)=ZoneInt
@@ -196,7 +197,7 @@ SUBROUTINE CreateBC(ProjectName,IndexWidth,SimulationDays)
 
 
     FileName=TRIM(ProjectName)//"_bc.txt"
-    OPEN(u,FILE=FileName, STATUS='REPLACE')
+    OPEN(u,FILE=FileName, STATUS="REPLACE")
 
     WRITE(u,*)"Timezones: ",SimulationDays
 
@@ -218,8 +219,8 @@ SUBROUTINE CreateBC(ProjectName,IndexWidth,SimulationDays)
         WRITE(u,*)"Timezone(",i,"):",1
         WRITE(u,*)"DT:",1.0
 
-        StressSourcePeriod=(((i/(2*365.D0))-FLOOR(i/(2*365.D0))).GT.1.D0).AND.(((i/(2*365.D0))-FLOOR(i/(2*365.D0))).LT.1.5D0)
-        StressSinkPeriod=(((i/(2*365.D0))-FLOOR(i/(2*365.D0))).LT.0.5D0)
+        StressSourcePeriod=(((i/(2*365.D0))-FLOOR(i/(2*365.D0))).GT.0.5D0).AND.(((i/(2*365.D0))-FLOOR(i/(2*365.D0))).LT.0.75D0)
+        StressSinkPeriod=  (((i/(2*365.D0))-FLOOR(i/(2*365.D0))).LT.0.25D0)
         DirichSize=2*IndexWidth(1)*IndexWidth(3)
         IF (StressSinkPeriod.OR.StressSourcePeriod) DirichSize=DirichSize+3
         WRITE(u,*)"DirichletBoundaryCondition(",i,"):", DirichSize
@@ -256,7 +257,7 @@ SUBROUTINE CreateExecutionLine(ProjectName)
     INTEGER,PARAMETER               :: u=01
 
     FileName=TRIM(ProjectName)//".sh"
-    OPEN(u,FILE=FileName, STATUS='REPLACE')
+    OPEN(u,FILE=FileName, STATUS="REPLACE")
 
     WRITE(u,*)"../../src/ANISOFLOW \"
     WRITE(u,*)"-Input_type_gmtry 2 \"
@@ -268,8 +269,7 @@ SUBROUTINE CreateExecutionLine(ProjectName)
     WRITE(u,*)"-Input_type_bc 2 \"
     WRITE(u,*)"-Run_options_scheme 2 \"
     WRITE(u,*)"-Output_type_ppt 3 \"
-    WRITE(u,*)"-Project_name ",TRIM(ProjectName)," \"
-    WRITE(u,*)"-log_view ascii:"//TRIM(ProjectName)//"_steady.log "
+    WRITE(u,*)"-Project_name ",TRIM(ProjectName)," "
     WRITE(u,*)" "
 
     WRITE(u,*)"../../src/ANISOFLOW \"
@@ -285,10 +285,80 @@ SUBROUTINE CreateExecutionLine(ProjectName)
     WRITE(u,*)"-Output_type_ppt 3 \"
     WRITE(u,*)"-Project_name ",TRIM(ProjectName)," \"
     WRITE(u,*)"-Input_type_init_sol 3 \"
-    WRITE(u,*)"-Input_file_init_sol ",TRIM(ProjectName)//"_Sol.h5 \"
-    WRITE(u,*)"-log_view ascii:"//TRIM(ProjectName)//"_transitory.log "
+    WRITE(u,*)"-Input_file_init_sol ",TRIM(ProjectName)//"_Sol.h5 "
 
     CLOSE(u)
     CALL CHMOD(FileName,"755")
 
 END SUBROUTINE CreateExecutionLine
+
+SUBROUTINE CreatePerformanceTest(ProjectName)
+
+    IMPLICIT NONE
+
+    CHARACTER(LEN=200),INTENT(IN)   :: ProjectName
+
+    CHARACTER(LEN=200)              :: FileName
+    INTEGER,PARAMETER               :: u=01
+
+    FileName=TRIM(ProjectName)//"_PerformanceTest.sh"
+    OPEN(u,FILE=FileName, STATUS="REPLACE")
+
+    WRITE(u,*)"# Execution Line must be: ./"//TRIM(FileName)//" np_max"
+    WRITE(u,*)"np_max= $1"
+    WRITE(u,*)"declare -a KSP=(""cg"" ""gmres"")"
+    WRITE(u,*)"declare -a PC=(""none"" ""jacobi"" ""bjacobi"")"
+
+    WRITE(u,*)"for np in `seq 1 ${np_max}`; do"
+    WRITE(u,*)"    for ksptype in ""${KSP[@]}""; do"
+    WRITE(u,*)"        for pctype in ""${PC[@]}""; do"
+    WRITE(u,*)"            echo ""*************************************************"""
+    WRITE(u,*)"            echo ""*************** Beginning new run ***************"""
+    WRITE(u,*)"            echo ""Options"""
+    WRITE(u,*)"            echo ""np: $np"""
+    WRITE(u,*)"            echo ""Solver: $ksptype"""
+    WRITE(u,*)"            echo ""Preconditioner: $pctype"""
+    WRITE(u,*)"            echo ""************** Initializing program *************"""
+    WRITE(u,*)"            mpiexec -n ${np} \"
+    WRITE(u,*)"            ../../src/ANISOFLOW \"
+    WRITE(u,*)"            -Input_type_gmtry 2 \"
+    WRITE(u,*)"            -Input_file_gmtry ",TRIM(ProjectName)//"_gmtry.txt \"
+    WRITE(u,*)"            -Input_type_tplgy 0 \"
+    WRITE(u,*)"            -Input_file_ppt ",TRIM(ProjectName)//"_properties.txt \"
+    WRITE(u,*)"            -Input_file_ppt_by_zones ",TRIM(ProjectName)//"_zones.txt \"
+    WRITE(u,*)"            -Input_file_bc ",TRIM(ProjectName)//"_bc.txt \"
+    WRITE(u,*)"            -Input_type_bc 2 \"
+    WRITE(u,*)"            -Run_options_scheme 2 \"
+    WRITE(u,*)"            -Output_type_ppt 3 \"
+    WRITE(u,*)"            -Project_name ",TRIM(ProjectName),"\"
+    WRITE(u,*)"            -ksp_type ${ksptype} \"
+    WRITE(u,*)"            -pc_type  ${pctype} \"
+    WRITE(u,*)"             "
+
+    WRITE(u,*)"            mpiexec -n ${np} \"
+    WRITE(u,*)"            ../../src/ANISOFLOW \"
+    WRITE(u,*)"            -Input_type_gmtry 2 \"
+    WRITE(u,*)"            -Input_file_gmtry ",TRIM(ProjectName)//"_gmtry.txt \"
+    WRITE(u,*)"            -Input_type_tplgy 0 \"
+    WRITE(u,*)"            -Input_file_ppt ",TRIM(ProjectName)//"_properties.txt \"
+    WRITE(u,*)"            -Input_file_ppt_by_zones ",TRIM(ProjectName)//"_zones.txt \"
+    WRITE(u,*)"            -Input_file_bc ",TRIM(ProjectName)//"_bc.txt \"
+    WRITE(u,*)"            -Input_type_bc 2 \"
+    WRITE(u,*)"            -Run_options_scheme 2 \"
+    WRITE(u,*)"            -Run_options_time 1 \"
+    WRITE(u,*)"            -Output_type_ppt 3 \"
+    WRITE(u,*)"            -Project_name ",TRIM(ProjectName)," \"
+    WRITE(u,*)"            -Input_type_init_sol 3 \"
+    WRITE(u,*)"            -Input_file_init_sol ",TRIM(ProjectName)//"_Sol.h5 \"
+    WRITE(u,*)"            -ksp_type ${ksptype} \"
+    WRITE(u,*)"            -pc_type  ${pctype} \"
+    WRITE(u,*)"            -log_view ascii:"//TRIM(ProjectName)//"_NP${np}_KSP${ksptype}_PC${pctype}.log \"
+    WRITE(u,*)"            | tee "//TRIM(ProjectName)//"_NP${np}_KSP${ksptype}_PC${pctype}.log_term "
+    WRITE(u,*)"            echo ""***************** Ending program ****************"""
+    WRITE(u,*)"        done"
+    WRITE(u,*)"    done"
+    WRITE(u,*)"done"
+    CLOSE(u)
+    CALL CHMOD(FileName,"755")
+
+END SUBROUTINE CreatePerformanceTest
