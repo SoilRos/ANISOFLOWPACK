@@ -1,5 +1,4 @@
 ../../src/ANISOFLOW 						\
--Input_type_gmtry 2 						\
 -Input_file_gmtry grid.txt 					\
 -Input_type_tplgy 0 						\
 -Input_file_ppt no_aniso_properties.txt 	\

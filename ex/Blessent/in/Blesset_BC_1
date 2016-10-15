@@ -1,8 +1,0 @@
-Timezones: 1     
-Timezone( 1 ): 10
-DT: 0.5
-DirichletBoundaryCondition( 1 ): 1
-20          6.704865
-SourceBoundaryCondition( 1 ): 0
-CauchyBoundaryCondition( 1 ): 1
- 83         5.0             100.0000
