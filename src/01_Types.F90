@@ -42,6 +42,7 @@ MODULE ANISOFLOW_Types
         Vec                             :: Tplgy,pTplgy
         PetscInt                        :: SizeTplgy(4)
         Vec                             :: x,y,z
+        IS                              :: InactiveIS
     END TYPE Geometry
 
 
@@ -262,6 +263,7 @@ MODULE ANISOFLOW_Types
         MatStencil,ALLOCATABLE          :: idx_rws(:,:),idx_clmns(:,:)
         PetscReal,ALLOCATABLE           :: idx_val(:)
         PetscInt                        :: idx_size
+        PetscBool                       :: IsActive=.FALSE.
     END TYPE StencilVar
 
  !  - RunOptionsVar: It's a data structure that contains all options related to the program execution.

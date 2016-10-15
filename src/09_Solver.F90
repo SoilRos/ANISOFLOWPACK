@@ -38,14 +38,14 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
     CHARACTER(LEN=200)                      :: CharTolR,CharTolAbs,CharTolD,CharMaxIts,CharSolverConvergedReason
     
     PetscInt                                :: i,j,Count,MaxIts
-    PetscReal                               :: zero=0.0,TolR,TolAbs,TolD
+    PetscReal                               :: TolR,TolAbs,TolD
 
     TYPE(RunOptionsVar)                     :: RunOptions
     CHARACTER(LEN=200)                      :: EventName,ClassName
     PetscBool                               :: Verbose
     PetscLogEvent                           :: Event
     PetscClassId                            :: ClassID
-    PetscLogDouble                          :: EventFlops=0.d0
+    PetscLogDouble                          :: EventFlops=0.D0
 
 
     ClassName="System"
@@ -62,9 +62,9 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
     CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
     CALL GetInitSol(Gmtry,x,ierr)
-
+PRINT*,"SolveSystem: A"
     CALL MatSetOption(A,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE,ierr)
-
+PRINT*,"SolveSystem: B"
     CALL GetRunOptions(RunOptions,ierr)
     
     If (RunOptions%Time) THEN ! Transitory
@@ -92,11 +92,11 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 !                 CALL UpdateTplgy(Gmtry,BCFld%DirichIS(i),BCFld%SourceIS(i),BCFld%CauchyIS(i),ierr)
 !                 CALL UpdateSystem(BCFld,A,ierr) UpdateSystem !to new dirichlet
 
-                CALL VecSet(b,zero,ierr)
+                CALL VecZeroEntries(b,ierr)
                 CALL ApplyTimeDiff(PptFld,BCFld,i,j,A,b,x,ierr)
                 CALL ApplyDirichlet(BCFld,i,A,b,ierr)
                 CALL ApplySource(BCFld,i,b,ierr)
-!                 CALL ApplyCauchy(BCFld,i,A,b,ierr)
+                CALL ApplyCauchy(BCFld,i,A,b,ierr)
 
                 CALL KSPSetOperators(Solver,A,A,ierr)
                 CALL KSPSetTolerances(Solver,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)
@@ -202,10 +202,10 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 !             aún así, puede ser útil para visualizar el cambio de la geometría en el tiempo
         CALL UpdateTplgy(Gmtry,BCFld%DirichIS(1),BCFld%SourceIS(1),BCFld%CauchyIS(1),ierr)
 
-        CALL VecSet(b,zero,ierr)
+        CALL VecZeroEntries(b,ierr)
         CALL ApplyDirichlet(BCFld,1,A,b,ierr)
         CALL ApplySource(BCFld,1,b,ierr)
-        CALL ApplyCauchy(BCFld,1,A,b,ierr)
+!         CALL ApplyCauchy(BCFld,1,A,b,ierr)
 
 
         CALL KSPSetOperators(Solver,A,A,ierr)

@@ -52,8 +52,10 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
                 CALL GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr) 
                 CALL GetStencil(Ppt,Stencil,ierr)
                 
-                CALL MatSetValuesStencil(A,1,Stencil%idx_rws,Stencil%idx_size,     &
-                    & Stencil%idx_clmns,Stencil%idx_val,ADD_VALUES,ierr)
+                IF (Stencil%IsActive) THEN
+                    CALL MatSetValuesStencil(A,1,Stencil%idx_rws,Stencil%idx_size,     &
+                        & Stencil%idx_clmns,Stencil%idx_val,ADD_VALUES,ierr)
+                END IF
             END DO
         END DO
     END DO
@@ -61,6 +63,10 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
     CALL MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY,ierr)
     CALL MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY,ierr)  
 
+!     CALL MatView(A,ierr)
+    CALL MatZeroRowsColumnsIS(A,Gmtry%InactiveIS,-1.D0,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+!     PRINT*,"AAAA"
+!     CALL MatView(A,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
     CALL PetscLogFlops(EventFlops,ierr)
@@ -255,7 +261,8 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
 
         Stencil%idx_val(4)= -(Stencil%idx_val(1)+Stencil%idx_val(2)+Stencil%idx_val(3)+Stencil%idx_val(5)+Stencil%idx_val(6)+Stencil%idx_val(7))
         Stencil%idx_val(:)=Stencil%idx_val(:)/(Ppt%dx(4)*Ppt%dy(4)*Ppt%dz(4))
-
+        Stencil%IsActive=.TRUE.
+        
     ELSEIF (Ppt%StnclTplgy(4).EQ.2) THEN ! Dirichlet cell
         Stencil%idx_val(4)=-one
     END IF
@@ -493,6 +500,7 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
         END IF
 
         Stencil%idx_val(: )=Stencil%idx_val(:)/(Ppt%dx(10)*Ppt%dy(10)*Ppt%dz(10))
+        Stencil%IsActive=.TRUE.
 
     ELSEIF (Ppt%StnclTplgy(10).EQ.2) THEN ! Dirichlet cell
         Stencil%idx_val(10)=-one
@@ -707,6 +715,7 @@ SUBROUTINE GetPerezStencil(Ppt,Stencil,ierr)
         ! 10-A Bloque centro-centro-centro
         Stencil%idx_val(10)= -(Stencil%idx_val(3)+Stencil%idx_val(7)+Stencil%idx_val(9)+Stencil%idx_val(11)+Stencil%idx_val(13)+Stencil%idx_val(17))
         Stencil%idx_val(:)=Stencil%idx_val(:)/(Ppt%dx(10)*Ppt%dy(10)*Ppt%dz(10))
+        Stencil%IsActive=.TRUE.
 
     ELSEIF (Ppt%StnclTplgy(10).EQ.2) THEN ! Dirichlet cell
         Stencil%idx_val(10)=-one
@@ -744,7 +753,6 @@ SUBROUTINE ApplyDirichlet(BCFld,TimeZone,A,b,ierr)
 
     CALL ISCreateStride(PETSC_COMM_WORLD,DirichSize,0,1,NaturalOrder,ierr)
     CALL VecScatterCreate(BCFld%Dirich(TimeZone),NaturalOrder,b,BCFld%DirichIS(TimeZone),Scatter,ierr)
-
 
     CALL VecScatterBegin(Scatter,BCFld%Dirich(TimeZone),b,INSERT_VALUES,SCATTER_FORWARD,ierr)
     CALL VecScatterEnd(Scatter,BCFld%Dirich(TimeZone),b,INSERT_VALUES,SCATTER_FORWARD,ierr)

@@ -46,7 +46,7 @@ SUBROUTINE GetGeometry(Comm,Gmtry,ierr)
     
     CALL GetDataMngr(Comm,Gmtry%Scale,Gmtry%DataMngr,ierr)
     CALL GetGrid(Comm,Gmtry%DataMngr,Gmtry%Scale,Gmtry%x,Gmtry%y,Gmtry%z,ierr)
-    CALL GetTopology(Comm,Gmtry%DataMngr,Gmtry%Scale,Gmtry%Tplgy,Gmtry%SizeTplgy,ierr)
+    CALL GetTopology(Comm,Gmtry%DataMngr,Gmtry%Scale,Gmtry%Tplgy,Gmtry%SizeTplgy,Gmtry%InactiveIS,ierr)
 
     ! Storing a permanet topology on pTplgy
     CALL VecDuplicate(Gmtry%Tplgy,Gmtry%pTplgy,ierr)
@@ -441,7 +441,7 @@ END SUBROUTINE GetGrid_2
  !          4: Cauchy boundary condition quantifier.
  !      + ierr: It's an integer that indicates whether an error has occurred during the call.
 
-SUBROUTINE GetTopology(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
+SUBROUTINE GetTopology(Comm,DataMngr,Scale,Tplgy,SizeTplgy,InactiveIS,ierr)
 
     USE ANISOFLOW_Types, ONLY : InputTypeVar
     USE ANISOFLOW_Interface, ONLY : GetInputType,GetVerbose
@@ -456,6 +456,7 @@ SUBROUTINE GetTopology(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
     PetscInt,INTENT(OUT)            :: SizeTplgy(4)
+    IS,INTENT(OUT)                  :: InactiveIS
 
     TYPE(InputTypeVar)              :: InputType
 
@@ -469,13 +470,13 @@ SUBROUTINE GetTopology(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     !   2: Border of first layer dirichlet
     !   3: Borders dirichlet
     IF (InputType%Tplgy.EQ.0) THEN
-        CALL GetTopology_0(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
+        CALL GetTopology_0(Comm,DataMngr,Scale,Tplgy,SizeTplgy,InactiveIS,ierr)
     ELSEIF (InputType%Tplgy.EQ.1) THEN
-        CALL GetTopology_1(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
+        CALL GetTopology_1(Comm,DataMngr,Scale,Tplgy,SizeTplgy,InactiveIS,ierr)
     ELSE IF (InputType%Tplgy.EQ.2) THEN
-        CALL GetTopology_2(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
+        CALL GetTopology_2(Comm,DataMngr,Scale,Tplgy,SizeTplgy,InactiveIS,ierr)
     ELSE IF (InputType%Tplgy.EQ.3) THEN
-        CALL GetTopology_3(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
+        CALL GetTopology_3(Comm,DataMngr,Scale,Tplgy,SizeTplgy,InactiveIS,ierr)
     ELSE
         CALL PetscSynchronizedPrintf(Comm, &
             & "[ERROR] Topology InputType wrong\n",ierr)
@@ -489,7 +490,7 @@ SUBROUTINE GetTopology(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
 END SUBROUTINE GetTopology
 
 
-SUBROUTINE GetTopology_0(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
+SUBROUTINE GetTopology_0(Comm,DataMngr,Scale,Tplgy,SizeTplgy,InactiveIS,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileTplgy
     USE ANISOFLOW_View, ONLY : ViewTopology
@@ -498,6 +499,7 @@ SUBROUTINE GetTopology_0(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
 
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscis.h>
 #include <petsc/finclude/petscdm.h>
 #include <petsc/finclude/petscdmda.h>
 #include <petsc/finclude/petscdmda.h90>
@@ -508,17 +510,20 @@ SUBROUTINE GetTopology_0(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
     PetscInt,INTENT(OUT)            :: SizeTplgy(4)
+    IS,INTENT(OUT)                  :: InactiveIS
 
     CHARACTER(LEN=200)              :: ViewName,EventName
     PetscReal                       :: one=1.D0
-    PetscInt                        :: widthG(3),BCLenL(3),BCLenG(3)
+    PetscInt                        :: widthG(3),SizeInactive
+    PetscInt,ALLOCATABLE            :: IndexInactive(:)
     PetscBool                       :: Verbose
+
 
     CALL GetVerbose(Verbose,ierr)
 
     ! It quantifies Dirichlet, and Cauchy boundary condition on global processors.
-    BCLenL(:)=0
-    BCLenG(:)=0
+    SizeInactive=0
+    SizeTplgy(:)=0
 
     ! It gets the global size from the geometry data manager.
     CALL DMDAGetInfo(DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
@@ -537,12 +542,15 @@ SUBROUTINE GetTopology_0(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     EventName="GetTopology"
     CALL ViewTopology(Tplgy,ViewName,EventName,ierr)
 
+    SizeTplgy(1)=widthG(1)*widthG(2)*widthG(3)
+
+    ALLOCATE(IndexInactive(SizeInactive))
+    CALL MPI_Bcast(IndexInactive,SizeInactive,MPI_INT,0,Comm,ierr)
+    CALL ISCreateGeneral(Comm,SizeInactive,IndexInactive,PETSC_COPY_VALUES,InactiveIS,ierr)
+    DEALLOCATE(IndexInactive)
+
     IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] WARNING: All domain is active.\n",ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Topology Identifiers were satisfactorily created\n",ierr)
-
-    CALL MPI_ALLREDUCE(BCLenL,BCLenG,3,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
-    SizeTplgy(2:4)=BCLenG(:)
-    SizeTplgy(1)=widthG(1)*widthG(3)*widthG(3)-(SizeTplgy(2)+SizeTplgy(3)+SizeTplgy(4))
 
 END SUBROUTINE GetTopology_0
 
@@ -570,7 +578,7 @@ END SUBROUTINE GetTopology_0
 
 ! from file
 
-SUBROUTINE GetTopology_1(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
+SUBROUTINE GetTopology_1(Comm,DataMngr,Scale,Tplgy,SizeTplgy,InactiveIS,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputDir,GetInputFileTplgy
     USE ANISOFLOW_View, ONLY : ViewTopology
@@ -579,6 +587,7 @@ SUBROUTINE GetTopology_1(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
 
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscis.h>
 #include <petsc/finclude/petscdm.h>
 #include <petsc/finclude/petscdmda.h>
 #include <petsc/finclude/petscdmda.h90>
@@ -589,11 +598,13 @@ SUBROUTINE GetTopology_1(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
     PetscInt,INTENT(OUT)            :: SizeTplgy(4)
+    IS,INTENT(OUT)                  :: InactiveIS
 
     PetscMPIInt                     :: process
     CHARACTER(LEN=200)              :: InputDir,InputFileTplgy,Route,ViewName,EventName
     PetscReal                       :: ValR
-    PetscInt                        :: u,i,ValI,widthG(3),BCLenL(3),BCLenG(3)
+    PetscInt                        :: u,i,ValI,widthG(3),SizeInactive
+    PetscInt,ALLOCATABLE            :: IndexInactive(:),TmpIndexInactive(:)
     Vec                             :: TmpTplgy
     PetscBool                       :: Verbose
 
@@ -611,8 +622,8 @@ SUBROUTINE GetTopology_1(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     CALL DMCreateGlobalVector(DataMngr,TmpTplgy,ierr)
 
     ! It quantifies Dirichlet, and Cauchy boundary condition on global processors.
-    BCLenL(:)=0
-    BCLenG(:)=0
+    SizeInactive=0
+    SizeTplgy(:)=0
 
     ! It gets the global size from the geometry data manager.
     CALL DMDAGetInfo(DataMngr,PETSC_NULL_INTEGER,widthG(1),widthG(2),&
@@ -624,16 +635,21 @@ SUBROUTINE GetTopology_1(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     ! It tag every processor from 0 to n-1
     CALL MPI_Comm_rank(Comm,process,ierr)
 
+
     ! It obtains the global size of the domain on the first processor.
     IF (process.EQ.0) THEN
         Route=ADJUSTL(TRIM(InputDir)//TRIM(InputFileTplgy))
         OPEN(u,FILE=TRIM(Route),STATUS='OLD',ACTION='READ')
+        ALLOCATE(TmpIndexInactive(widthG(1)*widthG(2)*widthG(3)))
         DO i=1,widthG(1)*widthG(2)*widthG(3)
             ValI=0
             READ(u,*)ValI
-            IF (ValI.EQ.2) BCLenL(1)=BCLenL(1)+1 ! Dirichlet
-            IF (ValI.EQ.3) BCLenL(2)=BCLenL(2)+1 ! Source
-            IF (ValI.EQ.4) BCLenL(3)=BCLenL(3)+1 ! Cauchy
+            IF (ValI.EQ.0) SizeInactive=SizeInactive+1
+            IF (ValI.EQ.0) TmpIndexInactive(SizeInactive)=i-1
+            IF (ValI.EQ.1) SizeTplgy(1)=SizeTplgy(1)+1 ! Active
+            IF (ValI.EQ.2) SizeTplgy(2)=SizeTplgy(2)+1 ! Dirichlet
+            IF (ValI.EQ.3) SizeTplgy(3)=SizeTplgy(3)+1 ! Source
+            IF (ValI.EQ.4) SizeTplgy(4)=SizeTplgy(4)+1 ! Cauchy
             ValR=REAL(ValI)
             CALL VecSetValue(TmpTplgy,i-1,ValR,INSERT_VALUES,ierr)
         END DO
@@ -652,22 +668,30 @@ SUBROUTINE GetTopology_1(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     ! Saving topology identificators as local vector in PETSc ordering
     CALL DMCreateLocalVector(DataMngr,Tplgy,ierr)
 
-    CALL DMGlobalToLocalBegin(DataMngr,TmpTplgy,INSERT_VALUES,  &
-        & Tplgy,ierr)
-    CALL DMGlobalToLocalEnd(DataMngr,TmpTplgy,INSERT_VALUES,    &
-        & Tplgy,ierr)
+    CALL DMGlobalToLocalBegin(DataMngr,TmpTplgy,INSERT_VALUES,Tplgy,ierr)
+    CALL DMGlobalToLocalEnd(DataMngr,TmpTplgy,INSERT_VALUES,Tplgy,ierr)
 
     CALL VecDestroy(TmpTplgy,ierr)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Topology Identifiers were satisfactorily created\n",ierr)
+    CALL MPI_Bcast(SizeTplgy,4,MPI_INT,0,Comm,ierr)
+    CALL MPI_Bcast(SizeInactive,1,MPI_INT,0,Comm,ierr)
 
-    CALL MPI_ALLREDUCE(BCLenL,BCLenG,3,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
-    SizeTplgy(2:4)=BCLenG(:)
-    SizeTplgy(1)=widthG(1)*widthG(3)*widthG(3)-(SizeTplgy(2)+SizeTplgy(3)+SizeTplgy(4))
+    IF (SizeInactive.NE.(widthG(1)*widthG(2)*widthG(3)-(SizeTplgy(1)+SizeTplgy(2)+SizeTplgy(3)+SizeTplgy(4)))) THEN
+        CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] ERROR: Topology file is invalid. Maybe due integers in the file are not between 0 and 4.\n",ierr)
+    END IF
+    ALLOCATE(IndexInactive(SizeInactive))
+    IF (process.EQ.0) IndexInactive(:)=TmpIndexInactive(1:SizeInactive)
+    IF (process.EQ.0) DEALLOCATE(TmpIndexInactive)
+
+    CALL MPI_Bcast(IndexInactive,SizeInactive,MPI_INT,0,Comm,ierr)
+    CALL ISCreateGeneral(Comm,SizeInactive,IndexInactive,PETSC_COPY_VALUES,InactiveIS,ierr)
+    DEALLOCATE(IndexInactive)
+
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Topology Identifiers were satisfactorily created.\n",ierr)
 
 END SUBROUTINE GetTopology_1
 
-SUBROUTINE GetTopology_2(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
+SUBROUTINE GetTopology_2(Comm,DataMngr,Scale,Tplgy,SizeTplgy,InactiveIS,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetVerbose
     USE ANISOFLOW_View, ONLY : ViewTopology
@@ -676,6 +700,7 @@ SUBROUTINE GetTopology_2(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
 
 #include <petsc/finclude/petscsys.h>
 #include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscis.h>
 #include <petsc/finclude/petscdm.h>
 #include <petsc/finclude/petscdmda.h>
 #include <petsc/finclude/petscdmda.h90>
@@ -686,10 +711,12 @@ SUBROUTINE GetTopology_2(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
     PetscInt,INTENT(OUT)            :: SizeTplgy(4)
+    IS,INTENT(OUT)                  :: InactiveIS
 
     PetscReal,POINTER               :: TmpTplgyArray(:,:,:)
     PetscReal                       :: ValR
-    PetscInt                        :: i,j,k,widthL(3),widthG(3),corn(3),BCLenL(3),BCLenG(3)
+    PetscInt                        :: i,j,k,widthL(3),widthG(3),corn(3),SizeInactive
+    PetscInt,ALLOCATABLE            :: IndexInactive(:)
     Vec                             :: TmpTplgy
     PetscBool                       :: Verbose
     CHARACTER(LEN=200)              :: ViewName,EventName
@@ -701,8 +728,7 @@ SUBROUTINE GetTopology_2(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     CALL DMDAVecGetArrayF90(DataMngr,TmpTplgy,TmpTplgyArray,ierr)
 
     ! It quantifies Dirichlet, Neumman, and Cauchy boundary condition on local and global processor.
-    BCLenL(:)=0
-    BCLenG(:)=0
+    SizeTplgy(:)=0
 
     ! It fills the temporal Fortran array.
 
@@ -731,7 +757,7 @@ SUBROUTINE GetTopology_2(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
                 & (j.EQ.0).OR.(j.EQ.(widthG(2)-1)))) THEN
                     ! Dirichlet
                     ValR=2.0
-                    BCLenL(1)=BCLenL(1)+1
+                    SizeTplgy(2)=SizeTplgy(2)+1
                 END IF
                 TmpTplgyArray(i,j,k)=ValR
             END DO
@@ -747,22 +773,25 @@ SUBROUTINE GetTopology_2(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     CALL DMDAVecRestoreArrayF90(DataMngr,TmpTplgy,TmpTplgyArray,ierr)
     CALL DMCreateLocalVector(DataMngr,Tplgy,ierr)
 
-    CALL DMGlobalToLocalBegin(DataMngr,TmpTplgy,INSERT_VALUES,  &
-        & Tplgy,ierr)
-    CALL DMGlobalToLocalEnd(DataMngr,TmpTplgy,INSERT_VALUES,    &
-        & Tplgy,ierr)
+    CALL DMGlobalToLocalBegin(DataMngr,TmpTplgy,INSERT_VALUES,Tplgy,ierr)
+    CALL DMGlobalToLocalEnd(DataMngr,TmpTplgy,INSERT_VALUES,Tplgy,ierr)
 
     CALL VecDestroy(TmpTplgy,ierr)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Topology Identifiers were satisfactorily created\n",ierr)
+    CALL MPI_Bcast(SizeTplgy,4,MPI_INT,0,Comm,ierr)
+    CALL MPI_Bcast(SizeInactive,1,MPI_INT,0,Comm,ierr)
+    SizeTplgy(1)=widthG(1)*widthG(2)*widthG(3)
 
-    CALL MPI_ALLREDUCE(BCLenL,BCLenG,3,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
-    SizeTplgy(2:4)=BCLenG(:)
-    SizeTplgy(1)=widthG(1)*widthG(3)*widthG(3)-(SizeTplgy(2)+SizeTplgy(3)+SizeTplgy(4))
+    ALLOCATE(IndexInactive(SizeInactive))
+    CALL MPI_Bcast(IndexInactive,SizeInactive,MPI_INT,0,Comm,ierr)
+    CALL ISCreateGeneral(Comm,SizeInactive,IndexInactive,PETSC_COPY_VALUES,InactiveIS,ierr)
+    DEALLOCATE(IndexInactive)
+
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Topology Identifiers were satisfactorily created\n",ierr)
 
 END SUBROUTINE GetTopology_2
 
-SUBROUTINE GetTopology_3(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
+SUBROUTINE GetTopology_3(Comm,DataMngr,Scale,Tplgy,SizeTplgy,InactiveIS,ierr)
 
     USE ANISOFLOW_Interface, ONLY : GetVerbose
     USE ANISOFLOW_View, ONLY : ViewTopology
@@ -781,10 +810,12 @@ SUBROUTINE GetTopology_3(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(OUT)                 :: Tplgy
     PetscInt,INTENT(OUT)            :: SizeTplgy(4)
+    IS,INTENT(OUT)                  :: InactiveIS
 
     PetscReal,POINTER               :: TmpTplgyArray(:,:,:)
     PetscReal                       :: ValR
-    PetscInt                        :: i,j,k,widthL(3),widthG(3),corn(3),BCLenL(3),BCLenG(3)
+    PetscInt                        :: i,j,k,widthL(3),widthG(3),corn(3),SizeInactive
+    PetscInt,ALLOCATABLE            :: IndexInactive(:)
     Vec                             :: TmpTplgy
     PetscBool                       :: Verbose
     CHARACTER(LEN=200)              :: ViewName,EventName
@@ -796,8 +827,7 @@ SUBROUTINE GetTopology_3(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     CALL DMDAVecGetArrayF90(DataMngr,TmpTplgy,TmpTplgyArray,ierr)
 
     ! It quantifies Dirichlet, Neumman, and Cauchy boundary condition on local and global processor.
-    BCLenL(:)=0
-    BCLenG(:)=0
+    SizeTplgy(:)=0
 
     ! It fills the temporal Fortran array.
 
@@ -827,7 +857,7 @@ SUBROUTINE GetTopology_3(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
                   & (i.EQ.0).OR.(i.EQ.(widthG(1)-1))) THEN
                     ! Dirichlet
                     ValR=2.0
-                    BCLenL(1)=BCLenL(1)+1
+                    SizeTplgy(2)=SizeTplgy(2)+1
                 END IF
                 TmpTplgyArray(i,j,k)=ValR
             END DO
@@ -843,18 +873,21 @@ SUBROUTINE GetTopology_3(Comm,DataMngr,Scale,Tplgy,SizeTplgy,ierr)
     CALL DMDAVecRestoreArrayF90(DataMngr,TmpTplgy,TmpTplgyArray,ierr)
     CALL DMCreateLocalVector(DataMngr,Tplgy,ierr)
 
-    CALL DMGlobalToLocalBegin(DataMngr,TmpTplgy,INSERT_VALUES,  &
-        & Tplgy,ierr)
-    CALL DMGlobalToLocalEnd(DataMngr,TmpTplgy,INSERT_VALUES,    &
-        & Tplgy,ierr)
+    CALL DMGlobalToLocalBegin(DataMngr,TmpTplgy,INSERT_VALUES,Tplgy,ierr)
+    CALL DMGlobalToLocalEnd(DataMngr,TmpTplgy,INSERT_VALUES,Tplgy,ierr)
 
     CALL VecDestroy(TmpTplgy,ierr)
 
-    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Topology Identifiers were satisfactorily created\n",ierr)
+    CALL MPI_Bcast(SizeTplgy,4,MPI_INT,0,Comm,ierr)
+    CALL MPI_Bcast(SizeInactive,1,MPI_INT,0,Comm,ierr)
+    SizeTplgy(1)=widthG(1)*widthG(2)*widthG(3)
 
-    CALL MPI_ALLREDUCE(BCLenL,BCLenG,3,MPI_INT,MPI_SUM,PETSC_COMM_WORLD,ierr)
-    SizeTplgy(2:4)=BCLenG(:)
-    SizeTplgy(1)=widthG(1)*widthG(3)*widthG(3)-(SizeTplgy(2)+SizeTplgy(3)+SizeTplgy(4))
+    ALLOCATE(IndexInactive(SizeInactive))
+    CALL MPI_Bcast(IndexInactive,SizeInactive,MPI_INT,0,Comm,ierr)
+    CALL ISCreateGeneral(Comm,SizeInactive,IndexInactive,PETSC_COPY_VALUES,InactiveIS,ierr)
+    DEALLOCATE(IndexInactive)
+
+    IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"[GetGeometry Event] Topology Identifiers were satisfactorily created\n",ierr)
 
 END SUBROUTINE GetTopology_3
 
