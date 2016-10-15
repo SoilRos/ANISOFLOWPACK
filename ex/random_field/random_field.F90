@@ -307,7 +307,7 @@ SUBROUTINE CreatePerformanceTest(ProjectName)
     WRITE(u,*)"# Execution Line must be: ./"//TRIM(FileName)//" np_max"
     WRITE(u,*)"np_max= $1"
     WRITE(u,*)"declare -a KSP=(""cg"" ""gmres"")"
-    WRITE(u,*)"declare -a PC=(""none"" ""jacobi"" ""bjacobi"")"
+    WRITE(u,*)"declare -a PC=(""none"" ""jacobi"" ""bjacobi"" ""mg"")"
 
     WRITE(u,*)"for np in `seq 1 ${np_max}`; do"
     WRITE(u,*)"    for ksptype in ""${KSP[@]}""; do"
