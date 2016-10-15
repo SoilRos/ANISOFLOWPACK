@@ -518,7 +518,7 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,Cvt,ierr)
 
     ViewName="Cvt"
     EventName="GetConductivity"
-    CALL ViewConductivity(Cvt%xx,ViewName,EventName,ierr)
+    CALL ViewConductivity(Cvt_xx_Global,ViewName,EventName,ierr)
 
     CALL DMGlobalToLocalBegin(Gmtry%DataMngr,Cvt_xx_Global,INSERT_VALUES,Cvt%xx,ierr)
     CALL DMGlobalToLocalEnd(Gmtry%DataMngr,Cvt_xx_Global,INSERT_VALUES,Cvt%xx,ierr)
@@ -1437,9 +1437,10 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
                     CALL TargetFullTensor(Ppt%Cvt(6))
 
                 END IF      
-            ELSE
-                PRINT*,"ERROR: The properties has to be defined by cell or by zone"
             END IF  
+        ELSE
+            PRINT*,"ERROR: The properties has to be defined by cell or by zone"
+            STOP
         END IF
         IF (k.EQ.0) Ppt%Cvt(1)=TensorZero
         IF (j.EQ.0) Ppt%Cvt(2)=TensorZero
@@ -1732,9 +1733,10 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
                     CALL TargetFullTensor(Ppt%Cvt(14))
 
                 END IF      
-            ELSE
-                PRINT*,"ERROR: The properties has to be defined by cell or by zone"
             END IF  
+        ELSE
+            PRINT*,"ERROR: The properties has to be defined by cell or by zone"
+            STOP
         END IF
         IF (k.EQ.0) Ppt%Cvt(1:5)=TensorZero
         IF (j.EQ.0) THEN
