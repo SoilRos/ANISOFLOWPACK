@@ -62,9 +62,8 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
 
     CALL DMCreateGlobalVector(Gmtry%DataMngr,b,ierr)
     CALL GetInitSol(Gmtry,x,ierr)
-PRINT*,"SolveSystem: A"
+
     CALL MatSetOption(A,MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE,ierr)
-PRINT*,"SolveSystem: B"
     CALL GetRunOptions(RunOptions,ierr)
     
     If (RunOptions%Time) THEN ! Transitory

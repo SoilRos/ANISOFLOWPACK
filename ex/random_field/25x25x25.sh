@@ -1,4 +1,4 @@
- ../../src/ANISOFLOW \
+mpiexec -n 2 ../../src/ANISOFLOW \
  -Input_type_gmtry 2 \
  -Input_file_gmtry 25x25x25_gmtry.txt \
  -Input_type_tplgy 0 \
@@ -11,7 +11,7 @@
  -Project_name 25x25x25 \
  -log_view ascii:25x25x25_steady.log 
   
- ../../src/ANISOFLOW \
+ mpiexec -n 2 ../../src/ANISOFLOW \
  -Input_type_gmtry 2 \
  -Input_file_gmtry 25x25x25_gmtry.txt \
  -Input_type_tplgy 0 \
