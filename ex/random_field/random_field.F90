@@ -10,7 +10,7 @@ PROGRAM ANISOFLOW_RANDOM_FIELD_GENERATOR
 
     RealWidth(:)=400.D0
     IndexWidth(:)=25
-    SimulationDays=365*2
+    SimulationDays=365*4
 
     NArgs=COMMAND_ARGUMENT_COUNT()
     IF (Nargs.GT.0) THEN
@@ -98,13 +98,13 @@ SUBROUTINE CreateProperties(ProjectName,IsoSize,OAnisoSize,NOAnisoSize)
 
         IF (i.LE.IsoSize) THEN
             WRITE(u,*)"k isotropic"
-            WRITE(u,*) RandCvt(1)
+            WRITE(u,*) 5*RandCvt(1)
         ELSEIF (i.LE.(IsoSize+OAnisoSize)) THEN
             WRITE(u,*)"k anisotropic"
-            WRITE(u,*) RandCvt(1),RandCvt(2),RandCvt(3)
+            WRITE(u,*) 5*RandCvt(1),5*RandCvt(2),5*RandCvt(3)
         ELSE
             WRITE(u,*)"k non-orthogonal anisotropic"
-            WRITE(u,*)RandCvt(1),RandCvt(2),RandCvt(3),0.05*RandCvt(4),0.01*RandCvt(5),0.01*RandCvt(6)
+            WRITE(u,*)5*RandCvt(1),5*RandCvt(2),5*RandCvt(3),0.5*RandCvt(4),0.1*RandCvt(5),0.1*RandCvt(6)
         END IF
 
         WRITE(u,*)" "
@@ -188,7 +188,9 @@ SUBROUTINE CreateBC(ProjectName,IndexWidth,SimulationDays)
     CHARACTER(LEN=200),INTENT(IN)   :: ProjectName
 
     CHARACTER(LEN=200)              :: FileName
-    INTEGER                         :: i,j
+    INTEGER                         :: i,j,k,DirichSize
+    LOGICAL                         :: StressSinkPeriod,StressSourcePeriod
+
     INTEGER,PARAMETER               :: u=01
     REAL,PARAMETER                  :: PI = 3.1415927
 
@@ -198,13 +200,16 @@ SUBROUTINE CreateBC(ProjectName,IndexWidth,SimulationDays)
 
     WRITE(u,*)"Timezones: ",SimulationDays
 
+    DirichSize=2*IndexWidth(1)*IndexWidth(3)
     i=1
     WRITE(u,*)"Timezone(",i,"):",1
     WRITE(u,*)"DT:",1.0
-    WRITE(u,*)"DirichletBoundaryCondition(",i,"):", 2*IndexWidth(1)
+    WRITE(u,*)"DirichletBoundaryCondition(",i,"):", DirichSize
     DO j=1,IndexWidth(1)
-        WRITE(u,*)j,1            ,1,10*(COS(2*PI*(j-1)/(IndexWidth(1)-1)   )*0.25+0.75)*(COS(2*PI*(i-1)/(365-1))*0.5+0.5)
-        WRITE(u,*)j,IndexWidth(2),1,10*(COS(2*PI*(j-1)/(IndexWidth(1)-1)-PI)*0.25+0.75)*(COS(2*PI*(i-1)/(365-1))*0.5+0.5)
+        DO k=1,IndexWidth(3)
+            WRITE(u,*)j,1            ,k,10*(COS(2*PI*(j-1)/(IndexWidth(1)-1)+PI)*0.25+0.75)*(COS(2*PI*(i-1)/(365-1))*0.5+0.5)
+            WRITE(u,*)j,IndexWidth(2),k,10*(COS(2*PI*(j-1)/(IndexWidth(1)-1)+PI)*0.25+0.75)*(COS(2*PI*(i-1)/(365-1))*0.5+0.5)
+        END DO
     END DO
     WRITE(u,*)"SourceBoundaryCondition(",i,"):",0
     WRITE(u,*)"CauchyBoundaryCondition(",i,"):",0
@@ -212,12 +217,27 @@ SUBROUTINE CreateBC(ProjectName,IndexWidth,SimulationDays)
     DO i=2,SimulationDays
         WRITE(u,*)"Timezone(",i,"):",1
         WRITE(u,*)"DT:",1.0
-        WRITE(u,*)"DirichletBoundaryCondition(",i,"):", 2*IndexWidth(1)+1
+
+        StressSourcePeriod=(((i/(2*365.D0))-FLOOR(i/(2*365.D0))).GT.1.D0).AND.(((i/(2*365.D0))-FLOOR(i/(2*365.D0))).LT.1.5D0)
+        StressSinkPeriod=(((i/(2*365.D0))-FLOOR(i/(2*365.D0))).LT.0.5D0)
+        DirichSize=2*IndexWidth(1)*IndexWidth(3)
+        IF (StressSinkPeriod.OR.StressSourcePeriod) DirichSize=DirichSize+3
+        WRITE(u,*)"DirichletBoundaryCondition(",i,"):", DirichSize
         DO j=1,IndexWidth(1)
-            WRITE(u,*)j,1            ,1,10*(COS(2*PI*(j-1)/(IndexWidth(1)-1)   )*0.25+0.75)*(COS(2*PI*(i-1)/(365-1))*0.5+0.5)
-            WRITE(u,*)j,IndexWidth(2),1,10*(COS(2*PI*(j-1)/(IndexWidth(1)-1)-PI)*0.25+0.75)*(COS(2*PI*(i-1)/(365-1))*0.5+0.5)
+            DO k=1,IndexWidth(3)
+                WRITE(u,*)j,1            ,k,10*(COS(2*PI*(j-1)/(IndexWidth(1)-1)+PI)*0.25+0.75)*(COS(2*PI*(i-1)/(365-1))*0.5+0.5)
+                WRITE(u,*)j,IndexWidth(2),k,10*(COS(2*PI*(j-1)/(IndexWidth(1)-1)+PI)*0.25+0.75)*(COS(2*PI*(i-1)/(365-1))*0.5+0.5)
+            END DO
         END DO
-        WRITE(u,*)INT(IndexWidth(1)/2),INT(IndexWidth(2)/2),1,0
+        IF (StressSinkPeriod) THEN
+            WRITE(u,*)INT(IndexWidth(1)/2),INT(IndexWidth(2)/2),1,0
+            WRITE(u,*)INT(IndexWidth(1)/2),INT(IndexWidth(2)/2),INT(IndexWidth(3)/2),0
+            WRITE(u,*)INT(IndexWidth(1)/2),INT(IndexWidth(2)/2),INT(IndexWidth(3)),0
+        ELSEIF (StressSourcePeriod) THEN
+            WRITE(u,*)INT(IndexWidth(1)/2),INT(IndexWidth(2)/2),1,20
+            WRITE(u,*)INT(IndexWidth(1)/2),INT(IndexWidth(2)/2),INT(IndexWidth(3)/2),20
+            WRITE(u,*)INT(IndexWidth(1)/2),INT(IndexWidth(2)/2),INT(IndexWidth(3)),20
+        END IF
         WRITE(u,*)"SourceBoundaryCondition(",i,"):",0
         WRITE(u,*)"CauchyBoundaryCondition(",i,"):",0
     END DO
