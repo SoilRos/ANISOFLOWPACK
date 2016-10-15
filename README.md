@@ -1,10 +1,8 @@
 # ANISOFLOW
 
-**ANISOFLOW is still in development!!**
-
 ## Synopsis
 
-The main philosophy of ANISOFLOW is to capture the anisotropies of the medium into the flow, for that purpose the program has three ways to carry the calculus. The first one is the most usual method used to solve the groundwa- ter equation, a scheme of seven blocks on finite difference, used by MODFLOW and the most popular programs to analyze aquifers. The second one is the finite difference equation proposed by Li, et al (2014) using a scheme of 19 blocks. And the last one is a finite difference scheme of 19 blocks we have proposed to attack the anisotropy of the mediums.
+The main philosophy of ANISOFLOW is to capture the anisotropies of the medium into the flow, for that purpose the program has three ways to carry the calculus. The first one is the most usual method used to solve the groundwater equation, a scheme of seven blocks on finite difference, used by MODFLOW and the most popular programs to analyze aquifers; the second one is the finite difference equation proposed by Li, et al (2014) using a scheme of 19 blocks; and the last one is a finite difference scheme of 19 blocks we have proposed to attack the anisotropy of the mediums (not yet  available).
 
 ## Documentation
 
@@ -12,7 +10,7 @@ To get an early documentation pdf, download it from [here](https://www.overleaf.
 
 ## Example
 
-Some examples of anisotropic flow are provided in **ex/** folder.
+Some examples of anisotropic flows are provided in **ex/** folder. They show how easy is to set up and run ANISOFLOW.
 
 ## Installation
 
@@ -24,12 +22,12 @@ You have to have installed:
 * **PETSc 3.7** libraries
 * **HDF5** parallel libraries connected with PETSc libraries (optional and recommend)
 
-Then, just compile the source files in **src/** folder with **make ANISOFLOW**
+Then, compile the source files in **src/** folder with **make ANISOFLOW**
 
 ## Tests
 
-To test ANISOFLOW just run the bash files on the examples folders:
-* **ex/Blesset/ex.sh**
+To test ANISOFLOW just run the bash files **(.sh)** on the examples folders.
+
 
 ## Contributors
 
