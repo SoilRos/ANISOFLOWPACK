@@ -305,10 +305,13 @@ SUBROUTINE CreatePerformanceTest(ProjectName)
     OPEN(u,FILE=FileName, STATUS="REPLACE")
 
     WRITE(u,*)"# Execution Line must be: ./"//TRIM(FileName)//" np_max"
+    WRITE(u,*)"CantTest=$1"
+    WRITE(u,*)"np=1"
     WRITE(u,*)"declare -a KSP=(""cg"" ""gmres"")"
     WRITE(u,*)"declare -a PC=(""none"" ""jacobi"" ""bjacobi"" ""mg"")"
 
-    WRITE(u,*)"for np in `seq 1 $1`; do"
+    WRITE(u,*)"for ContTest in `seq 1 ${CantTest}`; do"
+    WRITE(u,*)"    np=`expr 2 \* ${np}"
     WRITE(u,*)"    for ksptype in ""${KSP[@]}""; do"
     WRITE(u,*)"        for pctype in ""${PC[@]}""; do"
     WRITE(u,*)"            echo ""*************************************************"""
