@@ -1,0 +1,12 @@
+Timezones: 2
+Timezone( 1 ): 100
+DT: 0.01
+DirichletBoundaryCondition( 1 ): 0
+SourceBoundaryCondition( 1 ): 1
+8   10.0  
+CauchyBoundaryCondition( 1 ): 0
+Timezone( 2 ): 50
+DT: 0.01
+DirichletBoundaryCondition( 2 ): 0
+SourceBoundaryCondition( 2 ): 0
+CauchyBoundaryCondition( 2 ): 0
