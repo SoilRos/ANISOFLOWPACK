@@ -102,10 +102,10 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
                     & TRIM(CharMsg)// " inizialited\n",ierr)
                 END IF
 
-                ! UpdateTplgy en la práctica no sirve para nada, pues 
+                ! UpdateTplgy en la practica no sirve para nada, pues 
                 ! los BC se aplican con los IS del BC, no con la 
-                ! geometria aún así, puede ser útil para visualizar 
-                ! el cambio de la geometría en el tiempo.
+                ! geometria aun asi, puede ser util para visualizar 
+                ! el cambio de la geometria en el tiempo.
 !                 CALL UpdateTplgy(Gmtry,BCFld%DirichIS(i),            &
 !                   & BCFld%SourceIS(i),BCFld%CauchyIS(i),ierr)
 
@@ -274,9 +274,9 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
           & "["//ADJUSTL(TRIM(EventName))//" Event] Steady solutio"//&
           & "n inizialited\n",ierr)
 
-        ! UpdateTplgy en la práctica no sirve para nada, pues los BC 
-        ! se aplican con los IS del BC, no con la geometria aún así, 
-        ! puede ser útil para visualizar el cambio de la geometría en 
+        ! UpdateTplgy en la actica no sirve para nada, pues los BC 
+        ! se aplican con los IS del BC, no con la geometria aun asi, 
+        ! puede ser util para visualizar el cambio de la geometria en 
         ! el tiempo
 !         CALL UpdateTplgy(Gmtry,BCFld%DirichIS(1),BCFld%SourceIS(1),  &
 !           & BCFld%CauchyIS(1),ierr)
