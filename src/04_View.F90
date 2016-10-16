@@ -184,12 +184,15 @@ SUBROUTINE ViewVecProperty_1(x,Name,StageName,ierr)
 
     CALL GetOutputDir(OutputDir,ierr)
     Route=ADJUSTL(TRIM(OutputDir)//TRIM(Name)//TRIM(Ext))
-    CALL PetscViewerBinaryOpen(PETSC_COMM_WORLD,Route,FILE_MODE_WRITE,Viewer,ierr)
+    CALL PetscViewerBinaryOpen(PETSC_COMM_WORLD,Route,               &
+        & FILE_MODE_WRITE,Viewer,ierr)
     CALL VecView(x,Viewer,ierr)
     CALL PetscViewerDestroy(Viewer,ierr)
 
-    CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-        & "["//ADJUSTL(TRIM(StageName))//" Event] "//ADJUSTL(TRIM(Name)//TRIM(Ext))//" was satisfactorily saved\n",ierr)
+    CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                   &
+        & "["//ADJUSTL(TRIM(StageName))//" Event] "//                &
+        & ADJUSTL(TRIM(Name)//TRIM(Ext))//                           &
+        & " was satisfactorily saved\n",ierr)
 
 END SUBROUTINE ViewVecProperty_1
 
@@ -218,8 +221,10 @@ SUBROUTINE ViewVecProperty_2(x,Name,StageName,ierr)
     CALL VecView(x,Viewer,ierr)
     CALL PetscViewerDestroy(Viewer,ierr)
 
-    CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-        & "["//ADJUSTL(TRIM(StageName))//" Event] "//ADJUSTL(TRIM(Name)//TRIM(Ext))//" was satisfactorily saved\n",ierr)
+    CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                   &
+        & "["//ADJUSTL(TRIM(StageName))//" Event] "//                &
+        & ADJUSTL(TRIM(Name)//TRIM(Ext))//                           &
+        & " was satisfactorily saved\n",ierr)
 
 END SUBROUTINE ViewVecProperty_2
 
@@ -245,15 +250,21 @@ SUBROUTINE ViewVecProperty_3(x,Name,StageName,ierr)
 #if defined(PETSC_HAVE_HDF5)
     CALL GetOutputDir(OutputDir,ierr)
     Route=ADJUSTL(TRIM(OutputDir)//TRIM(Name)//TRIM(Ext))
-    CALL PetscViewerHDF5Open(PETSC_COMM_WORLD,Route,FILE_MODE_WRITE,Viewer,ierr)
+    CALL PetscViewerHDF5Open(PETSC_COMM_WORLD,Route,FILE_MODE_WRITE, &
+        & Viewer,ierr)
     CALL VecView(x,Viewer,ierr)
     CALL PetscViewerDestroy(Viewer,ierr)
 
-    CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-        & "["//ADJUSTL(TRIM(StageName))//" Event] "//ADJUSTL(TRIM(Name)//TRIM(Ext))//" was satisfactorily saved\n",ierr)
+    CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                   &
+        & "["//ADJUSTL(TRIM(StageName))//" Event] "//                &
+        & ADJUSTL(TRIM(Name)//TRIM(Ext))//                           &
+        & " was satisfactorily saved\n",ierr)
 #else
-    CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                         &
-        & "["//ADJUSTL(TRIM(StageName))//" Event] "//ADJUSTL(TRIM(Name)//TRIM(Ext))//" was not able to save. please install hdf5 with PETSc\n",ierr)
+    CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                   &
+        & "["//ADJUSTL(TRIM(StageName))//" Event] "//                &
+        & ADJUSTL(TRIM(Name)//TRIM(Ext))//                           &
+        & " was not able to save. please install hdf5 with PETSc\n", &
+        & ierr)
 #endif
 END SUBROUTINE ViewVecProperty_3
 
