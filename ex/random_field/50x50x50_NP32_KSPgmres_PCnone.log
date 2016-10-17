@@ -1,0 +1,209 @@
+************************************************************************************************************************
+***             WIDEN YOUR WINDOW TO 120 CHARACTERS.  Use 'enscript -r -fCourier9' to print this document            ***
+************************************************************************************************************************
+
+---------------------------------------------- PETSc Performance Summary: ----------------------------------------------
+
+../../src/ANISOFLOW                                                                                                                                                                                                                                             Àªd on a arch-centos-opt-v3.7.2-mpich-v3.2-hdf5-v1.8.17 named poroso-medellin-unal-edu-co with 32 processors, by sospinar Sun Oct 16 08:24:15 2016
+Using Petsc Release Version 3.7.3, unknown 
+
+                         Max       Max/Min        Avg      Total 
+Time (sec):           2.382e+02      1.00001   2.382e+02
+Objects:              8.765e+04      1.00000   8.765e+04
+Flops:                2.213e+10      1.20298   2.022e+10  6.470e+11
+Flops/sec:            9.290e+07      1.20298   8.488e+07  2.716e+09
+MPI Messages:         8.688e+05      2.01690   6.349e+05  2.032e+07
+MPI Message Lengths:  5.004e+09     10.56443   1.200e+03  2.438e+10
+MPI Reductions:       2.307e+05      1.00000
+
+Flop counting convention: 1 flop = 1 real number operation of type (multiply/divide/add/subtract)
+                            e.g., VecAXPY() for real vectors of length N --> 2N flops
+                            and VecAXPY() for complex vectors of length N --> 8N flops
+
+Summary of Stages:   ----- Time ------  ----- Flops -----  --- Messages ---  -- Message Lengths --  -- Reductions --
+                        Avg     %Total     Avg     %Total   counts   %Total     Avg         %Total   counts   %Total 
+ 0:      Main Stage: 2.7923e-04   0.0%  0.0000e+00   0.0%  0.000e+00   0.0%  0.000e+00        0.0%  0.000e+00   0.0% 
+ 1:   Loading Files: 2.5665e+01  10.8%  0.0000e+00   0.0%  2.350e+03   0.0%  2.074e-01        0.0%  3.069e+04  13.3% 
+ 2:      Setting up: 7.9527e-02   0.0%  0.0000e+00   0.0%  1.104e+03   0.0%  2.256e-02        0.0%  1.700e+01   0.0% 
+ 3:         Solving: 2.1245e+02  89.2%  6.4695e+11 100.0%  2.031e+07 100.0%  1.199e+03      100.0%  2.000e+05  86.7% 
+ 4:  Destroying obj: 1.3544e-03   0.0%  0.0000e+00   0.0%  0.000e+00   0.0%  0.000e+00        0.0%  0.000e+00   0.0% 
+
+------------------------------------------------------------------------------------------------------------------------
+See the 'Profiling' chapter of the users' manual for details on interpreting output.
+Phase summary info:
+   Count: number of times phase was executed
+   Time and Flops: Max - maximum over all processors
+                   Ratio - ratio of maximum to minimum over all processors
+   Mess: number of messages sent
+   Avg. len: average message length (bytes)
+   Reduct: number of global reductions
+   Global: entire computation
+   Stage: stages of a computation. Set stages with PetscLogStagePush() and PetscLogStagePop().
+      %T - percent time in this phase         %F - percent flops in this phase
+      %M - percent messages in this phase     %L - percent message lengths in this phase
+      %R - percent reductions in this phase
+   Total Mflop/s: 10e-6 * (sum of flops over all processors)/(max time over all processors)
+------------------------------------------------------------------------------------------------------------------------
+Event                Count      Time (sec)     Flops                             --- Global ---  --- Stage ---   Total
+                   Max Ratio  Max     Ratio   Max  Ratio  Mess   Avg len Reduct  %T %F %M %L %R  %T %F %M %L %R Mflop/s
+------------------------------------------------------------------------------------------------------------------------
+
+--- Event Stage 0: Main Stage
+
+
+--- Event Stage 1: Loading Files
+
+GetGeometry            1 1.0 1.5601e-02 1.0 0.00e+00 0.0 7.4e+02 2.1e+02 1.3e+01  0  0  0  0  0   0  0 31  4  0     0
+VecView                1 1.0 1.3322e-02 1.2 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecMax                 2 1.0 4.8161e-05 1.4 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecCopy                2 1.0 5.2691e-05 6.3 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecSet                 8 1.0 2.0742e-04 1.5 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecAssemblyBegin    5845 1.0 2.8814e-01 1.8 0.00e+00 0.0 6.2e+01 2.3e+04 1.8e+04  0  0  0  0  8   1  0  3 34 57     0
+VecAssemblyEnd      5845 1.0 5.4832e-03 1.2 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecScatterBegin        2 1.0 6.2799e-04 2.3 0.00e+00 0.0 5.9e+02 2.0e+03 0.0e+00  0  0  0  0  0   0  0 25 28  0     0
+VecScatterEnd          2 1.0 9.6655e-04 9.9 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+GetProrperties         1 1.0 1.9509e-01 1.0 0.00e+00 0.0 1.6e+03 2.5e+03 2.1e+01  0  0  0  0  0   1  0 69 96  0     0
+GetConductivity        1 1.0 5.8222e-04 8.1 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+GetSpecificStorage       1 1.0 3.0813e-02 1.5 0.00e+00 0.0 0.0e+00 0.0e+00 2.0e+00  0  0  0  0  0   0  0  0  0  0     0
+GetBC                  1 1.0 2.5455e+01 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 3.1e+04 11  0  0  0 13  99  0  0  0100     0
+
+--- Event Stage 2: Setting up
+
+BuildTwoSided          1 1.0 1.6403e-04 3.5 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecSet                 2 1.0 2.9802e-05 6.9 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecScatterBegin        1 1.0 1.6379e-04 2.8 0.00e+00 0.0 3.7e+02 8.3e+02 0.0e+00  0  0  0  0  0   0  0 33 66  0     0
+VecScatterEnd          1 1.0 1.1206e-04 3.9 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatAssemblyBegin       2 1.0 2.5354e-02 7.5 0.00e+00 0.0 0.0e+00 0.0e+00 4.0e+00  0  0  0  0  0  21  0  0  0 24     0
+MatAssemblyEnd         2 1.0 3.8986e-03 1.1 0.00e+00 0.0 7.4e+02 2.1e+02 8.0e+00  0  0  0  0  0   5  0 67 34 47     0
+SFSetGraph             1 1.0 2.7657e-05 5.3 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+SFReduceBegin          1 1.0 2.4009e-04 2.3 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+SFReduceEnd            1 1.0 3.0994e-06 1.4 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+BuildSystem            1 1.0 7.9775e-02 1.0 0.00e+00 0.0 1.1e+03 4.2e+02 1.7e+01  0  0  0  0  0 100  0100100100     0
+
+--- Event Stage 3: Solving
+
+BuildTwoSided       1460 1.0 2.1760e+00 8.2 0.00e+00 0.0 7.5e+05 4.0e+00 0.0e+00  0  0  4  0  0   1  0  4  0  0     0
+VecView             1461 1.0 1.4425e+01 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  6  0  0  0  0   7  0  0  0  0     0
+VecMDot            43800 1.0 3.3742e+01 2.1 5.74e+09 1.2 0.0e+00 0.0e+00 4.4e+04 11 26  0  0 19  12 26  0  0 22  5029
+VecNorm            45260 1.0 2.0864e+00 2.3 3.82e+08 1.2 0.0e+00 0.0e+00 4.5e+04  1  2  0  0 20   1  2  0  0 23  5423
+VecScale           45260 1.0 2.2587e-01 1.2 1.91e+08 1.2 0.0e+00 0.0e+00 0.0e+00  0  1  0  0  0   0  1  0  0  0 25047
+VecCopy            46720 1.0 1.6852e+00 1.3 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  1  0  0  0  0   1  0  0  0  0     0
+VecSet              8761 1.0 1.7700e-01 1.2 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecAXPY             2920 1.0 5.4956e-02 1.9 2.47e+07 1.2 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0 13283
+VecMAXPY           45260 1.0 9.3051e+00 1.2 6.11e+09 1.2 0.0e+00 0.0e+00 0.0e+00  4 28  0  0  0   4 28  0  0  0 19417
+VecPointwiseMult    5840 1.0 1.5352e-01 1.3 1.23e+07 1.2 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0  2377
+VecLoad                1 1.0 1.4980e-02 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecScatterBegin    52560 1.0 4.3731e+00 3.9 0.00e+00 0.0 1.6e+07 1.0e+03 0.0e+00  1  0 80 70  0   1  0 80 70  0     0
+VecScatterEnd      52560 1.0 1.7053e+01 6.7 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  6  0  0  0  0   7  0  0  0  0     0
+VecNormalize       45260 1.0 2.3989e+00 1.9 5.74e+08 1.2 0.0e+00 0.0e+00 4.5e+04  1  3  0  0 20   1  3  0  0 23  7075
+MatMult            43800 1.0 8.2023e+01 1.3 9.67e+09 1.2 1.6e+07 8.3e+02 0.0e+00 30 43 79 55  0  34 43 79 55  0  3395
+MatCopy             1460 1.0 4.6931e+00 1.3 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  2  0  0  0  0   2  0  0  0  0     0
+MatConvert             1 1.0 8.3239e-03 2.2 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+SFSetGraph          1460 1.0 7.3875e-01 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+SFReduceBegin       1460 1.0 2.5544e+00 4.2 0.00e+00 0.0 3.7e+06 5.0e+02 0.0e+00  1  0 18  8  0   1  0 18  8  0     0
+SFReduceEnd         1460 1.0 1.1988e-01 1.2 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+SolveSystem            1 1.0 2.1245e+02 1.0 2.21e+10 1.2 2.0e+07 1.2e+03 2.0e+05 89100100100 87 100100100100100  3045
+KSPGMRESOrthog     43800 1.0 4.1570e+01 1.7 1.15e+10 1.2 0.0e+00 0.0e+00 4.4e+04 14 52  0  0 19  16 52  0  0 22  8165
+KSPSetUp            1460 1.0 2.0618e+00 3.6 0.00e+00 0.0 0.0e+00 0.0e+00 2.9e+03  1  0  0  0  1   1  0  0  0  1     0
+KSPSolve            1460 1.0 1.1407e+02 1.0 2.21e+10 1.2 1.6e+07 8.3e+02 1.7e+05 48100 79 55 75  54100 79 55 87  5665
+PCSetUp             1460 1.0 1.1425e-03 2.6 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+PCApply            45260 1.0 1.7563e+00 1.3 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  1  0  0  0  0   1  0  0  0  0     0
+
+--- Event Stage 4: Destroying obj
+
+DestroyBC              1 1.0 1.1785e-03 1.5 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0  81  0  0  0  0     0
+DestroyProperties       1 1.0 1.2565e-0410.8 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   1  0  0  0  0     0
+DestroyGeometry        1 1.0 1.5473e-04 7.2 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   3  0  0  0  0     0
+------------------------------------------------------------------------------------------------------------------------
+
+Memory usage is given in bytes:
+
+Object Type          Creations   Destructions     Memory  Descendants' Mem.
+Reports information only for process 0.
+
+--- Event Stage 0: Main Stage
+
+              Viewer     1              0            0     0.
+
+--- Event Stage 1: Loading Files
+
+              Vector  5852              5        75624     0.
+      Vector Scatter     2              1         6272     0.
+    Distributed Mesh     1              0            0     0.
+Star Forest Bipartite Graph     2              0            0     0.
+     Discrete System     1              0            0     0.
+           Index Set  4387              4        57288     0.
+   IS L to G Mapping     1              0            0     0.
+   Application Order     1              0            0     0.
+              Viewer     1              1          776     0.
+
+--- Event Stage 2: Setting up
+
+              Vector     4              3        45592     0.
+      Vector Scatter     1              0            0     0.
+              Matrix     3              0            0     0.
+Star Forest Bipartite Graph     1              1          848     0.
+           Index Set     2              2         5036     0.
+
+--- Event Stage 3: Solving
+
+              Vector 59863          55481   1926385032     0.
+      Vector Scatter  5841           5841    132592432     0.
+              Matrix     3              3      1430108     0.
+Star Forest Bipartite Graph  1460           1460      1238080     0.
+           Index Set  5840           5840      4531840     0.
+              Viewer  1462           1462      1134512     0.
+       Krylov Solver  1461           1461     26865160     0.
+      Preconditioner  1460           1460      1191360     0.
+
+--- Event Stage 4: Destroying obj
+
+              Vector     0             11       181920     0.
+      Vector Scatter     0              1         1072     0.
+              Matrix     0              3      1430104     0.
+           Index Set     0              3        22328     0.
+========================================================================================================================
+Average time to get PetscTime(): 7.15256e-08
+Average time for MPI_Barrier(): 5.67436e-06
+Average time for zero size MPI_Send(): 4.91738e-06
+#PETSc Option Table entries:
+-Input_file_bc 50x50x50_bc.txt
+-Input_file_gmtry 50x50x50_gmtry.txt
+-Input_file_init_sol 50x50x50_Sol.h5
+-Input_file_ppt 50x50x50_properties.txt
+-Input_file_ppt_by_zones 50x50x50_zones.txt
+-Input_type_bc 2
+-Input_type_gmtry 2
+-Input_type_init_sol 3
+-Input_type_tplgy 0
+-ksp_type gmres
+-log_view ascii:50x50x50_NP32_KSPgmres_PCnone.log
+-Output_type_ppt 3
+-pc_type none
+-Project_name 50x50x50
+-Run_options_scheme 2
+-Run_options_time 1
+#End of PETSc Option Table entries
+Compiled without FORTRAN kernels
+Compiled with full precision matrices (default)
+sizeof(short) 2 sizeof(int) 4 sizeof(long) 8 sizeof(void*) 8 sizeof(PetscScalar) 8 sizeof(PetscInt) 4
+Configure options: --with-shared-libraries --with-debugging=0 --with-mpi-dir=/MyLibs/MPICH/mpich-3.2/arch-centos-opt --with-cxx=0 --with-hdf5-dir=/MyLibs/HDF5/hdf5-1.8.17/arch-centos-parallel-opt/ PETSC_ARCH=arch-centos-opt-v3.7.2-mpich-v3.2-hdf5-v1.8.17 FOPTFLAGS="optimization flags" COPTFLAGS="optimization flags"
+-----------------------------------------
+Libraries compiled on Wed Aug 17 12:00:13 2016 on poroso-medellin-unal-edu-co 
+Machine characteristics: Linux-3.10.0-327.28.2.el7.x86_64-x86_64-with-centos-7.2.1511-Core
+Using PETSc directory: /MyLibs/PETSc
+Using PETSc arch: arch-centos-opt-v3.7.2-mpich-v3.2-hdf5-v1.8.17
+-----------------------------------------
+
+Using C compiler: /MyLibs/MPICH/mpich-3.2/arch-centos-opt/bin/mpicc  -fPIC  -Wall -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -fvisibility=hidden  ${COPTFLAGS} ${CFLAGS}
+Using Fortran compiler: /MyLibs/MPICH/mpich-3.2/arch-centos-opt/bin/mpif90  -fPIC -Wall -ffree-line-length-0 -Wno-unused-dummy-argument   ${FOPTFLAGS} ${FFLAGS} 
+-----------------------------------------
+
+Using include paths: -I/MyLibs/PETSc/arch-centos-opt-v3.7.2-mpich-v3.2-hdf5-v1.8.17/include -I/MyLibs/PETSc/include -I/MyLibs/PETSc/include -I/MyLibs/PETSc/arch-centos-opt-v3.7.2-mpich-v3.2-hdf5-v1.8.17/include -I/MyLibs/HDF5/hdf5-1.8.17/arch-centos-parallel-opt/include -I/MyLibs/MPICH/mpich-3.2/arch-centos-opt/include
+-----------------------------------------
+
+Using C linker: /MyLibs/MPICH/mpich-3.2/arch-centos-opt/bin/mpicc
+Using Fortran linker: /MyLibs/MPICH/mpich-3.2/arch-centos-opt/bin/mpif90
+Using libraries: -Wl,-rpath,/MyLibs/PETSc/arch-centos-opt-v3.7.2-mpich-v3.2-hdf5-v1.8.17/lib -L/MyLibs/PETSc/arch-centos-opt-v3.7.2-mpich-v3.2-hdf5-v1.8.17/lib -lpetsc -llapack -lblas -Wl,-rpath,/MyLibs/HDF5/hdf5-1.8.17/arch-centos-parallel-opt/lib -L/MyLibs/HDF5/hdf5-1.8.17/arch-centos-parallel-opt/lib -lhdf5hl_fortran -lhdf5_fortran -lhdf5_hl -lhdf5 -lpthread -lm -Wl,-rpath,/MyLibs/MPICH/mpich-3.2/arch-centos-opt/lib -L/MyLibs/MPICH/mpich-3.2/arch-centos-opt/lib -Wl,-rpath,/usr/lib/gcc/x86_64-redhat-linux/4.8.5 -L/usr/lib/gcc/x86_64-redhat-linux/4.8.5 -lmpifort -lgfortran -lm -lgfortran -lm -lquadmath -lm -Wl,-rpath,/MyLibs/MPICH/mpich-3.2/arch-centos-opt/lib -L/MyLibs/MPICH/mpich-3.2/arch-centos-opt/lib -Wl,-rpath,/usr/lib/gcc/x86_64-redhat-linux/4.8.5 -L/usr/lib/gcc/x86_64-redhat-linux/4.8.5 -ldl -Wl,-rpath,/MyLibs/MPICH/mpich-3.2/arch-centos-opt/lib -lmpi -lgcc_s -ldl 
+-----------------------------------------
+
