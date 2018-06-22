@@ -1,3 +1,7 @@
+gfortran random_field.F90 -o random_field
+
+./random_field 25 25 25
+
  ../../src/ANISOFLOW \
  -Input_type_gmtry 2 \
  -Input_file_gmtry 25x25x25_gmtry.txt \

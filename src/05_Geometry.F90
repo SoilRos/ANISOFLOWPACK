@@ -58,7 +58,7 @@ SUBROUTINE GetGeometry(Comm,Gmtry,ierr)
 
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"["//             &
-        & ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
+        & ADJUSTL(TRIM(EventName))//" Event] Initialized\n",ierr)
     
     CALL GetDataMngr(Comm,Gmtry%Scale,Gmtry%DataMngr,ierr)
     CALL GetGrid(Comm,Gmtry%DataMngr,Gmtry%Scale,Gmtry%x,Gmtry%y,    &
@@ -1306,7 +1306,7 @@ SUBROUTINE DestroyGeometry(Gmtry,ierr)
 
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,      &
-        & "["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
+        & "["//ADJUSTL(TRIM(EventName))//" Event] Initialized\n",ierr)
 
     CALL DMDestroy(Gmtry%DataMngr,ierr)
     CALL VecDestroy(Gmtry%Tplgy,ierr)
