@@ -1,4 +1,16 @@
+MODULE PETSc_LIBRARY
+
+#include <petsc/finclude/petsc.h>
+
+    USE PETSc
+
+    IMPLICIT NONE
+
+END MODULE
+
 MODULE ANISOFLOW_Properties
+
+    USE PETSc_LIBRARY
 
     IMPLICIT NONE
 
@@ -11,12 +23,6 @@ SUBROUTINE GetProrperties(Gmtry,PptFld,ierr)
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetRunOptions
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
 
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
@@ -34,8 +40,7 @@ SUBROUTINE GetProrperties(Gmtry,PptFld,ierr)
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
     EventName="GetProrperties"
     CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
-    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,                 &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventBegin(Event,ierr)
 
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,      &
@@ -54,8 +59,7 @@ SUBROUTINE GetProrperties(Gmtry,PptFld,ierr)
         & "["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
     CALL PetscLogFlops(EventFlops,ierr)
-    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT, &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventEnd(Event,ierr)
 
 
 END SUBROUTINE GetProrperties
@@ -70,12 +74,6 @@ SUBROUTINE GetPptZoneID(Gmtry,PptZoneID_Local,DefinedByPptZones,ierr)
     USE ANISOFLOW_Geometry,  ONLY : VecApplicationToPetsc
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
@@ -208,8 +206,6 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,Cvt,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertiesField),INTENT(IN)    :: PptFld
@@ -226,8 +222,7 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,Cvt,ierr)
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
     EventName="GetConductivity"
     CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
-    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,                 &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventBegin(Event,ierr)
 
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD       &
@@ -254,8 +249,7 @@ SUBROUTINE GetConductivity(Gmtry,PptFld,Cvt,ierr)
         & ,"["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
     CALL PetscLogFlops(EventFlops,ierr)
-    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT, &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventEnd(Event,ierr)
 
 END SUBROUTINE GetConductivity
 
@@ -272,12 +266,6 @@ SUBROUTINE GetCvtZoneID(Gmtry,PptFld,CvtZoneID_Local,DefinedBy,ierr)
     USE ANISOFLOW_Geometry,  ONLY : VecApplicationToPetsc
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
@@ -431,12 +419,6 @@ SUBROUTINE GetConductivity_1(Gmtry,PptFld,Cvt,ierr)
     
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertiesField),INTENT(IN)    :: PptFld
@@ -545,12 +527,6 @@ SUBROUTINE GetConductivity_2(Gmtry,PptFld,Cvt,ierr)
     
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertiesField),INTENT(IN)    :: PptFld
@@ -650,12 +626,6 @@ SUBROUTINE GetConductivity_3(Gmtry,PptFld,Cvt,ierr)
     USE ANISOFLOW_View,      ONLY : ViewConductivity
     
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
@@ -779,12 +749,6 @@ SUBROUTINE GetConductivity_4(Gmtry,PptFld,Cvt,ierr)
     USE ANISOFLOW_View,      ONLY : ViewConductivity
     
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
@@ -938,8 +902,6 @@ SUBROUTINE GetStorage(Gmtry,PptFld,Sto,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Geometry),INTENT(IN)               :: Gmtry
     TYPE(PropertiesField),INTENT(IN)        :: PptFld
@@ -956,8 +918,7 @@ SUBROUTINE GetStorage(Gmtry,PptFld,Sto,ierr)
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
     EventName="GetSpecificStorage"
     CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
-    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,                 &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventBegin(Event,ierr)
 
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,      &
@@ -980,8 +941,7 @@ SUBROUTINE GetStorage(Gmtry,PptFld,Sto,ierr)
         & "["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
     CALL PetscLogFlops(EventFlops,ierr)
-    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT, &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventEnd(Event,ierr)
 
 END SUBROUTINE GetStorage
 
@@ -998,12 +958,6 @@ SUBROUTINE GetStoZoneID(Gmtry,PptFld,StoZoneID_Local,DefinedBy,ierr)
     USE ANISOFLOW_Geometry,  ONLY : VecApplicationToPetsc
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(Geometry),INTENT(IN)           :: Gmtry
@@ -1152,12 +1106,6 @@ SUBROUTINE GetStorage_1(Gmtry,PptFld,Sto,ierr)
     
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
-
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Geometry),INTENT(IN)               :: Gmtry
     TYPE(PropertiesField),INTENT(IN)        :: PptFld
@@ -1239,13 +1187,6 @@ SUBROUTINE StorageZoneToCell(Gmtry,Sto,ierr)
     USE ANISOFLOW_View,  ONLY : ViewStorage
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscvec.h90>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
 
     PetscErrorCode,INTENT(INOUT)                :: ierr
     TYPE(Geometry),INTENT(IN)                   :: Gmtry
@@ -1344,12 +1285,6 @@ SUBROUTINE GetStorage_2(Gmtry,PptFld,Sto,ierr)
     
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
-
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Geometry),INTENT(IN)               :: Gmtry
     TYPE(PropertiesField),INTENT(IN)        :: PptFld
@@ -1418,8 +1353,6 @@ SUBROUTINE GetLocalProperty(Gmtry,PptFld,Ppt,i,j,k,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertiesField),INTENT(IN)    :: PptFld
     TYPE(Property),INTENT(OUT)          :: Ppt
@@ -1442,12 +1375,6 @@ SUBROUTINE GetLocalConductivity(Gmtry,PptFld,Ppt,ierr)
     USE ANISOFLOW_Operators
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
 
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(PropertiesField),INTENT(IN)    :: PptFld
@@ -2059,9 +1986,6 @@ SUBROUTINE DestroyProperties(PptFld,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     TYPE(PropertiesField),INTENT(INOUT) :: PptFld
 
@@ -2075,8 +1999,7 @@ SUBROUTINE DestroyProperties(PptFld,ierr)
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
     EventName="DestroyProperties"
     CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
-    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,                 &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventBegin(Event,ierr)
 
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,      &
@@ -2094,8 +2017,7 @@ SUBROUTINE DestroyProperties(PptFld,ierr)
         & "["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
     CALL PetscLogFlops(EventFlops,ierr)
-    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT, &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventEnd(Event,ierr)
 
 END SUBROUTINE DestroyProperties
 

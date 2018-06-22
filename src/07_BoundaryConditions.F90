@@ -1,7 +1,19 @@
+MODULE PETSc_LIBRARY
+
+#include <petsc/finclude/petsc.h>
+
+    USE PETSc
+
+    IMPLICIT NONE
+
+END MODULE
+
 MODULE ANISOFLOW_BoundaryConditions
 
     ! USE ANISOFLOW_Interface, ONLY : GetVerbose
     ! USE ANISOFLOW_Types, ONLY : Geometry,BoundaryConditions
+
+    USE PETSc_LIBRARY
 
     IMPLICIT NONE
 
@@ -14,9 +26,6 @@ SUBROUTINE GetBC(Gmtry,BCFld,ierr)
     USE ANISOFLOW_Interface, ONLY : GetVerbose,GetInputType
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Geometry),INTENT(IN)               :: Gmtry
@@ -33,8 +42,7 @@ SUBROUTINE GetBC(Gmtry,BCFld,ierr)
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
     EventName="GetBC"
     CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
-    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,                 &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventBegin(Event,ierr)
 
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,      &
@@ -56,8 +64,7 @@ SUBROUTINE GetBC(Gmtry,BCFld,ierr)
         & "["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
     CALL PetscLogFlops(EventFlops,ierr)
-    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT, &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventEnd(Event,ierr)
 
 END SUBROUTINE GetBC
 
@@ -68,9 +75,6 @@ SUBROUTINE GetBC_1(Gmtry,BCFld,ierr)
                                   & GetInputFileBC
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Geometry),INTENT(IN)               :: Gmtry
@@ -348,9 +352,6 @@ SUBROUTINE GetBC_2(Gmtry,BCFld,ierr)
                                   & GetInputFileBC
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Geometry),INTENT(IN)               :: Gmtry
@@ -639,11 +640,6 @@ SUBROUTINE DestroyBC(BCFld,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(BoundaryConditions),INTENT(INOUT)  :: BCFld
 
@@ -658,32 +654,34 @@ SUBROUTINE DestroyBC(BCFld,ierr)
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
     EventName="DestroyBC"
     CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
-    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,                 &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventBegin(Event,ierr)
 
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,      &
         & "["//ADJUSTL(TRIM(EventName))//" Event] Inizialited\n",ierr)
 
-    CALL VecDestroy(BCFld%Dirich,ierr)
-    CALL VecDestroy(BCFld%Source,ierr)
-    CALL VecDestroy(BCFld%CauchyC,ierr)
-    CALL VecDestroy(BCFld%CauchyHe,ierr)
+    CALL VecDestroyVecs(BCFld%SizeTimeZone, BCFld%Dirich,ierr)
+    CALL VecDestroyVecs(BCFld%SizeTimeZone, BCFld%Source,ierr)
+    CALL VecDestroyVecs(BCFld%SizeTimeZone, BCFld%CauchyC,ierr)
+    CALL VecDestroyVecs(BCFld%SizeTimeZone, BCFld%CauchyHe,ierr)
+
     DO i=1,BCFld%SizeTimeZone
         DEALLOCATE(BCFld%TimeZone(i)%Time)
     END DO
+    
     DEALLOCATE(BCFld%TimeZone)
 
-    CALL ISDestroy(BCFld%DirichIS,ierr)
-    CALL ISDestroy(BCFld%SourceIS,ierr)
-    CALL ISDestroy(BCFld%CauchyIS,ierr)
+    DO i=1,BCFld%SizeTimeZone
+        CALL ISDestroy(BCFld%DirichIS(i),ierr)
+        CALL ISDestroy(BCFld%SourceIS(i),ierr)
+        CALL ISDestroy(BCFld%CauchyIS(i),ierr)
+    END DO
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,      &
         & "["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
     CALL PetscLogFlops(EventFlops,ierr)
-    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT, &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventEnd(Event,ierr)
 
 END SUBROUTINE DestroyBC
 

@@ -1,7 +1,19 @@
+MODULE PETSc_LIBRARY
+
+#include <petsc/finclude/petsc.h>
+
+    USE PETSc
+
+    IMPLICIT NONE
+
+END MODULE
+
 MODULE ANISOFLOW_Geometry
 
 ! ANISOFLOW_Geometry it's a module that contains routines to manage 
 ! geometry variables.
+
+    USE PETSc_LIBRARY
 
     IMPLICIT NONE
 
@@ -28,9 +40,6 @@ SUBROUTINE GetGeometry(Comm,Gmtry,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
     TYPE(Geometry),INTENT(OUT)      :: Gmtry
@@ -45,8 +54,7 @@ SUBROUTINE GetGeometry(Comm,Gmtry,ierr)
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
     EventName="GetGeometry"
     CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
-    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,                 &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventBegin(Event,ierr)
 
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(Comm,"["//             &
@@ -67,8 +75,7 @@ SUBROUTINE GetGeometry(Comm,Gmtry,ierr)
     
     CALL PetscGetFlops(EventFlops,ierr)
     CALL PetscLogFlops(EventFlops,ierr)
-    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT, &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventEnd(Event,ierr)
 
 END SUBROUTINE GetGeometry
 
@@ -90,9 +97,6 @@ SUBROUTINE GetDataMngr(Comm,Scale,DataMngr,ierr)
     USE ANISOFLOW_Interface,    ONLY : GetInputType,GetVerbose
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscdm.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
@@ -125,10 +129,6 @@ SUBROUTINE GetDataMngr_1(Comm,Scale,DataMngr,ierr)
                                      & GetRunOptions,GetVerbose
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
@@ -227,9 +227,6 @@ SUBROUTINE GetGrid(Comm,DataMngr,Scale,x,y,z,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     MPI_Comm,INTENT(IN)                 :: Comm
     PetscInt,INTENT(IN)                 :: Scale
@@ -278,9 +275,6 @@ SUBROUTINE GetGrid_1(Comm,DataMngr,Scale,x,y,z,ierr)
                                   & GetVerbose
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     MPI_Comm,INTENT(IN)                 :: Comm
@@ -358,9 +352,6 @@ SUBROUTINE GetGrid_2(Comm,DataMngr,Scale,x,y,z,ierr)
                                   & GetVerbose
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     MPI_Comm,INTENT(IN)                 :: Comm
@@ -494,8 +485,6 @@ SUBROUTINE GetTopology(Comm,DataMngr,Scale,Tplgy,SizeTplgy,          &
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
     PetscInt,INTENT(IN)             :: Scale
@@ -549,13 +538,6 @@ SUBROUTINE GetTopology_0(Comm,DataMngr,Scale,Tplgy,SizeTplgy,        &
     USE ANISOFLOW_View,      ONLY : ViewTopology
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscis.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
@@ -649,13 +631,6 @@ SUBROUTINE GetTopology_1(Comm,DataMngr,Scale,Tplgy,SizeTplgy,        &
     USE ANISOFLOW_View,      ONLY : ViewTopology
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscis.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
@@ -777,13 +752,6 @@ SUBROUTINE GetTopology_2(Comm,DataMngr,Scale,Tplgy,SizeTplgy,        &
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscis.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
-
     ! Scale do nothing here, it's keeped just to maintain the syntax.
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
@@ -890,12 +858,6 @@ SUBROUTINE GetTopology_3(Comm,DataMngr,Scale,Tplgy,SizeTplgy,        &
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
-
     ! Scale do nothing here, it's keeped just to maintain the syntax.
     PetscErrorCode,INTENT(INOUT)    :: ierr
     MPI_Comm,INTENT(IN)             :: Comm
@@ -1001,9 +963,6 @@ SUBROUTINE UpdateTplgy(Gmtry,DirichIS,SourceIS,CauchyIS,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-
     TYPE(Geometry),INTENT(INOUT)        :: Gmtry
     IS,INTENT(IN)                       :: DirichIS,SourceIS,CauchyIS
     PetscErrorCode,INTENT(INOUT)        :: ierr
@@ -1089,13 +1048,6 @@ SUBROUTINE GetLocalTopology(Gmtry,Ppt,ierr)
     USE ANISOFLOW_Types, ONLY : Geometry,Property
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscvec.h90>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscdmda.h90>
 
     TYPE(Geometry),INTENT(IN)           :: Gmtry
     TYPE(Property),INTENT(INOUT)        :: Ppt
@@ -1295,13 +1247,6 @@ SUBROUTINE VecApplicationToPetsc(DataMngr,AppVec,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscis.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-#include <petsc/finclude/petscao.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     DM,INTENT(IN)                   :: DataMngr
     Vec,INTENT(INOUT)               :: AppVec ! it outs as PetscVec
@@ -1344,12 +1289,6 @@ SUBROUTINE DestroyGeometry(Gmtry,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscis.h>
-#include <petsc/finclude/petscdm.h>
-#include <petsc/finclude/petscdmda.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     TYPE(Geometry),INTENT(INOUT)    :: Gmtry
 
@@ -1363,8 +1302,7 @@ SUBROUTINE DestroyGeometry(Gmtry,ierr)
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
     EventName="DestroyGeometry"
     CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
-    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,                 &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventBegin(Event,ierr)
 
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,      &
@@ -1380,8 +1318,7 @@ SUBROUTINE DestroyGeometry(Gmtry,ierr)
         & "["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
     CALL PetscLogFlops(EventFlops,ierr)
-    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT, &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventEnd(Event,ierr)
 
 END SUBROUTINE DestroyGeometry
 

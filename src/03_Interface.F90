@@ -1,8 +1,20 @@
+MODULE PETSc_LIBRARY
+
+#include <petsc/finclude/petsc.h>
+
+    USE PETSc
+
+    IMPLICIT NONE
+
+END MODULE
+
 MODULE ANISOFLOW_Interface
 
 ! ANISOFLOW_Interface it's a module that contains routines that serve 
 ! as a bridge between user and program.
 
+    USE PETSc_LIBRARY
+    
     IMPLICIT NONE
 
 CONTAINS
@@ -21,14 +33,12 @@ SUBROUTINE GetInputDir(InputDir,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     CHARACTER(LEN=200),INTENT(OUT)  :: InputDir
 
     PetscBool                       :: InputDirFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,                    &
+    CALL PetscOptionsGetString(PETSC_NULL_OPTIONS,                    &
         & PETSC_NULL_CHARACTER,"-Input_dir",InputDir,InputDirFlg,ierr)
     IF (.NOT.InputDirFlg) InputDir=""
     InputDir=TRIM(InputDir)
@@ -55,15 +65,13 @@ SUBROUTINE GetInputType(InputType,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     Type(InputTypeVar),INTENT(OUT)  :: InputType
 
     PetscBool                       :: InputTypeFlg
     PetscInt                        :: InputTypeTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,  &
+    CALL PetscOptionsGetInt(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,  &
         & "-Input_type",InputTypeTmp,InputTypeFlg,ierr)
 
     IF (InputTypeFlg) THEN
@@ -124,14 +132,13 @@ SUBROUTINE GetInputTypeGmtry(InputType,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
     PetscErrorCode,INTENT(INOUT)        :: ierr
     Type(InputTypeVar),INTENT(INOUT)    :: InputType
 
     PetscBool                       :: InputTypeGmtryFlg
     PetscInt                        :: InputTypeGmtryTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,  &
+    CALL PetscOptionsGetInt(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,  &
         & "-Input_type_gmtry",InputTypeGmtryTmp,InputTypeGmtryFlg,   &
         & ierr)
 
@@ -171,15 +178,13 @@ SUBROUTINE GetInputTypeTplgy(InputType,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     Type(InputTypeVar),INTENT(INOUT)    :: InputType
 
     PetscBool                       :: InputTypeTplgyFlg
     PetscInt                        :: InputTypeTplgyTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,  &
+    CALL PetscOptionsGetInt(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,  &
         & "-Input_type_tplgy",InputTypeTplgyTmp,InputTypeTplgyFlg,   &
         & ierr)
 
@@ -223,15 +228,13 @@ SUBROUTINE GetInputTypeCvt(InputType,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     Type(InputTypeVar),INTENT(INOUT)    :: InputType
 
     PetscBool                       :: InputTypeCvtFlg
     PetscInt                        :: InputTypeCvtTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,  &
+    CALL PetscOptionsGetInt(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,  &
         & "-Input_type_cvt",InputTypeCvtTmp,InputTypeCvtFlg,ierr)
 
     IF (InputTypeCvtFlg) THEN
@@ -275,15 +278,13 @@ SUBROUTINE GetInputTypeSto(InputType,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     Type(InputTypeVar),INTENT(INOUT)    :: InputType
 
     PetscBool                       :: InputTypeStoFlg
     PetscInt                        :: InputTypeStoTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,  &
+    CALL PetscOptionsGetInt(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,  &
         & "-Input_type_sto",InputTypeStoTmp,InputTypeStoFlg,ierr)
 
     IF (InputTypeStoFlg) THEN
@@ -322,15 +323,13 @@ SUBROUTINE GetInputTypeBC(InputType,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     Type(InputTypeVar),INTENT(INOUT)    :: InputType
 
     PetscBool                       :: InputTypeBCFlg
     PetscInt                        :: InputTypeBCTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,  &
+    CALL PetscOptionsGetInt(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,  &
         & "-Input_type_bc",InputTypeBCTmp,InputTypeBCFlg,ierr)
 
     IF (InputTypeBCFlg) THEN
@@ -369,15 +368,13 @@ SUBROUTINE GetInputTypeInitSol(InputType,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     Type(InputTypeVar),INTENT(INOUT)    :: InputType
 
     PetscBool                       :: InputTypeInitSolFlg
     PetscInt                        :: InputTypeInitSolTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,  &
+    CALL PetscOptionsGetInt(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,  &
         & "-Input_type_init_sol",InputTypeInitSolTmp,                &
         & InputTypeInitSolFlg,ierr)
 
@@ -407,19 +404,16 @@ END SUBROUTINE GetInputTypeInitSol
  !    > NOTES: The user must provide a file name using 
  !             "-Input_file_gmtry" followed by geometry file name.
 
-
 SUBROUTINE GetInputFileGmtry(InputFileGmtry,ierr)
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
 
     PetscErrorCode,INTENT(INOUT)    :: ierr
     CHARACTER(LEN=200),INTENT(OUT)  :: InputFileGmtry
 
     PetscBool                       :: InputFileGmtryFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,                    &
+    CALL PetscOptionsGetString(PETSC_NULL_OPTIONS,                    &
         & PETSC_NULL_CHARACTER,"-Input_file_gmtry",InputFileGmtry,   &
         & InputFileGmtryFlg,ierr)
 
@@ -448,14 +442,12 @@ SUBROUTINE GetInputFileTplgy(InputFileTplgy,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     CHARACTER(LEN=200),INTENT(OUT)  :: InputFileTplgy
 
     PetscBool                       :: InputFileTplgyFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,                    &
+    CALL PetscOptionsGetString(PETSC_NULL_OPTIONS,                    &
         & PETSC_NULL_CHARACTER,"-Input_file_tplgy",InputFileTplgy,   &
         & InputFileTplgyFlg,ierr)
 
@@ -489,13 +481,11 @@ SUBROUTINE GetInputFilePptByZone(InputFilePptByZone,                 &
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     CHARACTER(LEN=200),INTENT(OUT)  :: InputFilePptByZone
     PetscBool,INTENT(OUT)           :: InputFilePptByZoneFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,                    &
+    CALL PetscOptionsGetString(PETSC_NULL_OPTIONS,                    &
         & PETSC_NULL_CHARACTER,"-Input_file_ppt_by_zones",           &
         & InputFilePptByZone,InputFilePptByZoneFlg,ierr)
 
@@ -517,14 +507,12 @@ SUBROUTINE GetInputFilePpt(InputFilePpt,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     CHARACTER(LEN=200),INTENT(OUT)  :: InputFilePpt
 
     PetscBool                       :: InputFilePptFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,                    &
+    CALL PetscOptionsGetString(PETSC_NULL_OPTIONS,                    &
         & PETSC_NULL_CHARACTER,"-Input_file_ppt",InputFilePpt,       &
         & InputFilePptFlg,ierr)
 
@@ -557,14 +545,12 @@ SUBROUTINE GetInputFileCvt(InputFileCvt,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     CHARACTER(LEN=200),INTENT(OUT)  :: InputFileCvt
 
     PetscBool                       :: InputFileCvtFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,                    &
+    CALL PetscOptionsGetString(PETSC_NULL_OPTIONS,                    &
         & PETSC_NULL_CHARACTER,"-Input_file_cvt",InputFileCvt,       &
         & InputFileCvtFlg,ierr)
 
@@ -595,13 +581,11 @@ SUBROUTINE GetInputFileCvtByZone(InputFileCvtByZone,                 &
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     CHARACTER(LEN=200),INTENT(OUT)  :: InputFileCvtByZone
     PetscBool,INTENT(OUT)           :: InputFileCvtByZoneFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,                    &
+    CALL PetscOptionsGetString(PETSC_NULL_OPTIONS,                    &
         & PETSC_NULL_CHARACTER,"-Input_file_cvt_by_zones",           &
         InputFileCvtByZone,InputFileCvtByZoneFlg,ierr)
 
@@ -624,14 +608,12 @@ SUBROUTINE GetInputFileSto(InputFileSto,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     CHARACTER(LEN=200),INTENT(OUT)  :: InputFileSto
 
     PetscBool                       :: InputFileStoFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,                    &
+    CALL PetscOptionsGetString(PETSC_NULL_OPTIONS,                    &
         & PETSC_NULL_CHARACTER,"-Input_file_sto",InputFileSto,       &
         & InputFileStoFlg,ierr)
 
@@ -662,13 +644,11 @@ SUBROUTINE GetInputFileStoByZone(InputFileStoByZone,                 &
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     CHARACTER(LEN=200),INTENT(OUT)  :: InputFileStoByZone
     PetscBool,INTENT(OUT)           :: InputFileStoByZoneFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,                    &
+    CALL PetscOptionsGetString(PETSC_NULL_OPTIONS,                    &
         & PETSC_NULL_CHARACTER,"-Input_file_sto_by_zones",           &
         & InputFileStoByZone,InputFileStoByZoneFlg,ierr)
 
@@ -691,14 +671,12 @@ SUBROUTINE GetInputFileBC(InputFileBC,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     CHARACTER(LEN=200),INTENT(OUT)  :: InputFileBC
 
     PetscBool                       :: InputFileBCFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,                    &
+    CALL PetscOptionsGetString(PETSC_NULL_OPTIONS,                    &
         & PETSC_NULL_CHARACTER,"-Input_file_bc",InputFileBC,         &
         & InputFileBCFlg,ierr)
 
@@ -727,14 +705,12 @@ SUBROUTINE GetInputFileInitSol(InputFileInitSol,InputFileInitSolFlg, &
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     CHARACTER(LEN=200),INTENT(OUT)  :: InputFileInitSol
 
     PetscBool                       :: InputFileInitSolFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,                    &
+    CALL PetscOptionsGetString(PETSC_NULL_OPTIONS,                    &
         & PETSC_NULL_CHARACTER,"-Input_file_init_sol",               &
         & InputFileInitSol,InputFileInitSolFlg,ierr)
 
@@ -748,13 +724,11 @@ SUBROUTINE GetInitSolUniValue(InitSolUniValue,InitSolUniValueFlg,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     PetscBool,INTENT(OUT)               :: InitSolUniValueFlg
     PetscReal,INTENT(OUT)               :: InitSolUniValue
 
-    CALL PetscOptionsGetReal(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER, &
+    CALL PetscOptionsGetReal(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER, &
         & "-Init_sol_value",InitSolUniValue,InitSolUniValueFlg,ierr)
 
 END SUBROUTINE GetInitSolUniValue
@@ -765,15 +739,13 @@ SUBROUTINE GetHomogeneusPptFlg(HomogeneusPptFlg,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     PetscBool,INTENT(OUT)               :: HomogeneusPptFlg
 
     PetscBool                           :: HomogeneusPptFlg_1=.FALSE.
     PetscBool                           :: HomogeneusPptFlg_2=.FALSE.
 
-    CALL PetscOptionsGetBool(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER, &
+    CALL PetscOptionsGetBool(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER, &
         & "-Homogeneuos_ppt",HomogeneusPptFlg_1,HomogeneusPptFlg_2,  &
         & ierr)
 
@@ -788,15 +760,13 @@ SUBROUTINE GetHomogeneusCvtFlg(HomogeneusCvtFlg,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     PetscBool,INTENT(OUT)               :: HomogeneusCvtFlg
 
     PetscBool                           :: HomogeneusCvtFlg_1=.FALSE.
     PetscBool                           :: HomogeneusCvtFlg_2=.FALSE.
 
-    CALL PetscOptionsGetBool(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER, &
+    CALL PetscOptionsGetBool(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER, &
         & "-Homogeneuos_cvt",HomogeneusCvtFlg_1,HomogeneusCvtFlg_2,  &
         & ierr)
 
@@ -811,15 +781,13 @@ SUBROUTINE GetHomogeneusStoFlg(HomogeneusStoFlg,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     PetscBool,INTENT(OUT)               :: HomogeneusStoFlg
 
     PetscBool                           :: HomogeneusStoFlg_1=.FALSE.
     PetscBool                           :: HomogeneusStoFlg_2=.FALSE.
 
-    CALL PetscOptionsGetBool(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER, &
+    CALL PetscOptionsGetBool(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER, &
         & "-Homogeneuos_sto",HomogeneusStoFlg_1,HomogeneusStoFlg_2,  &
         & ierr)
 
@@ -834,14 +802,12 @@ SUBROUTINE GetProjectName(ProjectName,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     CHARACTER(LEN=200),INTENT(OUT)  :: ProjectName
 
     PetscBool                       :: ProjectNameFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,                    &
+    CALL PetscOptionsGetString(PETSC_NULL_OPTIONS,                    &
         & PETSC_NULL_CHARACTER,"-Project_name",ProjectName,          &
         & ProjectNameFlg,ierr)
     IF (.NOT.ProjectNameFlg) ProjectName="ANISOFLOW"
@@ -855,14 +821,12 @@ SUBROUTINE GetOutputDir(OutputDir,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     CHARACTER(LEN=200),INTENT(OUT)  :: OutputDir
 
     PetscBool                       :: OutputDirFlg
 
-    CALL PetscOptionsGetString(PETSC_NULL_OBJECT,                    &
+    CALL PetscOptionsGetString(PETSC_NULL_OPTIONS,                    &
         & PETSC_NULL_CHARACTER,"-Output_dir",OutputDir,OutputDirFlg, &
         & ierr)
     IF (.NOT.OutputDirFlg) OutputDir=""
@@ -878,15 +842,13 @@ SUBROUTINE GetOutputType(OutputType,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     Type(OutputTypeVar),INTENT(OUT)  :: OutputType
 
     PetscBool                       :: OutputTypeFlg
     PetscInt                        :: OutputTypeTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,  &
+    CALL PetscOptionsGetInt(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,  &
         & "-Output_type",OutputTypeTmp,OutputTypeFlg,ierr)
 
     IF (OutputTypeFlg) THEN
@@ -943,15 +905,13 @@ SUBROUTINE GetOutputTypeTplgy(OutputType,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     Type(OutputTypeVar),INTENT(INOUT)    :: OutputType
 
     PetscBool                       :: OutputTypeTplgyFlg
     PetscInt                        :: OutputTypeTplgyTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,  &
+    CALL PetscOptionsGetInt(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,  &
         & "-Output_type_tplgy",OutputTypeTplgyTmp,OutputTypeTplgyFlg,&
         & ierr)
 
@@ -979,15 +939,13 @@ SUBROUTINE GetOutputTypePpt(OutputType,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     Type(OutputTypeVar),INTENT(INOUT)    :: OutputType
 
     PetscBool                       :: OutputTypePptFlg
     PetscInt                        :: OutputTypePptTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,  &
+    CALL PetscOptionsGetInt(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,  &
         & "-Output_type_ppt",OutputTypePptTmp,OutputTypePptFlg,ierr)
 
     IF (OutputTypePptFlg) THEN
@@ -1014,15 +972,13 @@ SUBROUTINE GetOutputTypeCvt(OutputType,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     Type(OutputTypeVar),INTENT(INOUT)    :: OutputType
 
     PetscBool                       :: OutputTypeCvtFlg
     PetscInt                        :: OutputTypeCvtTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,  &
+    CALL PetscOptionsGetInt(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,  &
         & "-Output_type_cvt",OutputTypeCvtTmp,OutputTypeCvtFlg,ierr)
 
     IF (OutputTypeCvtFlg) THEN
@@ -1049,15 +1005,13 @@ SUBROUTINE GetOutputTypeSto(OutputType,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     Type(OutputTypeVar),INTENT(INOUT)    :: OutputType
 
     PetscBool                       :: OutputTypeStoFlg
     PetscInt                        :: OutputTypeStoTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,  &
+    CALL PetscOptionsGetInt(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,  &
         & "-Output_type_sto",OutputTypeStoTmp,OutputTypeStoFlg,ierr)
 
     IF (OutputTypeStoFlg) THEN
@@ -1084,15 +1038,13 @@ SUBROUTINE GetOutputTypeSol(OutputType,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)        :: ierr
     Type(OutputTypeVar),INTENT(INOUT)    :: OutputType
 
     PetscBool                       :: OutputTypeSolFlg
     PetscInt                        :: OutputTypeSolTmp
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,  &
+    CALL PetscOptionsGetInt(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,  &
         & "-Output_type_sol",OutputTypeSolTmp,OutputTypeSolFlg,ierr)
 
     IF (OutputTypeSolFlg) THEN
@@ -1133,18 +1085,16 @@ SUBROUTINE GetRunOptions(RunOptions,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     TYPE(RunOptionsVar),INTENT(OUT) :: RunOptions
 
     PetscBool                       :: RunOptionsTimeFlg, &
                                      & RunOptionsSchemeFlg
 
-    CALL PetscOptionsGetInt(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER,  &
+    CALL PetscOptionsGetInt(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER,  &
         & "-Run_options_scheme",RunOptions%Scheme,                   &
         & RunOptionsSchemeFlg,ierr)
-    CALL PetscOptionsGetBool(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER, &
+    CALL PetscOptionsGetBool(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER, &
         & "-Run_options_time",RunOptions%Time,RunOptionsTimeFlg,ierr)
 
     IF (RunOptionsSchemeFlg) THEN
@@ -1162,14 +1112,12 @@ SUBROUTINE GetVerbose(Verbose,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)    :: ierr
     PetscBool,INTENT(OUT)           :: Verbose
 
     PetscBool                       :: VerboseFlg
 
-    CALL PetscOptionsGetBool(PETSC_NULL_OBJECT,PETSC_NULL_CHARACTER, &
+    CALL PetscOptionsGetBool(PETSC_NULL_OPTIONS,PETSC_NULL_CHARACTER, &
         & "-Verbose",Verbose,VerboseFlg,ierr)
 
     IF (.NOT.VerboseFlg) THEN

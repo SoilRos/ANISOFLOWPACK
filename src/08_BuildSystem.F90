@@ -1,4 +1,16 @@
+MODULE PETSc_LIBRARY
+
+#include <petsc/finclude/petsc.h>
+
+    USE PETSc
+
+    IMPLICIT NONE
+
+END MODULE
+
 MODULE ANISOFLOW_BuildSystem
+
+    USE PETSc_LIBRARY
 
     IMPLICIT NONE
 
@@ -12,10 +24,6 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
     USE ANISOFLOW_Interface,  ONLY : GetVerbose
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscmat.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Geometry),INTENT(IN)               :: Gmtry
@@ -35,8 +43,7 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
     EventName="BuildSystem"
     CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
-    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,                 &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventBegin(Event,ierr)
 
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,      &
@@ -68,14 +75,13 @@ SUBROUTINE BuildSystem(Gmtry,PptFld,A,ierr)
     CALL MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY,ierr)  
 
     CALL MatZeroRowsColumnsIS(A,Gmtry%InactiveIS,-1.D0,              &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+        & PETSC_NULL_VEC,PETSC_NULL_VEC,ierr)
 
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,      &
         & "["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
     CALL PetscLogFlops(EventFlops,ierr)
-    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,                   &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventEnd(Event,ierr)
 
 END SUBROUTINE BuildSystem
 
@@ -87,10 +93,6 @@ SUBROUTINE GetInitSol(Gmtry,x,ierr)
                                   & GetInitSolUniValue,GetVerbose
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscviewer.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Geometry),INTENT(IN)               :: Gmtry
@@ -175,8 +177,6 @@ SUBROUTINE GetStencil(Ppt,Stencil,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Property),INTENT(IN)               :: Ppt
     TYPE(StencilVar),INTENT(OUT)            :: Stencil
@@ -211,8 +211,6 @@ SUBROUTINE GetTraditionalStencil(Ppt,Stencil,ierr)
     USE ANISOFLOW_Operators
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Property),INTENT(IN)               :: Ppt
@@ -339,8 +337,6 @@ SUBROUTINE GetLiStencil(Ppt,Stencil,ierr)
     USE ANISOFLOW_Operators
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Property),INTENT(IN)               :: Ppt
@@ -700,8 +696,6 @@ SUBROUTINE GetPerezStencil(Ppt,Stencil,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Property),INTENT(IN)               :: Ppt
     TYPE(StencilVar),INTENT(INOUT)          :: Stencil
@@ -996,10 +990,6 @@ SUBROUTINE ApplyDirichlet(BCFld,TimeZone,A,b,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscmat.h>
-
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
     PetscInt,INTENT(IN)                     :: TimeZone
@@ -1014,7 +1004,7 @@ SUBROUTINE ApplyDirichlet(BCFld,TimeZone,A,b,ierr)
 
 
     CALL MatZeroRowsIS(A,BCFld%DirichIS(TimeZone),-one,              &
-        & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+        & PETSC_NULL_VEC,PETSC_NULL_VEC,ierr)
 
     CALL VecGetSize(BCFld%Dirich(TimeZone),DirichSize,ierr)
 
@@ -1044,9 +1034,6 @@ SUBROUTINE ApplySource(BCFld,TimeZone,b,ierr)
     USE ANISOFLOW_Interface, ONLY : GetVerbose
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
@@ -1087,9 +1074,6 @@ SUBROUTINE ApplyCauchy(BCFld,TimeZone,A,b,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
     PetscInt,INTENT(IN)                     :: TimeZone
@@ -1116,8 +1100,8 @@ SUBROUTINE ApplyCauchy(BCFld,TimeZone,A,b,ierr)
 
 !     CALL VecView(MultHeC,PETSC_VIEWER_STDOUT_WORLD,ierr)
 
-    CALL ISCreateStride(PETSC_COMM_WORLD,BCFld%SizeCauchy,0,1,       &
-        & NaturalOrder,ierr)
+    CALL ISCreateStride(PETSC_COMM_WORLD,BCFld%SizeCauchy(TimeZone), &
+        0,1,NaturalOrder,ierr)
     CALL VecScatterCreate(MultHeC,NaturalOrder,b,                    &
         & BCFld%CauchyIS(TimeZone),Scatter,ierr)
 
@@ -1164,10 +1148,6 @@ SUBROUTINE ApplyTimeDiff(PptFld,BCFld,TimeZone,TimeStep,A,b,x,ierr)
     USE ANISOFLOW_Interface, ONLY : GetVerbose
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscmat.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(PropertiesField),INTENT(IN)        :: PptFld
@@ -1227,11 +1207,6 @@ SUBROUTINE GetDT(BCFld,TimeZone,TimeStep,DT,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscvec.h90>
-#include <petsc/finclude/petscmat.h>
-
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(BoundaryConditions),INTENT(IN)     :: BCFld
     PetscInt,INTENT(IN)                     :: TimeZone,TimeStep
@@ -1259,10 +1234,6 @@ END SUBROUTINE GetDT
 SUBROUTINE DestroySystem(A,b,x,ierr)
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscmat.h>
 
     PetscErrorCode,INTENT(INOUT)        :: ierr
     Mat,INTENT(INOUT)                   :: A

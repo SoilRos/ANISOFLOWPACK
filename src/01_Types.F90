@@ -1,15 +1,21 @@
+MODULE PETSc_LIBRARY
+
+#include <petsc/finclude/petsc.h>
+
+    USE PETSc
+
+    IMPLICIT NONE
+
+END MODULE
+
 MODULE ANISOFLOW_Types
 
 ! ANISOFLOW_Types it's a module that contains the basic data structur-
 ! es to ANISOFLOWPACK.
 
+    USE PETSc_LIBRARY
+
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscis.h>
-#include <petsc/finclude/petscdm.h>
-
 
  !  - Geometry: It's a data structure that manages every information 
  !              needed related to geometry.

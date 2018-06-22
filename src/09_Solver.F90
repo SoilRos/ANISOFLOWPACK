@@ -1,5 +1,16 @@
+MODULE PETSc_LIBRARY
+
+#include <petsc/finclude/petsc.h>
+
+    USE PETSc
+
+    IMPLICIT NONE
+
+END MODULE
+
 MODULE ANISOFLOW_Solver
 
+    USE PETSc_LIBRARY
     IMPLICIT NONE
 
 CONTAINS
@@ -16,12 +27,6 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
                                     & GetInitSol
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscksp.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscmat.h>
-#include <petsc/finclude/petscviewer.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
     TYPE(Geometry),INTENT(INOUT)            :: Gmtry
@@ -58,8 +63,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
     CALL PetscClassIdRegister(ClassName,ClassID,ierr)
     EventName="SolveSystem"
     CALL PetscLogEventRegister(EventName,ClassID,Event,ierr)
-    CALL PetscLogEventBegin(Event,PETSC_NULL_OBJECT,                 &
-      & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventBegin(Event,ierr)
 
     CALL GetVerbose(Verbose,ierr)
     IF (Verbose) CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,      &
@@ -401,8 +405,7 @@ SUBROUTINE SolveSystem(Gmtry,PptFld,BCFld,A,b,x,ierr)
       & "["//ADJUSTL(TRIM(EventName))//" Event] Finalized\n",ierr)
     
     CALL PetscLogFlops(EventFlops,ierr)
-    CALL PetscLogEventEnd(Event,PETSC_NULL_OBJECT,PETSC_NULL_OBJECT, &
-      & PETSC_NULL_OBJECT,PETSC_NULL_OBJECT,ierr)
+    CALL PetscLogEventEnd(Event,ierr)
 
 
 END SUBROUTINE SolveSystem

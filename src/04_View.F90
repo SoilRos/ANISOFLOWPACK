@@ -1,5 +1,16 @@
+MODULE PETSc_LIBRARY
+
+#include <petsc/finclude/petsc.h>
+
+    USE PETSc
+
+    IMPLICIT NONE
+
+END MODULE
+
 MODULE ANISOFLOW_View
     
+    USE PETSc_LIBRARY
     USE ANISOFLOW_Types, ONLY : OutputTypeVar
 
     IMPLICIT NONE
@@ -11,9 +22,6 @@ SUBROUTINE ViewSolution(x,ViewName,StageName,ierr)
     USE ANISOFLOW_Interface, ONLY : GetOutputType,GetProjectName
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
     CHARACTER(LEN=200),INTENT(IN)           :: ViewName,StageName
@@ -43,9 +51,6 @@ SUBROUTINE ViewTopology(x,ViewName,StageName,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-
     PetscErrorCode,INTENT(INOUT)            :: ierr
     CHARACTER(LEN=200),INTENT(IN)           :: ViewName,StageName
     Vec,INTENT(IN)                          :: x
@@ -74,9 +79,6 @@ SUBROUTINE ViewConductivity(x,ViewName,StageName,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-
     PetscErrorCode,INTENT(INOUT)            :: ierr
     CHARACTER(LEN=200),INTENT(IN)           :: ViewName,StageName
     Vec,INTENT(IN)                          :: x
@@ -104,9 +106,6 @@ SUBROUTINE ViewStorage(x,ViewName,StageName,ierr)
     USE ANISOFLOW_Interface, ONLY : GetOutputType,GetProjectName
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
     CHARACTER(LEN=200),INTENT(IN)           :: ViewName,StageName
@@ -138,9 +137,6 @@ SUBROUTINE ViewProperty(x,ViewName,StageName,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-
     PetscErrorCode,INTENT(INOUT)            :: ierr
     CHARACTER(LEN=200),INTENT(IN)           :: ViewName,StageName
     Vec,INTENT(IN)                          :: x
@@ -168,10 +164,6 @@ SUBROUTINE ViewVecProperty_1(x,Name,StageName,ierr)
     USE ANISOFLOW_Interface
 
     IMPLICIT NONE
-
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscviewer.h>
 
     PetscErrorCode,INTENT(INOUT)            :: ierr
     CHARACTER(LEN=200),INTENT(IN)           :: Name,StageName
@@ -202,10 +194,6 @@ SUBROUTINE ViewVecProperty_2(x,Name,StageName,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscviewer.h>
-
     PetscErrorCode,INTENT(INOUT)            :: ierr
     CHARACTER(LEN=200),INTENT(IN)           :: Name,StageName
 
@@ -234,10 +222,6 @@ SUBROUTINE ViewVecProperty_3(x,Name,StageName,ierr)
 
     IMPLICIT NONE
 
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscviewer.h>
-
     PetscErrorCode,INTENT(INOUT)            :: ierr
     CHARACTER(LEN=200),INTENT(IN)           :: Name,StageName
 
@@ -260,6 +244,7 @@ SUBROUTINE ViewVecProperty_3(x,Name,StageName,ierr)
         & ADJUSTL(TRIM(Name)//TRIM(Ext))//                           &
         & " was satisfactorily saved\n",ierr)
 #else
+#warning "PETSc does not have HDF5."
     CALL PetscSynchronizedPrintf(PETSC_COMM_WORLD,                   &
         & "["//ADJUSTL(TRIM(StageName))//" Event] "//                &
         & ADJUSTL(TRIM(Name)//TRIM(Ext))//                           &

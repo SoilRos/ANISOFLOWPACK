@@ -1,5 +1,16 @@
+MODULE PETSc_LIBRARY
+
+#include <petsc/finclude/petsc.h>
+
+    USE PETSc
+
+    IMPLICIT NONE
+
+END MODULE
+
 PROGRAM ANISOFLOW
 
+    USE PETSc_LIBRARY
     USE ANISOFLOW_Types,                ONLY : Geometry,             &
                                              & PropertiesField,      &
                                              & BoundaryConditions
@@ -14,10 +25,6 @@ PROGRAM ANISOFLOW
     USE ANISOFLOW_Solver,               ONLY : SolveSystem
 
     IMPLICIT NONE
-    
-#include <petsc/finclude/petscsys.h>
-#include <petsc/finclude/petscvec.h>
-#include <petsc/finclude/petscmat.h>
 
     PetscErrorCode              :: ierr
     PetscBool                   :: Verbose
